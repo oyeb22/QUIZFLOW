@@ -731,6 +731,7 @@
       min-height: 100vh;
       min-height: 100dvh;
       display: none;
+      overflow-y: auto;
       background:
         radial-gradient(ellipse 50% 40% at 50% 0%, rgba(91,110,245,0.07) 0%, transparent 70%),
         var(--bg);
@@ -952,6 +953,7 @@
     .back-btn:hover { border-color: var(--accent); color: var(--accent2); }
 
     /* Divider */
+    .hidden { display: none !important; }
     .divider { height: 1px; background: var(--border); margin: 20px 0; }
   </style>
 </head>
@@ -1104,7 +1106,7 @@
   <!-- Bottom nav -->
   <div class="exam-nav">
     <button class="nav-btn nav-prev" id="prevBtn" onclick="prevQ()" disabled>← Prev</button>
-    <button class="nav-btn nav-submit" onclick="confirmSubmit()">Submit ✓</button>
+    <button class="nav-btn nav-submit hidden" id="submitBtn" onclick="confirmSubmit()">Submit Exam ✓</button>
     <button class="nav-btn nav-next" id="nextBtn" onclick="nextQ()">Next →</button>
   </div>
 </div>
@@ -1219,7 +1221,15 @@ function showScreen(id){
     el.style.display = '';
   });
   var el = document.getElementById(id);
-  if (el) el.classList.add('active');
+  if (el) {
+    el.classList.add('active');
+    // Always scroll to the very top when switching screens
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    el.scrollTop = 0;
+    // Also scroll the results-card if it exists (for overflow:auto containers)
+    var card = el.querySelector('.results-card');
+    if (card) card.scrollTop = 0;
+  }
 }
 
 function safeText(id, val){
@@ -1624,10 +1634,23 @@ function renderQuestion(){
   var area = document.getElementById('questionArea');
   if (area) area.innerHTML = html;
 
-  var prev = document.getElementById('prevBtn');
-  var next = document.getElementById('nextBtn');
+  var prev   = document.getElementById('prevBtn');
+  var next   = document.getElementById('nextBtn');
+  var submit = document.getElementById('submitBtn');
+  var isLast = (qIndex === questions.length - 1);
+
   if (prev) prev.disabled = (qIndex === 0);
-  if (next) next.textContent = qIndex === questions.length - 1 ? 'Review →' : 'Next →';
+
+  // On last question: hide Next, show Submit
+  // On any other question: show Next, hide Submit
+  if (next) {
+    if (isLast) { next.classList.add('hidden'); }
+    else        { next.classList.remove('hidden'); next.textContent = 'Next →'; }
+  }
+  if (submit) {
+    if (isLast) { submit.classList.remove('hidden'); }
+    else        { submit.classList.add('hidden'); }
+  }
 
   updateDots();
   updateVioDisplay();
