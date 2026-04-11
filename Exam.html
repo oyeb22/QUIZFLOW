@@ -884,6 +884,56 @@
     .review-badge.bad { background: var(--red-glow); color: var(--red); }
     .review-badge.skip { background: var(--yellow-glow); color: var(--yellow); }
 
+    /* AI Explanation */
+    .explain-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 7px 14px;
+      background: rgba(91,110,245,.1);
+      border: 1px solid rgba(91,110,245,.3);
+      border-radius: 8px;
+      color: var(--accent2);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .explain-btn:hover { background: rgba(91,110,245,.18); }
+    .explain-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .explain-box {
+      margin-top: 10px;
+      padding: 12px 14px;
+      background: rgba(91,110,245,.06);
+      border: 1px solid rgba(91,110,245,.2);
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text);
+    }
+    .explain-box .ai-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .explain-spinner {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border: 2px solid rgba(129,140,248,.3);
+      border-top-color: var(--accent2);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+
     .back-btn {
       display: block;
       margin: 24px auto 0;
@@ -1847,6 +1897,9 @@ function showResults(data){
     return;
   }
 
+  // Cache to avoid re-fetching same explanation
+  var _explainCache = {};
+
   list.innerHTML = detailedAnswers.map(function(a, i){
     var skipped = !a.studentAnswer || a.studentAnswer === '(no answer)';
     var cls     = skipped ? 'skipped' : (a.isCorrect ? 'correct' : 'wrong');
@@ -1855,6 +1908,13 @@ function showResults(data){
       : a.isCorrect
         ? '<span class="review-badge ok">✓ Correct</span>'
         : '<span class="review-badge bad">✗ Wrong</span>';
+
+    // Explain button — only for wrong/skipped answers
+    var explainBtn = (!a.isCorrect && !skipped)
+      ? '<button class="explain-btn" id="eb_' + i + '" onclick="fetchExplanation(' + i + ')">'
+        + '✦ Explain this</button>'
+        + '<div id="ex_' + i + '"></div>'
+      : '';
 
     return '<div class="review-item ' + cls + '">'
       + '<div class="review-q">'
@@ -1866,8 +1926,63 @@ function showResults(data){
         + '<span class="review-val ok">' + a.correctAnswer + '</span></div>' : '')
       + '<div class="review-row"><span class="review-label">Points</span>'
       + '<span class="review-val">' + a.pointsEarned + ' / ' + a.maxPoints + '</span></div>'
+      + explainBtn
       + '</div>';
   }).join('');
+
+  // Store answers for use in fetchExplanation
+  window._reviewAnswers = detailedAnswers;
+}
+
+// Called when student clicks "Explain this" on a wrong answer
+function fetchExplanation(idx) {
+  if (!window._reviewAnswers) return;
+  var a    = window._reviewAnswers[idx];
+  var btn  = document.getElementById('eb_' + idx);
+  var box  = document.getElementById('ex_' + idx);
+  if (!btn || !box || !a) return;
+
+  // Return cached result
+  if (_explainCache[idx]) {
+    box.innerHTML = _explainCache[idx];
+    btn.style.display = 'none';
+    return;
+  }
+
+  // Disable button while loading
+  btn.disabled = true;
+  btn.innerHTML = '<span class="explain-spinner"></span> Getting explanation...';
+
+  post('getExplanation', {
+    question:      a.questionText,
+    studentAnswer: a.studentAnswer,
+    correctAnswer: a.correctAnswer,
+    type:          a.type || 'MCQ',
+    school:        studentInfo.school || ''
+  }, function(e, r) {
+    btn.disabled = false;
+
+    if (e || !r || r.status !== 'success') {
+      var errMsg = (r && r.message) || 'Could not get explanation.';
+      // If AI is disabled for this school, hide the button entirely
+      if (errMsg.indexOf('not enabled') !== -1 || errMsg.indexOf('not configured') !== -1) {
+        btn.style.display = 'none';
+      } else {
+        btn.innerHTML = '✦ Explain this';
+        box.innerHTML = '<div style="font-size:12px;color:var(--red);margin-top:8px">' + errMsg + '</div>';
+      }
+      return;
+    }
+
+    // Show explanation
+    var html = '<div class="explain-box">'
+      + '<div class="ai-label">⚡ AI Explanation</div>'
+      + r.data.explanation
+      + '</div>';
+    _explainCache[idx] = html;
+    box.innerHTML = html;
+    btn.style.display = 'none';
+  });
 }
 </script>
 </body>
