@@ -624,7 +624,6 @@
       gap: 8px;
       align-items: center;
       z-index: 150;
-      /* Safe area for iPhones */
       padding-bottom: calc(clamp(10px, 2.5vw, 14px) + env(safe-area-inset-bottom));
     }
     .nav-btn {
@@ -865,14 +864,14 @@
       font-size: 10px;
       font-weight: 700;
       color: var(--muted);
-      min-width: 80px;
+      min-width: 90px;
       padding-top: 1px;
       text-transform: uppercase;
       letter-spacing: 0.4px;
       flex-shrink: 0;
     }
     .review-val { color: var(--text); }
-    .review-val.ok { color: var(--green); }
+    .review-val.ok { color: var(--green); font-weight: 600; }
     .review-val.bad { color: var(--red); }
     .review-badge {
       font-size: 10px;
@@ -885,8 +884,30 @@
     .review-badge.bad { background: var(--red-glow); color: var(--red); }
     .review-badge.skip { background: var(--yellow-glow); color: var(--yellow); }
 
-    /* AI Explanation */
-    .explain-btn {
+    /* Explanation block (from question bank) */
+    .explain-box {
+      margin-top: 10px;
+      padding: 12px 14px;
+      background: rgba(91,110,245,.07);
+      border: 1px solid rgba(91,110,245,.22);
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text);
+    }
+    .explain-box .ai-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    /* AI explanation button */
+    .ai-explain-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -902,22 +923,22 @@
       cursor: pointer;
       transition: all .15s;
     }
-    .explain-btn:hover { background: rgba(91,110,245,.18); }
-    .explain-btn:disabled { opacity: .5; cursor: not-allowed; }
-    .explain-box {
+    .ai-explain-btn:hover { background: rgba(91,110,245,.18); }
+    .ai-explain-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .ai-explain-box {
       margin-top: 10px;
       padding: 12px 14px;
-      background: rgba(91,110,245,.06);
-      border: 1px solid rgba(91,110,245,.2);
+      background: rgba(45,212,160,.05);
+      border: 1px solid rgba(45,212,160,.2);
       border-radius: 10px;
       font-size: 13px;
       line-height: 1.65;
       color: var(--text);
     }
-    .explain-box .ai-label {
+    .ai-explain-box .ai-label {
       font-size: 10px;
       font-weight: 700;
-      color: var(--accent2);
+      color: var(--green);
       text-transform: uppercase;
       letter-spacing: .6px;
       margin-bottom: 6px;
@@ -952,7 +973,6 @@
     }
     .back-btn:hover { border-color: var(--accent); color: var(--accent2); }
 
-    /* Divider */
     .hidden { display: none !important; }
     .divider { height: 1px; background: var(--border); margin: 20px 0; }
   </style>
@@ -968,7 +988,6 @@
 <!-- ══════════════════ PRE-EXAM ══════════════════ -->
 <div id="preExam" class="screen active">
 
-  <!-- Candidate banner -->
   <div class="candidate-banner">
     <div class="cb-logo">⚡</div>
     <div class="cb-info">
@@ -1029,7 +1048,7 @@
 
   <div class="pre-start">
     <button class="start-btn" id="startBtn" onclick="enterFullscreen()" disabled>
-      🔒 Enter Fullscreen & Begin Exam
+      🔒 Enter Fullscreen &amp; Begin Exam
     </button>
   </div>
 </div>
@@ -1037,7 +1056,6 @@
 <!-- ══════════════════ EXAM SCREEN ══════════════════ -->
 <div id="examScreen" class="screen">
 
-  <!-- Floating proctor monitor (desktop) -->
   <div class="monitor">
     <div class="monitor-title"><div class="pulse-dot"></div> AI Proctor Live</div>
     <div class="monitor-video">
@@ -1052,10 +1070,8 @@
     </div>
   </div>
 
-  <!-- Security log (desktop) -->
   <div class="sec-log" id="secLog"></div>
 
-  <!-- Sticky header -->
   <div class="exam-header">
     <div class="exam-header-top">
       <div class="exam-title-block">
@@ -1079,10 +1095,7 @@
     </div>
   </div>
 
-  <!-- Question area -->
   <div class="question-wrap">
-
-    <!-- Candidate card -->
     <div class="exam-candidate-card">
       <div class="ecc-avatar">👤</div>
       <div class="ecc-info">
@@ -1098,12 +1111,9 @@
     </div>
 
     <div id="questionArea"></div>
-
     <div class="q-dots-wrap" id="navDots"></div>
-
   </div>
 
-  <!-- Bottom nav -->
   <div class="exam-nav">
     <button class="nav-btn nav-prev" id="prevBtn" onclick="prevQ()" disabled>← Prev</button>
     <button class="nav-btn nav-submit hidden" id="submitBtn" onclick="confirmSubmit()">Submit Exam ✓</button>
@@ -1204,8 +1214,10 @@ var faceEnabled  = true;
 var faceDetector = null;
 var examSubmitted = false;
 
-// Student display info
 var studentInfo = { name: '', class: '', school: '' };
+
+// ── Global AI explanation cache (accessible from fetchAiExplanation) ──
+var _explainCache = {};
 
 // ================================================================
 // UTILITIES
@@ -1223,10 +1235,8 @@ function showScreen(id){
   var el = document.getElementById(id);
   if (el) {
     el.classList.add('active');
-    // Always scroll to the very top when switching screens
     window.scrollTo({ top: 0, behavior: 'instant' });
     el.scrollTop = 0;
-    // Also scroll the results-card if it exists (for overflow:auto containers)
     var card = el.querySelector('.results-card');
     if (card) card.scrollTop = 0;
   }
@@ -1280,19 +1290,15 @@ window.addEventListener('load', function(){
     quizMeta    = r.data.quizData;
     faceEnabled = quizMeta.faceDetection !== false;
 
-    // Populate UI with exam details
     safeText('preTitle', quizMeta.title);
     safeText('bannerCode', student.examCode);
 
-    // Fetch student info
     fetchStudentInfo();
     initMedia();
   });
 });
 
 function fetchStudentInfo(){
-  // We'll derive name/class/school from the registration data if available
-  // via URL param, or display just the email initially
   var email = student.email;
   var displayName = email.split('@')[0] || email;
   studentInfo.name = displayName;
@@ -1300,7 +1306,6 @@ function fetchStudentInfo(){
   safeText('bannerName', displayName);
   safeText('bannerMeta', student.examCode + ' · ' + (quizMeta ? quizMeta.title : ''));
 
-  // Update exam details panel
   var detailsEl = document.getElementById('examDetailsList');
   if (detailsEl && quizMeta) {
     detailsEl.innerHTML =
@@ -1312,7 +1317,6 @@ function fetchStudentInfo(){
   }
 }
 
-// Called after we load questions and have student profile from server
 function updateCandidateDisplays(sInfo){
   var name   = (sInfo && sInfo.Name)   || studentInfo.name || student.email;
   var cls    = (sInfo && sInfo.Class)  || '';
@@ -1324,18 +1328,12 @@ function updateCandidateDisplays(sInfo){
 
   var metaStr = [cls, school].filter(Boolean).join(' · ');
 
-  // Banner
   safeText('bannerName', name);
   safeText('bannerMeta', (quizMeta ? quizMeta.title : '') + (metaStr ? ' · ' + metaStr : ''));
-
-  // Exam candidate card
   safeText('eccName', name);
   safeText('eccMeta', metaStr || student.email);
-
-  // Exam sub-header
   safeText('examSubBar', [name, metaStr].filter(Boolean).join(' · '));
 
-  // Details panel
   var detailsEl = document.getElementById('examDetailsList');
   if (detailsEl && quizMeta) {
     detailsEl.innerHTML =
@@ -1551,7 +1549,6 @@ function startExam(){
     renderQuestion();
     startTimer();
 
-    // Fetch student profile for display
     post('registerStudent', {
       email: student.email,
       name: studentInfo.name,
@@ -1640,9 +1637,6 @@ function renderQuestion(){
   var isLast = (qIndex === questions.length - 1);
 
   if (prev) prev.disabled = (qIndex === 0);
-
-  // On last question: hide Next, show Submit
-  // On any other question: show Next, hide Submit
   if (next) {
     if (isLast) { next.classList.add('hidden'); }
     else        { next.classList.remove('hidden'); next.textContent = 'Next →'; }
@@ -1767,7 +1761,6 @@ function setupSecurity(){
     e.preventDefault(); e.returnValue = '';
   });
 
-  // Initial badge states
   setMobileBadge('sb-cam', 'ok', '📷 Cam OK');
   setMobileBadge('sb-face', 'ok', '👤 Face OK');
   setMobileBadge('sb-tab', 'ok', '🖥 Focus OK');
@@ -1890,6 +1883,9 @@ function showResults(data){
   showScreen('resultsScreen');
   try { document.exitFullscreen(); } catch(e){}
 
+  // Reset explanation cache for this new result session
+  _explainCache = {};
+
   var pct    = parseFloat(data.percentage);
   var passed = data.status === 'Pass';
 
@@ -1906,75 +1902,112 @@ function showResults(data){
   var statusEl = document.getElementById('resStatus');
   if (statusEl) statusEl.className = 'result-status ' + (passed ? 'pass' : 'fail');
 
-  // Correct / wrong counts
   var detailedAnswers = data.detailedAnswers || [];
   var correct = detailedAnswers.filter(function(a){ return a.isCorrect; }).length;
   var wrong   = detailedAnswers.filter(function(a){ return !a.isCorrect; }).length;
   safeText('resCorrect', correct);
   safeText('resWrong', wrong);
 
-  // Review list
   var list = document.getElementById('reviewList');
   if (!detailedAnswers.length){
     list.innerHTML = '<p style="color:var(--text2);font-size:13px;">No question data available.</p>';
     return;
   }
 
-  // Cache to avoid re-fetching same explanation
-  var _explainCache = {};
+  // Store answers globally for fetchAiExplanation
+  window._reviewAnswers = detailedAnswers;
 
   list.innerHTML = detailedAnswers.map(function(a, i){
-  var skipped = !a.studentAnswer || a.studentAnswer === '(no answer)';
-  var cls     = skipped ? 'skipped' : (a.isCorrect ? 'correct' : 'wrong');
-  var badge   = skipped
-    ? '<span class="review-badge skip">Skipped</span>'
-    : a.isCorrect
-      ? '<span class="review-badge ok">✓ Correct</span>'
-      : '<span class="review-badge bad">✗ Wrong</span>';
+    var skipped = !a.studentAnswer || a.studentAnswer === '(no answer)';
+    var cls     = skipped ? 'skipped' : (a.isCorrect ? 'correct' : 'wrong');
+    var badge   = skipped
+      ? '<span class="review-badge skip">Skipped</span>'
+      : a.isCorrect
+        ? '<span class="review-badge ok">✓ Correct</span>'
+        : '<span class="review-badge bad">✗ Wrong</span>';
 
-  // Explanation block — shown for wrong/skipped if explanation exists
-  var explainBlock = '';
-  if (!a.isCorrect && a.explanation) {
-    explainBlock = '<div class="explain-box" style="margin-top:10px">'
-      + '<div class="ai-label">💡 Explanation</div>'
-      + a.explanation
+    // ── Correct answer written out (MCQ letter + full text) ──
+    // correctAnswer from server is already the full text (e.g. "Paris")
+    // correctAnswerLetter is the letter (e.g. "B")
+    var correctDisplay = '';
+    if (!a.isCorrect) {
+      var letter = a.correctAnswerLetter || '';
+      var text   = a.correctAnswer || '';
+      // If we have both letter and text and they differ, show "B — Paris"
+      if (letter && text && text !== letter) {
+        correctDisplay = letter + ' — ' + text;
+      } else {
+        correctDisplay = text || letter || '—';
+      }
+    }
+
+    // ── Explanation block (from question bank, shown for wrong/skipped) ──
+    var explainBlock = '';
+    if (!a.isCorrect && a.explanation) {
+      explainBlock =
+        '<div class="explain-box">'
+        + '<div class="ai-label">💡 Explanation</div>'
+        + a.explanation
+        + '</div>';
+    }
+
+    // ── AI explanation button (only for wrong/skipped, when no QB explanation) ──
+    var aiBlock = '';
+    if (!a.isCorrect) {
+      aiBlock =
+        '<div id="ai_wrap_' + i + '">'
+        + '<button class="ai-explain-btn" id="ai_btn_' + i + '" onclick="fetchAiExplanation(' + i + ')">✦ AI Explanation</button>'
+        + '<div id="ai_box_' + i + '"></div>'
+        + '</div>';
+    }
+
+    return '<div class="review-item ' + cls + '">'
+      + '<div class="review-q">'
+      + '<span class="review-q-text">Q' + (i+1) + '. ' + (a.questionText || 'Question ' + (i+1)) + '</span>'
+      + badge + '</div>'
+
+      // Student's answer
+      + '<div class="review-row"><span class="review-label">Your Answer</span>'
+      + '<span class="review-val ' + (a.isCorrect ? 'ok' : skipped ? '' : 'bad') + '">' + (a.studentAnswer || '(no answer)') + '</span></div>'
+
+      // Correct answer — only shown when wrong/skipped, written out in full
+      + (!a.isCorrect
+          ? '<div class="review-row"><span class="review-label">Correct Answer</span>'
+            + '<span class="review-val ok">' + correctDisplay + '</span></div>'
+          : '')
+
+      // Points
+      + '<div class="review-row"><span class="review-label">Points</span>'
+      + '<span class="review-val">' + a.pointsEarned + ' / ' + a.maxPoints + '</span></div>'
+
+      // QB explanation (static)
+      + explainBlock
+
+      // AI explanation button
+      + aiBlock
+
       + '</div>';
-  }
-
-  return '<div class="review-item ' + cls + '">'
-    + '<div class="review-q">'
-    + '<span class="review-q-text">Q' + (i+1) + '. ' + (a.questionText || 'Question ' + (i+1)) + '</span>'
-    + badge + '</div>'
-    + '<div class="review-row"><span class="review-label">Your answer</span>'
-    + '<span class="review-val ' + (a.isCorrect ? 'ok' : skipped ? '' : 'bad') + '">' + (a.studentAnswer || '(no answer)') + '</span></div>'
-    + (!a.isCorrect ? '<div class="review-row"><span class="review-label">Correct answer</span>'
-      + '<span class="review-val ok">' + (a.correctAnswer || '—') + '</span></div>' : '')
-    + '<div class="review-row"><span class="review-label">Points</span>'
-    + '<span class="review-val">' + a.pointsEarned + ' / ' + a.maxPoints + '</span></div>'
-    + explainBlock
-    + '</div>';
-}).join('');
-
-  // Store answers for use in fetchExplanation
-  window._reviewAnswers = detailedAnswers;
+  }).join('');
 }
 
-// Called when student clicks "Explain this" on a wrong answer
-function fetchExplanation(idx) {
-  if (!window._reviewAnswers) return;
-  var a    = window._reviewAnswers[idx];
-  var btn  = document.getElementById('eb_' + idx);
-  var box  = document.getElementById('ex_' + idx);
+// ================================================================
+// AI EXPLANATION (on-demand, only when no QB explanation)
+// ================================================================
+function fetchAiExplanation(idx) {
+  var answers = window._reviewAnswers;
+  if (!answers) return;
+  var a    = answers[idx];
+  var btn  = document.getElementById('ai_btn_' + idx);
+  var box  = document.getElementById('ai_box_' + idx);
   if (!btn || !box || !a) return;
 
-  // Return cached result
+  // Return cached result without hitting the API again
   if (_explainCache[idx]) {
     box.innerHTML = _explainCache[idx];
     btn.style.display = 'none';
     return;
   }
 
-  // Disable button while loading
   btn.disabled = true;
   btn.innerHTML = '<span class="explain-spinner"></span> Getting explanation...';
 
@@ -1989,18 +2022,16 @@ function fetchExplanation(idx) {
 
     if (e || !r || r.status !== 'success') {
       var errMsg = (r && r.message) || 'Could not get explanation.';
-      // If AI is disabled for this school, hide the button entirely
       if (errMsg.indexOf('not enabled') !== -1 || errMsg.indexOf('not configured') !== -1) {
         btn.style.display = 'none';
       } else {
-        btn.innerHTML = '✦ Explain this';
+        btn.innerHTML = '✦ AI Explanation';
         box.innerHTML = '<div style="font-size:12px;color:var(--red);margin-top:8px">' + errMsg + '</div>';
       }
       return;
     }
 
-    // Show explanation
-    var html = '<div class="explain-box">'
+    var html = '<div class="ai-explain-box">'
       + '<div class="ai-label">⚡ AI Explanation</div>'
       + r.data.explanation
       + '</div>';
