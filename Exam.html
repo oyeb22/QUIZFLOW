@@ -1924,34 +1924,36 @@ function showResults(data){
   var _explainCache = {};
 
   list.innerHTML = detailedAnswers.map(function(a, i){
-    var skipped = !a.studentAnswer || a.studentAnswer === '(no answer)';
-    var cls     = skipped ? 'skipped' : (a.isCorrect ? 'correct' : 'wrong');
-    var badge   = skipped
-      ? '<span class="review-badge skip">Skipped</span>'
-      : a.isCorrect
-        ? '<span class="review-badge ok">✓ Correct</span>'
-        : '<span class="review-badge bad">✗ Wrong</span>';
+  var skipped = !a.studentAnswer || a.studentAnswer === '(no answer)';
+  var cls     = skipped ? 'skipped' : (a.isCorrect ? 'correct' : 'wrong');
+  var badge   = skipped
+    ? '<span class="review-badge skip">Skipped</span>'
+    : a.isCorrect
+      ? '<span class="review-badge ok">✓ Correct</span>'
+      : '<span class="review-badge bad">✗ Wrong</span>';
 
-    // Explain button — only for wrong/skipped answers
-    var explainBtn = (!a.isCorrect && !skipped)
-      ? '<button class="explain-btn" id="eb_' + i + '" onclick="fetchExplanation(' + i + ')">'
-        + '✦ Explain this</button>'
-        + '<div id="ex_' + i + '"></div>'
-      : '';
-
-    return '<div class="review-item ' + cls + '">'
-      + '<div class="review-q">'
-      + '<span class="review-q-text">Q' + (i+1) + '. ' + (a.questionText || 'Question ' + (i+1)) + '</span>'
-      + badge + '</div>'
-      + '<div class="review-row"><span class="review-label">Your answer</span>'
-      + '<span class="review-val ' + (a.isCorrect ? 'ok' : skipped ? '' : 'bad') + '">' + (a.studentAnswer || '(no answer)') + '</span></div>'
-      + (!a.isCorrect ? '<div class="review-row"><span class="review-label">Correct</span>'
-        + '<span class="review-val ok">' + a.correctAnswer + '</span></div>' : '')
-      + '<div class="review-row"><span class="review-label">Points</span>'
-      + '<span class="review-val">' + a.pointsEarned + ' / ' + a.maxPoints + '</span></div>'
-      + explainBtn
+  // Explanation block — shown for wrong/skipped if explanation exists
+  var explainBlock = '';
+  if (!a.isCorrect && a.explanation) {
+    explainBlock = '<div class="explain-box" style="margin-top:10px">'
+      + '<div class="ai-label">💡 Explanation</div>'
+      + a.explanation
       + '</div>';
-  }).join('');
+  }
+
+  return '<div class="review-item ' + cls + '">'
+    + '<div class="review-q">'
+    + '<span class="review-q-text">Q' + (i+1) + '. ' + (a.questionText || 'Question ' + (i+1)) + '</span>'
+    + badge + '</div>'
+    + '<div class="review-row"><span class="review-label">Your answer</span>'
+    + '<span class="review-val ' + (a.isCorrect ? 'ok' : skipped ? '' : 'bad') + '">' + (a.studentAnswer || '(no answer)') + '</span></div>'
+    + (!a.isCorrect ? '<div class="review-row"><span class="review-label">Correct answer</span>'
+      + '<span class="review-val ok">' + (a.correctAnswer || '—') + '</span></div>' : '')
+    + '<div class="review-row"><span class="review-label">Points</span>'
+    + '<span class="review-val">' + a.pointsEarned + ' / ' + a.maxPoints + '</span></div>'
+    + explainBlock
+    + '</div>';
+}).join('');
 
   // Store answers for use in fetchExplanation
   window._reviewAnswers = detailedAnswers;
