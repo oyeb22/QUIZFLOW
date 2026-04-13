@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>E-PRO</title>
+  <title>E-PRO Live</title>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -23,13 +23,11 @@
       --font:  'Sora', sans-serif;
       --mono:  'JetBrains Mono', monospace;
 
-      /* Answer button palette */
       --col-A: #c0392b; --col-A-bdr: #e74c3c;
       --col-B: #1a5276; --col-B-bdr: #2980b9;
       --col-C: #784212; --col-C-bdr: #e67e22;
       --col-D: #1e8449; --col-D-bdr: #27ae60;
 
-      /* True/False colors */
       --col-true:  #1e8449; --col-true-bdr: #27ae60;
       --col-false: #c0392b; --col-false-bdr: #e74c3c;
     }
@@ -200,7 +198,6 @@
     .lobby-count  { font-size:42px; font-weight:900; font-family:var(--mono); color:var(--grn); line-height:1; }
     .lobby-clabel { font-size:12px; color:var(--txt2); margin-top:4px; }
 
-    /* Simple waiting indicator — three dots */
     .waiting-dots {
       display:flex; gap:7px; justify-content:center; margin-top:22px;
     }
@@ -219,7 +216,6 @@
     ══════════════════════════════════════ */
     #s-question { justify-content:space-between; }
 
-    /* Top bar */
     .q-topbar {
       background:var(--surf);
       border-bottom:1px solid var(--bdr);
@@ -244,7 +240,6 @@
     .q-timer.warn  { color:var(--yel); }
     .q-timer.urgent{ color:var(--red); }
 
-    /* Timer progress strip */
     .timer-strip { height:4px; background:var(--surf2); flex-shrink:0; }
     .timer-fill  {
       height:100%;
@@ -254,7 +249,6 @@
     .timer-fill.warn   { background:var(--yel); }
     .timer-fill.urgent { background:var(--red); }
 
-    /* Question text card */
     .q-body {
       flex:1;
       display:flex;
@@ -299,7 +293,6 @@
       margin-bottom:8px;
     }
 
-    /* Answer buttons grid - Multiple Choice */
     .opts-grid {
       display:grid;
       grid-template-columns:1fr 1fr;
@@ -344,7 +337,6 @@
       flex-shrink:0;
     }
 
-    /* True/False buttons */
     .tf-grid {
       display:grid;
       grid-template-columns:1fr 1fr;
@@ -372,10 +364,9 @@
     .tf-btn:active:not(:disabled) { transform:scale(.97); }
     .tf-btn:disabled { opacity:.5; cursor:not-allowed; }
     .tf-btn.selected { box-shadow:0 0 0 3px #fff; transform:scale(1.02); }
-    .tf-btn.true { background:var(--col-true); border-color:var(--col-true-bdr); }
-    .tf-btn.false { background:var(--col-false); border-color:var(--col-false-bdr); }
+    .tf-btn.true-btn  { background:var(--col-true);  border-color:var(--col-true-bdr); }
+    .tf-btn.false-btn { background:var(--col-false); border-color:var(--col-false-bdr); }
 
-    /* Short Answer input */
     .short-answer-container {
       padding:clamp(10px,2.5vw,16px);
       flex-shrink:0;
@@ -415,7 +406,6 @@
     .short-answer-btn:hover:not(:disabled) { opacity:.9; transform:translateY(-1px); }
     .short-answer-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
 
-    /* Answered state — replaces the options grid */
     .answered-state {
       flex:1;
       display:flex;
@@ -439,11 +429,11 @@
     .ans-subtext { font-size:13px; color:var(--txt2); }
 
     /* ══════════════════════════════════════
-       LEADERBOARD SCREEN
+       LEADERBOARD
     ══════════════════════════════════════ */
-    #s-leaderboard { 
-      padding:clamp(16px,4vw,24px); 
-      overflow-y:auto; 
+    #s-leaderboard {
+      padding:clamp(16px,4vw,24px);
+      overflow-y:auto;
       justify-content:flex-start;
     }
 
@@ -451,7 +441,6 @@
     .lb-header h2 { font-size:clamp(18px,5vw,22px); font-weight:800; }
     .lb-header p  { font-size:12px; color:var(--txt2); margin-top:3px; }
 
-    /* My score summary */
     .my-summary {
       background:rgba(74,124,255,.1);
       border:1px solid rgba(74,124,255,.25);
@@ -479,14 +468,8 @@
       opacity:0;
       transform:translateY(20px);
     }
-    .lb-row.animate-in {
-      opacity:1;
-      transform:translateY(0);
-    }
-    .lb-row.me {
-      border-color:rgba(74,124,255,.45);
-      background:rgba(74,124,255,.07);
-    }
+    .lb-row.animate-in { opacity:1; transform:translateY(0); }
+    .lb-row.me    { border-color:rgba(74,124,255,.45); background:rgba(74,124,255,.07); }
     .lb-row.top-1 { border-color:rgba(240,180,41,.45); background:rgba(240,180,41,.05); }
     .lb-row.top-2 { border-color:rgba(180,180,180,.4); }
     .lb-row.top-3 { border-color:rgba(205,127,50,.4); }
@@ -494,25 +477,9 @@
     .lb-medal { font-size:18px; width:26px; text-align:center; flex-shrink:0; }
     .lb-name  { flex:1; font-size:13px; font-weight:600; }
     .lb-score-col { text-align:right; flex-shrink:0; }
-    .lb-pts   { font-family:var(--mono); font-size:15px; font-weight:700; color:var(--grn); }
-    .lb-gain  { font-size:10px; color:var(--acc2); font-family:var(--mono); }
+    .lb-pts  { font-family:var(--mono); font-size:15px; font-weight:700; color:var(--grn); }
+    .lb-gain { font-size:10px; color:var(--acc2); font-family:var(--mono); }
 
-    .lb-waiting {
-      margin-top:18px;
-      padding:12px 16px;
-      background:var(--surf);
-      border:1px solid var(--bdr);
-      border-radius:10px;
-      font-size:12px;
-      color:var(--txt2);
-      text-align:center;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-    }
-
-    /* Countdown to next question */
     .next-q-countdown {
       margin-top:20px;
       text-align:center;
@@ -525,7 +492,7 @@
     .next-q-timer { font-family:var(--mono); font-size:32px; font-weight:800; color:var(--acc2); }
 
     /* ══════════════════════════════════════
-       ENDED SCREEN
+       ENDED
     ══════════════════════════════════════ */
     #s-ended {
       align-items:center;
@@ -534,20 +501,11 @@
       overflow-y:auto;
     }
 
-    .ended-card {
-      width:100%;
-      max-width:480px;
-      text-align:center;
-    }
-
-    .ended-badge {
-      font-size:52px;
-      margin-bottom:12px;
-    }
+    .ended-card { width:100%; max-width:480px; text-align:center; }
+    .ended-badge { font-size:52px; margin-bottom:12px; }
     .ended-title { font-size:clamp(22px,5vw,28px); font-weight:900; margin-bottom:6px; }
     .ended-sub   { font-size:13px; color:var(--txt2); margin-bottom:24px; }
 
-    /* Score ring */
     .score-ring-wrap { position:relative; width:130px; height:130px; margin:0 auto 20px; }
     .score-ring-svg  { transform:rotate(-90deg); }
     .ring-bg   { fill:none; stroke:var(--surf2); stroke-width:8; }
@@ -575,10 +533,9 @@
 
     @media (max-width:420px) {
       .opts-grid { grid-template-columns:1fr; }
-      .tf-grid { grid-template-columns:1fr; }
+      .tf-grid   { grid-template-columns:1fr; }
     }
   </style>
-<base target="_blank">
 </head>
 <body>
 
@@ -618,8 +575,8 @@
 <div class="screen" id="s-lobby">
   <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
     <div class="lobby-avatar">👤</div>
-    <div class="lobby-name"  id="lby-name">—</div>
-    <div class="lobby-room"  id="lby-room">------</div>
+    <div class="lobby-name" id="lby-name">—</div>
+    <div class="lobby-room" id="lby-room">------</div>
     <div class="lobby-status">You're in! Waiting for your teacher to start the game.</div>
     <div class="lobby-stat-card">
       <div class="lobby-count"  id="lby-count">—</div>
@@ -647,16 +604,14 @@
   </div>
   <div class="timer-strip"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
 
-  <!-- Question text -->
   <div class="q-body">
     <div class="q-card">
       <div class="q-type-badge" id="q-type">Multiple Choice</div>
-      <div class="q-num" id="q-num">Question 1 of 10</div>
+      <div class="q-num"  id="q-num">Question 1 of 10</div>
       <div class="q-text" id="q-text">Loading...</div>
     </div>
   </div>
 
-  <!-- Options or answered overlay -->
   <div id="opts-container">
     <div class="opts-grid" id="opts-grid"></div>
   </div>
@@ -666,7 +621,7 @@
 <div class="screen" id="s-leaderboard">
   <div class="lb-header">
     <h2 id="lb-title">Leaderboard</h2>
-    <p id="lb-sub">After question 1</p>
+    <p  id="lb-sub">After question 1</p>
   </div>
 
   <div class="my-summary">
@@ -704,9 +659,8 @@
       </div>
     </div>
 
-    <div class="rank-pill" id="rank-pill">Rank —</div>
-
-    <div class="ended-lb" id="ended-lb"></div>
+    <div class="rank-pill"  id="rank-pill">Rank —</div>
+    <div class="ended-lb"   id="ended-lb"></div>
   </div>
 </div>
 
@@ -714,8 +668,9 @@
 // ══════════════════════════════════════════════════════
 // CONFIG & STATE
 // ══════════════════════════════════════════════════════
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBs0vNJ8tqcKRNKAVLgNvjKz7jBn0i4S-oN2n9Xlyn-Bt2AChKiYWI4sKh1qatE_VZnA/exec'; // !! replace with your GAS URL !!
-var POLL_MS    = 2000; // Faster polling for smoother auto-transition
+// !! Replace with your deployed Google Apps Script URL !!
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBs0vNJ8tqcKRNKAVLgNvjKz7jBn0i4S-oN2n9Xlyn-Bt2AChKiYWI4sKh1qatE_VZnA/exec';
+var POLL_MS    = 2000;
 
 var state = {
   playerId:   '',
@@ -735,20 +690,18 @@ var ui = {
   pollHandle:      null,
   timerHandle:     null,
   countdownHandle: null,
-  qStartTime:      0,
-  qRenderedAt:     0,  // When question was actually displayed
-  serverStartTime: 0 // When server says question started
+  qRenderedAt:     0,
+  serverStartTime: 0
 };
 
 // ══════════════════════════════════════════════════════
 // BOOT
 // ══════════════════════════════════════════════════════
 window.addEventListener('load', function() {
-  // Pre-fill room code if passed via ?room=ABC123
   var m = window.location.search.match(/[?&]room=([^&]{6})/i);
   if (m) {
     var ci = document.getElementById('inp-code');
-    if (ci) { ci.value = m[1].toUpperCase(); }
+    if (ci) ci.value = m[1].toUpperCase();
   }
 });
 
@@ -781,10 +734,6 @@ function clearErr(id) {
 }
 
 function post(action, data, cb) {
-  if (!SCRIPT_URL || SCRIPT_URL.indexOf('YOUR_DEPLOYMENT_ID') !== -1) {
-    if (cb) cb(new Error('Script URL not configured'), null);
-    return;
-  }
   fetch(SCRIPT_URL, {
     method: 'POST',
     body: JSON.stringify(Object.assign({ action: action }, data || {}))
@@ -801,14 +750,15 @@ function focusName() {
 
 function escHtml(str) {
   return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;');
 }
 
 // ══════════════════════════════════════════════════════
-// JOIN
+// JOIN  — FIX: removed the false "not configured" guard
+//         so the button always attempts the fetch
 // ══════════════════════════════════════════════════════
 function doJoin() {
   clearErr('join-err');
@@ -816,10 +766,6 @@ function doJoin() {
   var code = (document.getElementById('inp-code').value || '').trim().toUpperCase();
   var name = (document.getElementById('inp-name').value || '').trim();
 
-  if (!SCRIPT_URL || SCRIPT_URL.indexOf('YOUR_DEPLOYMENT_ID') !== -1) {
-    showErr('join-err', 'This page has not been configured yet. Contact your administrator.');
-    return;
-  }
   if (code.length !== 6) {
     showErr('join-err', 'Please enter the 6-character room code.');
     return;
@@ -849,8 +795,8 @@ function doJoin() {
     state.timePerQ = d.timePerQ || 20;
     state.totalQ   = d.totalQ   || 0;
 
-    setText('lby-name',  state.name);
-    setText('lby-room',  state.roomCode);
+    setText('lby-name', state.name);
+    setText('lby-room', state.roomCode);
     show('s-lobby');
     startPoll();
   });
@@ -885,7 +831,6 @@ function doPoll() {
 // STATE MACHINE
 // ══════════════════════════════════════════════════════
 function applyState(d) {
-  // Update our score from server truth
   state.score   = d.myScore   || 0;
   state.correct = d.myCorrect || 0;
 
@@ -897,27 +842,20 @@ function applyState(d) {
     var q = d.currentQuestion;
     if (!q) return;
 
-    // Check if this is a new question
     if (d.currentQ !== ui.currentQ) {
-      // New question arrived - reset state
-      ui.currentQ = d.currentQ;
-      ui.answered = false;
+      ui.currentQ        = d.currentQ;
+      ui.answered        = false;
       ui.serverStartTime = new Date(q.startTime).getTime();
-
-      // Render question first, then start timer (Kahoot-style)
       renderQuestion(q, d);
 
     } else if (d.alreadyAnswered && !ui.answered) {
-      // Server says we already answered (e.g., page refresh)
       ui.answered = true;
       showAnsweredState();
     }
 
   } else if (d.phase === 'leaderboard') {
     stopQuestionTimer();
-    if (ui.phase !== 'leaderboard') {
-      renderLeaderboard(d);
-    }
+    if (ui.phase !== 'leaderboard') renderLeaderboard(d);
 
   } else if (d.phase === 'ended') {
     stopPoll();
@@ -929,24 +867,24 @@ function applyState(d) {
 
 // ══════════════════════════════════════════════════════
 // QUESTION RENDER
+// FIX: All onclick strings now use proper JS escaping
+//      (no curly/smart quotes, no broken concatenation)
 // ══════════════════════════════════════════════════════
 function renderQuestion(q, d) {
   show('s-question');
 
-  // Record when we actually displayed the question
   ui.qRenderedAt = Date.now();
 
-  setText('q-text', q.text);
-  setText('q-num', 'Question ' + (d.currentQ + 1) + ' of ' + d.totalQ);
+  setText('q-text',  q.text);
+  setText('q-num',   'Question ' + (d.currentQ + 1) + ' of ' + d.totalQ);
   setText('q-score', state.score.toLocaleString());
 
-  // Set question type badge
+  // Type badge
   var typeBadge = document.getElementById('q-type');
-  var qType = (q.type || 'multiple_choice').toLowerCase();
-
-  if (qType === 'true_false' || qType === 'boolean') {
+  var qType = (q.type || 'MCQ').toUpperCase();
+  if (qType === 'TF') {
     typeBadge.textContent = 'True / False';
-  } else if (qType === 'short_answer' || qType === 'text') {
+  } else if (qType === 'SHORT' || qType === 'SHORT_ANSWER') {
     typeBadge.textContent = 'Short Answer';
   } else {
     typeBadge.textContent = 'Multiple Choice';
@@ -954,125 +892,150 @@ function renderQuestion(q, d) {
 
   // Reset timer display
   var timerEl = document.getElementById('q-timer');
-  var fillEl = document.getElementById('timer-fill');
-  if (timerEl) {
-    timerEl.textContent = q.timePerQ || state.timePerQ;
-    timerEl.className = 'q-timer';
-  }
-  if (fillEl) {
-    fillEl.style.width = '100%';
-    fillEl.className = 'timer-fill';
-  }
+  var fillEl  = document.getElementById('timer-fill');
+  if (timerEl) { timerEl.textContent = q.timePerQ || state.timePerQ; timerEl.className = 'q-timer'; }
+  if (fillEl)  { fillEl.style.width = '100%'; fillEl.className = 'timer-fill'; }
 
-  // Render appropriate input based on question type
+  // Render input area
   var container = document.getElementById('opts-container');
-  var qType = (q.type || 'multiple_choice').toLowerCase();
-
-  if (qType === 'true_false' || qType === 'boolean') {
+  if (qType === 'TF') {
     renderTrueFalse(container, q);
-  } else if (qType === 'short_answer' || qType === 'text') {
+  } else if (qType === 'SHORT' || qType === 'SHORT_ANSWER') {
     renderShortAnswer(container, q);
   } else {
     renderMultipleChoice(container, q);
   }
 
-  // NOW start the timer (Kahoot-style: timer starts after question is visible)
-  // Calculate remaining time based on when question was rendered vs server start
+  // Start timer — account for server-side elapsed time
   var timePerQ = q.timePerQ || state.timePerQ;
-  var elapsedSinceRender = 0;
-
-  // If server started the question before we rendered it, account for that
+  var elapsed  = 0;
   if (ui.serverStartTime && ui.qRenderedAt > ui.serverStartTime) {
-    elapsedSinceRender = (ui.qRenderedAt - ui.serverStartTime) / 1000;
+    elapsed = (ui.qRenderedAt - ui.serverStartTime) / 1000;
   }
+  var remaining = Math.max(1, timePerQ - elapsed);
 
-  var remainingTime = Math.max(0, timePerQ - elapsedSinceRender);
-
-  // Small delay to ensure UI is fully rendered before starting countdown
   setTimeout(function() {
-    startQuestionTimer(timePerQ, remainingTime);
+    startQuestionTimer(timePerQ, remaining);
   }, 100);
 }
 
+// ── Multiple Choice ────────────────────────────────────────────
 function renderMultipleChoice(container, q) {
   var letters = ['A', 'B', 'C', 'D'];
-  var opts = q.options || [];
+  var opts    = q.options || [];
 
-  container.innerHTML = '<div class="opts-grid" id="opts-grid"></div>';
-  var grid = document.getElementById('opts-grid');
+  // Build grid using DOM (avoids any string-quote issues entirely)
+  var grid = document.createElement('div');
+  grid.className = 'opts-grid';
+  grid.id = 'opts-grid';
 
-  grid.innerHTML = opts.map(function(opt, i) {
+  opts.forEach(function(opt, i) {
     var letter = letters[i] || String.fromCharCode(65 + i);
-    return '<button class="opt-btn ' + letter + '" ' +
-           'onclick="submitAnswer('' + q.id + '','' + letter + '',this)">' +
-      '<div class="opt-letter">' + letter + '</div>' +
-      '<span>' + escHtml(opt) + '</span>' +
-    '</button>';
-  }).join('');
+    var btn    = document.createElement('button');
+    btn.className = 'opt-btn ' + letter;
+
+    var letterDiv = document.createElement('div');
+    letterDiv.className   = 'opt-letter';
+    letterDiv.textContent = letter;
+
+    var textSpan = document.createElement('span');
+    textSpan.textContent = opt;
+
+    btn.appendChild(letterDiv);
+    btn.appendChild(textSpan);
+
+    // ✅ Clean event listener — no string concatenation, no quote issues
+    btn.addEventListener('click', (function(qId, ltr, el) {
+      return function() { submitAnswer(qId, ltr, el); };
+    })(q.id, letter, btn));
+
+    grid.appendChild(btn);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(grid);
 }
 
+// ── True / False ───────────────────────────────────────────────
 function renderTrueFalse(container, q) {
-  container.innerHTML = '<div class="tf-grid" id="tf-grid"></div>';
-  var grid = document.getElementById('tf-grid');
+  var grid = document.createElement('div');
+  grid.className = 'tf-grid';
+  grid.id = 'tf-grid';
 
-  grid.innerHTML = 
-    '<button class="tf-btn true" onclick="submitAnswer('' + q.id + '','True',this)">' +
-      '<span>✓</span> TRUE' +
-    '</button>' +
-    '<button class="tf-btn false" onclick="submitAnswer('' + q.id + '','False',this)">' +
-      '<span>✗</span> FALSE' +
-    '</button>';
+  [
+    { label: '✓  TRUE',  val: 'A', cls: 'true-btn'  },
+    { label: '✗  FALSE', val: 'B', cls: 'false-btn' }
+  ].forEach(function(item) {
+    var btn = document.createElement('button');
+    btn.className   = 'tf-btn ' + item.cls;
+    btn.textContent = item.label;
+
+    btn.addEventListener('click', (function(qId, val, el) {
+      return function() { submitAnswer(qId, val, el); };
+    })(q.id, item.val, btn));
+
+    grid.appendChild(btn);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(grid);
 }
 
+// ── Short Answer ───────────────────────────────────────────────
 function renderShortAnswer(container, q) {
-  container.innerHTML = 
-    '<div class="short-answer-container" id="short-answer-container">' +
-      '<input type="text" class="short-answer-input" id="short-answer-input" ' +
-        'placeholder="Type your answer here..." maxlength="200" ' +
-        'onkeydown="if(event.key==='Enter') submitShortAnswer('' + q.id + '')">' +
-      '<button class="short-answer-btn" id="short-answer-btn" ' +
-        'onclick="submitShortAnswer('' + q.id + '')">Submit Answer</button>' +
-    '</div>';
+  var wrap  = document.createElement('div');
+  wrap.className = 'short-answer-container';
+  wrap.id = 'short-answer-container';
 
-  // Auto-focus the input
-  setTimeout(function() {
-    var input = document.getElementById('short-answer-input');
-    if (input) input.focus();
-  }, 100);
+  var input = document.createElement('input');
+  input.type        = 'text';
+  input.className   = 'short-answer-input';
+  input.id          = 'short-answer-input';
+  input.placeholder = 'Type your answer here...';
+  input.maxLength   = 200;
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') submitShortAnswer(q.id);
+  });
+
+  var btn = document.createElement('button');
+  btn.className   = 'short-answer-btn';
+  btn.id          = 'short-answer-btn';
+  btn.textContent = 'Submit Answer';
+  btn.addEventListener('click', function() { submitShortAnswer(q.id); });
+
+  wrap.appendChild(input);
+  wrap.appendChild(btn);
+
+  container.innerHTML = '';
+  container.appendChild(wrap);
+
+  setTimeout(function() { input.focus(); }, 100);
 }
 
 function submitShortAnswer(questionId) {
   if (ui.answered) return;
-
-  var input = document.getElementById('short-answer-input');
+  var input  = document.getElementById('short-answer-input');
   var answer = input ? input.value.trim() : '';
 
   if (!answer) {
-    input.style.borderColor = 'var(--red)';
-    setTimeout(function() {
-      input.style.borderColor = '';
-    }, 500);
+    if (input) {
+      input.style.borderColor = 'var(--red)';
+      setTimeout(function() { input.style.borderColor = ''; }, 500);
+    }
     return;
   }
 
   ui.answered = true;
-
-  // Disable input and button
   if (input) input.disabled = true;
   var btn = document.getElementById('short-answer-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Submitted!';
-  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitted!'; }
 
   post('submitLiveAnswer', {
     roomCode:   state.roomCode,
     playerId:   state.playerId,
     questionId: questionId,
     answer:     answer
-  }, function(e, r) {
-    showAnsweredState();
-  });
+  }, function() { showAnsweredState(); });
 }
 
 // ══════════════════════════════════════════════════════
@@ -1082,7 +1045,6 @@ function submitAnswer(questionId, answer, btn) {
   if (ui.answered) return;
   ui.answered = true;
 
-  // Visually select this button and disable all
   document.querySelectorAll('.opt-btn, .tf-btn').forEach(function(b) { b.disabled = true; });
   btn.classList.add('selected');
 
@@ -1091,68 +1053,93 @@ function submitAnswer(questionId, answer, btn) {
     playerId:   state.playerId,
     questionId: questionId,
     answer:     answer
-  }, function(e, r) {
-    showAnsweredState();
-  });
+  }, function() { showAnsweredState(); });
 }
 
 function showAnsweredState() {
   stopQuestionTimer();
   var container = document.getElementById('opts-container');
-  container.innerHTML =
-    '<div class="answered-state">' +
-      '<div class="ans-check">✓</div>' +
-      '<div class="ans-heading">Answer submitted</div>' +
-      '<div class="ans-subtext">Waiting for other players...</div>' +
-    '</div>';
+  if (!container) return;
+
+  var wrap = document.createElement('div');
+  wrap.className = 'answered-state';
+
+  var check = document.createElement('div');
+  check.className   = 'ans-check';
+  check.textContent = '✓';
+
+  var heading = document.createElement('div');
+  heading.className   = 'ans-heading';
+  heading.textContent = 'Answer submitted';
+
+  var sub = document.createElement('div');
+  sub.className   = 'ans-subtext';
+  sub.textContent = 'Waiting for other players...';
+
+  wrap.appendChild(check);
+  wrap.appendChild(heading);
+  wrap.appendChild(sub);
+
+  container.innerHTML = '';
+  container.appendChild(wrap);
 }
 
 // ══════════════════════════════════════════════════════
-// TIMER (Kahoot-style: starts after question renders)
+// TIMER
 // ══════════════════════════════════════════════════════
 function startQuestionTimer(totalSecs, remainingSecs) {
   stopQuestionTimer();
 
   var timerEl = document.getElementById('q-timer');
-  var fillEl = document.getElementById('timer-fill');
-
-  var startTime = Date.now();
-  var endTime = startTime + (remainingSecs * 1000);
+  var fillEl  = document.getElementById('timer-fill');
+  var endTime = Date.now() + (remainingSecs * 1000);
 
   function tick() {
-    var now = Date.now();
+    var now       = Date.now();
     var remaining = Math.max(0, (endTime - now) / 1000);
-    var pct = (remaining / totalSecs) * 100;
+    var pct       = (remaining / totalSecs) * 100;
 
-    // Number display
     if (timerEl) {
       timerEl.textContent = Math.ceil(remaining);
-      timerEl.className = 'q-timer';
-      if (remaining <= totalSecs * 0.25) timerEl.classList.add('urgent');
-      else if (remaining <= totalSecs * 0.5) timerEl.classList.add('warn');
+      timerEl.className   = 'q-timer';
+      if      (remaining <= totalSecs * 0.25) timerEl.classList.add('urgent');
+      else if (remaining <= totalSecs * 0.5)  timerEl.classList.add('warn');
     }
-
-    // Progress fill
     if (fillEl) {
       fillEl.style.width = pct + '%';
-      fillEl.className = 'timer-fill';
-      if (remaining <= totalSecs * 0.25) fillEl.classList.add('urgent');
-      else if (remaining <= totalSecs * 0.5) fillEl.classList.add('warn');
+      fillEl.className   = 'timer-fill';
+      if      (remaining <= totalSecs * 0.25) fillEl.classList.add('urgent');
+      else if (remaining <= totalSecs * 0.5)  fillEl.classList.add('warn');
     }
 
-    // Auto-show timed-out state
     if (remaining <= 0) {
       stopQuestionTimer();
       if (!ui.answered) {
         ui.answered = true;
         var container = document.getElementById('opts-container');
         if (container) {
-          container.innerHTML =
-            '<div class="answered-state">' +
-              '<div class="ans-check" style="background:rgba(240,180,41,.15);border-color:rgba(240,180,41,.4)">⏰</div>' +
-              '<div class="ans-heading" style="color:var(--yel)">Time's up!</div>' +
-              '<div class="ans-subtext">Waiting for results...</div>' +
-            '</div>';
+          var wrap = document.createElement('div');
+          wrap.className = 'answered-state';
+
+          var icon = document.createElement('div');
+          icon.className = 'ans-check';
+          icon.style.cssText = 'background:rgba(240,180,41,.15);border-color:rgba(240,180,41,.4)';
+          icon.textContent = '⏰';
+
+          var heading = document.createElement('div');
+          heading.className = 'ans-heading';
+          heading.style.color = 'var(--yel)';
+          heading.textContent = "Time's up!";
+
+          var sub = document.createElement('div');
+          sub.className   = 'ans-subtext';
+          sub.textContent = 'Waiting for results...';
+
+          wrap.appendChild(icon);
+          wrap.appendChild(heading);
+          wrap.appendChild(sub);
+          container.innerHTML = '';
+          container.appendChild(wrap);
         }
       }
     }
@@ -1173,14 +1160,14 @@ function stopCountdown() {
 }
 
 // ══════════════════════════════════════════════════════
-// LEADERBOARD (with animation and auto-next countdown)
+// LEADERBOARD
 // ══════════════════════════════════════════════════════
 function renderLeaderboard(d) {
   show('s-leaderboard');
   stopCountdown();
 
-  setText('lb-title', 'Leaderboard');
-  setText('lb-sub',   'After question ' + (d.currentQ + 1) + ' of ' + d.totalQ);
+  setText('lb-title',      'Leaderboard');
+  setText('lb-sub',        'After question ' + (d.currentQ + 1) + ' of ' + d.totalQ);
   setText('lb-my-score',   state.score.toLocaleString());
   setText('lb-my-correct', state.correct + ' correct');
 
@@ -1189,55 +1176,73 @@ function renderLeaderboard(d) {
   if (!table) return;
 
   var medals = ['🥇', '🥈', '🥉'];
+  table.innerHTML = '';
 
-  // Build HTML but don't animate yet
-  table.innerHTML = lb.slice(0, 10).map(function(row, i) {
+  lb.slice(0, 10).forEach(function(row, i) {
     var isMe  = row.name === state.name;
-    var medal = i < 3 ? medals[i] : String(row.rank);
+    var div   = document.createElement('div');
     var cls   = 'lb-row';
-    if (isMe) cls += ' me';
+    if (isMe)  cls += ' me';
     if (i === 0) cls += ' top-1';
     else if (i === 1) cls += ' top-2';
     else if (i === 2) cls += ' top-3';
+    div.className        = cls;
+    div.dataset.index    = i;
 
-    return '<div class="' + cls + '" data-index="' + i + '">' +
-      '<div class="lb-medal">' + medal + '</div>' +
-      '<div class="lb-name">' + escHtml(row.name) + (isMe ? ' &nbsp;<span style="color:var(--acc2);font-size:11px">← you</span>' : '') + '</div>' +
-      '<div class="lb-score-col">' +
-        '<div class="lb-pts">' + row.score.toLocaleString() + '</div>' +
-        (row.lastPoints > 0 ? '<div class="lb-gain">+' + row.lastPoints + '</div>' : '') +
-      '</div>' +
-    '</div>';
-  }).join('');
+    var medal = document.createElement('div');
+    medal.className   = 'lb-medal';
+    medal.textContent = i < 3 ? medals[i] : String(row.rank);
 
-  // Animate rows in with stagger
-  var rows = table.querySelectorAll('.lb-row');
-  rows.forEach(function(row, i) {
-    setTimeout(function() {
-      row.classList.add('animate-in');
-    }, i * 100);
+    var name = document.createElement('div');
+    name.className = 'lb-name';
+    name.textContent = row.name;
+    if (isMe) {
+      var you = document.createElement('span');
+      you.style.cssText = 'color:var(--acc2);font-size:11px;margin-left:6px';
+      you.textContent = '← you';
+      name.appendChild(you);
+    }
+
+    var scoreCol = document.createElement('div');
+    scoreCol.className = 'lb-score-col';
+
+    var pts = document.createElement('div');
+    pts.className   = 'lb-pts';
+    pts.textContent = row.score.toLocaleString();
+    scoreCol.appendChild(pts);
+
+    if (row.lastPoints > 0) {
+      var gain = document.createElement('div');
+      gain.className   = 'lb-gain';
+      gain.textContent = '+' + row.lastPoints;
+      scoreCol.appendChild(gain);
+    }
+
+    div.appendChild(medal);
+    div.appendChild(name);
+    div.appendChild(scoreCol);
+    table.appendChild(div);
+
+    // Staggered animate-in
+    setTimeout(function() { div.classList.add('animate-in'); }, i * 100);
   });
 
   // Auto-next countdown
-  var countdownEl = document.getElementById('next-q-timer');
-  var timeLeft = d.nextQuestionDelay || 5; // Server tells us how long to wait
-
+  var timeLeft = d.nextQuestionDelay || 5;
   setText('next-q-timer', timeLeft);
 
   ui.countdownHandle = setInterval(function() {
     timeLeft--;
     setText('next-q-timer', timeLeft);
-
     if (timeLeft <= 0) {
       stopCountdown();
-      // Poll immediately to get next question
-      doPoll();
+      doPoll(); // immediate poll to get next question
     }
   }, 1000);
 }
 
 // ══════════════════════════════════════════════════════
-// ENDED (removed close button as requested)
+// ENDED
 // ══════════════════════════════════════════════════════
 function renderEnded(d) {
   show('s-ended');
@@ -1251,17 +1256,16 @@ function renderEnded(d) {
   setText('ring-score', state.score.toLocaleString());
   setText('rank-pill',  'Rank #' + rank + ' of ' + total);
 
-  // Badge based on rank
   var badge = rank === 1 ? '🏆' : rank <= 3 ? '🎉' : rank <= Math.ceil(total / 2) ? '👍' : '📋';
   setText('ended-badge', badge);
 
-  // Animate the score ring
-  var pct   = me && lb[0] ? (me.score / Math.max(lb[0].score, 1)) : 0;
-  var circ  = 339.29;
+  // Animate score ring
+  var pct    = (me && lb[0]) ? (me.score / Math.max(lb[0].score, 1)) : 0;
+  var circ   = 339.29;
   var ringEl = document.getElementById('ring-fill');
   if (ringEl) {
     setTimeout(function() {
-      ringEl.style.transition = 'stroke-dashoffset 1s ease';
+      ringEl.style.transition     = 'stroke-dashoffset 1s ease';
       ringEl.style.strokeDashoffset = circ * (1 - pct);
     }, 200);
   }
@@ -1269,25 +1273,45 @@ function renderEnded(d) {
   // Top 5 leaderboard
   var medals  = ['🥇', '🥈', '🥉'];
   var endedLb = document.getElementById('ended-lb');
-  if (endedLb) {
-    endedLb.innerHTML = lb.slice(0, 5).map(function(row, i) {
-      var isMe  = row.name === state.name;
-      var medal = i < 3 ? medals[i] : String(row.rank);
-      var cls   = 'lb-row';
-      if (isMe) cls += ' me';
-      if (i === 0) cls += ' top-1';
-      else if (i === 1) cls += ' top-2';
-      else if (i === 2) cls += ' top-3';
+  if (!endedLb) return;
 
-      return '<div class="' + cls + '">' +
-        '<div class="lb-medal">' + medal + '</div>' +
-        '<div class="lb-name">' + escHtml(row.name) + (isMe ? ' &nbsp;<span style="color:var(--acc2);font-size:11px">← you</span>' : '') + '</div>' +
-        '<div class="lb-score-col">' +
-          '<div class="lb-pts">' + row.score.toLocaleString() + '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-  }
+  endedLb.innerHTML = '';
+  lb.slice(0, 5).forEach(function(row, i) {
+    var isMe = row.name === state.name;
+    var div  = document.createElement('div');
+    var cls  = 'lb-row animate-in';
+    if (isMe)  cls += ' me';
+    if (i === 0) cls += ' top-1';
+    else if (i === 1) cls += ' top-2';
+    else if (i === 2) cls += ' top-3';
+    div.className = cls;
+
+    var medal = document.createElement('div');
+    medal.className   = 'lb-medal';
+    medal.textContent = i < 3 ? medals[i] : String(row.rank);
+
+    var name = document.createElement('div');
+    name.className = 'lb-name';
+    name.textContent = row.name;
+    if (isMe) {
+      var you = document.createElement('span');
+      you.style.cssText = 'color:var(--acc2);font-size:11px;margin-left:6px';
+      you.textContent   = '← you';
+      name.appendChild(you);
+    }
+
+    var scoreCol = document.createElement('div');
+    scoreCol.className = 'lb-score-col';
+    var pts = document.createElement('div');
+    pts.className   = 'lb-pts';
+    pts.textContent = row.score.toLocaleString();
+    scoreCol.appendChild(pts);
+
+    div.appendChild(medal);
+    div.appendChild(name);
+    div.appendChild(scoreCol);
+    endedLb.appendChild(div);
+  });
 }
 </script>
 </body>
