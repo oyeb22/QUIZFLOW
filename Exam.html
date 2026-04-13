@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -727,18 +728,21 @@
        RESULTS SCREEN
     ════════════════════════════════════════════ */
     #resultsScreen {
-      min-height: 100vh;
-      min-height: 100dvh;
-      display: none;
-      overflow-y: auto;
-      background:
-        radial-gradient(ellipse 50% 40% at 50% 0%, rgba(91,110,245,0.07) 0%, transparent 70%),
-        var(--bg);
-      padding: 20px 14px 40px;
-      align-items: flex-start;
-      justify-content: center;
-    }
-    #resultsScreen.active { display: flex; }
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse 50% 40% at 50% 0%, rgba(91,110,245,0.07) 0%, transparent 70%),
+    var(--bg);
+  padding: 20px 14px 40px;
+  display: none;              /* hidden by default */
+  align-items: flex-start;
+  justify-content: center;
+}
+#resultsScreen.active {
+  display: flex;              /* shown as flex when active */
+}
 
     .results-card {
       background: var(--surface);
@@ -1230,10 +1234,11 @@ function showScreen(id){
     var el = document.getElementById(s);
     if (!el) return;
     el.classList.remove('active');
-    el.style.display = '';
+    el.style.display = 'none';   // ← force hide, overrides any flex/block
   });
   var el = document.getElementById(id);
   if (el) {
+    el.style.display = '';       // ← let CSS take over
     el.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'instant' });
     el.scrollTop = 0;
