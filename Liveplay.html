@@ -141,6 +141,18 @@
     }
     .err.on { display:block; }
 
+    /* Script URL config notice */
+    .config-notice {
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: rgba(240,180,41,.07);
+      border: 1px solid rgba(240,180,41,.25);
+      border-radius: 8px;
+      font-size: 11px;
+      color: var(--yel);
+      line-height: 1.5;
+    }
+
     .spin {
       display:inline-block;
       width:12px; height:12px;
@@ -567,6 +579,9 @@
 
       <button class="btn-primary" id="btn-join" onclick="doJoin()">Join Game →</button>
       <div class="err" id="join-err"></div>
+      <div class="config-notice" id="config-notice" style="display:none">
+        ⚠️ No server URL configured. Add <code>?script=YOUR_URL</code> to the page URL, or set the <code>SCRIPT_URL</code> constant in this file.
+      </div>
     </div>
   </div>
 </div>
@@ -666,11 +681,22 @@
 
 <script>
 // ══════════════════════════════════════════════════════
-// CONFIG & STATE
+// CONFIG — reads script URL from query param first,
+// then falls back to the hardcoded constant below.
+// To use: append ?script=YOUR_GAS_URL to this page's URL,
+//         OR replace the string below with your deployed URL.
 // ══════════════════════════════════════════════════════
-// !! Replace with your deployed Google Apps Script URL !!
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz282fqoSGFR2dYeREEloTRnxusVOOyVD1qcMNSLJmTsDIKM7il8m4h3x3amcFVDJO4dw/exec';
-var POLL_MS    = 1500;  // poll every 1.5s for snappier phase transitions
+var HARDCODED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz282fqoSGFR2dYeREEloTRnxusVOOyVD1qcMNSLJmTsDIKM7il8m4h3x3amcFVDJO4dw/exec';
+
+var SCRIPT_URL = (function() {
+  // 1. Try ?script= query param (set by teacher dashboard links)
+  var m = window.location.search.match(/[?&]script=([^&]+)/i);
+  if (m) return decodeURIComponent(m[1]);
+  // 2. Fall back to hardcoded constant
+  return HARDCODED_SCRIPT_URL;
+})();
+
+var POLL_MS = 1500;
 
 var state = {
   playerId:   '',
@@ -690,7 +716,6 @@ var ui = {
   pollHandle:      null,
   timerHandle:     null,
   countdownHandle: null,
-  // Absolute ISO deadline from server — used by all timer calculations
   questionEndTime: ''
 };
 
@@ -698,10 +723,19 @@ var ui = {
 // BOOT
 // ══════════════════════════════════════════════════════
 window.addEventListener('load', function() {
-  var m = window.location.search.match(/[?&]room=([^&]{6})/i);
+  // Pre-fill room code from URL param ?room=ABC123
+  var m = window.location.search.match(/[?&]room=([^&]{1,6})/i);
   if (m) {
     var ci = document.getElementById('inp-code');
     if (ci) ci.value = m[1].toUpperCase();
+  }
+
+  // Show warning if no script URL is configured at all
+  if (!SCRIPT_URL) {
+    var notice = document.getElementById('config-notice');
+    if (notice) notice.style.display = 'block';
+    var btn = document.getElementById('btn-join');
+    if (btn) btn.disabled = true;
   }
 });
 
@@ -734,6 +768,10 @@ function clearErr(id) {
 }
 
 function post(action, data, cb) {
+  if (!SCRIPT_URL) {
+    if (cb) cb(new Error('No script URL configured'), null);
+    return;
+  }
   fetch(SCRIPT_URL, {
     method: 'POST',
     body: JSON.stringify(Object.assign({ action: action }, data || {}))
@@ -748,17 +786,8 @@ function focusName() {
   if (el) el.focus();
 }
 
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g,  '&amp;')
-    .replace(/</g,  '&lt;')
-    .replace(/>/g,  '&gt;')
-    .replace(/"/g,  '&quot;');
-}
-
 // ══════════════════════════════════════════════════════
-// JOIN  — FIX: removed the false "not configured" guard
-//         so the button always attempts the fetch
+// JOIN
 // ══════════════════════════════════════════════════════
 function doJoin() {
   clearErr('join-err');
@@ -766,12 +795,20 @@ function doJoin() {
   var code = (document.getElementById('inp-code').value || '').trim().toUpperCase();
   var name = (document.getElementById('inp-name').value || '').trim();
 
+  if (code.length < 1) {
+    showErr('join-err', 'Please enter the room code.');
+    return;
+  }
   if (code.length !== 6) {
-    showErr('join-err', 'Please enter the 6-character room code.');
+    showErr('join-err', 'Room codes are exactly 6 characters. Got: ' + code.length);
     return;
   }
   if (!name) {
     showErr('join-err', 'Please enter your name.');
+    return;
+  }
+  if (!SCRIPT_URL) {
+    showErr('join-err', 'Server not configured. Contact your teacher.');
     return;
   }
 
@@ -783,8 +820,21 @@ function doJoin() {
     btn.disabled = false;
     btn.textContent = 'Join Game →';
 
-    if (e || !r || r.status !== 'success') {
-      showErr('join-err', (r && r.message) || 'Could not join. Check the room code and try again.');
+    if (e) {
+      showErr('join-err', 'Network error — check your connection and try again.');
+      return;
+    }
+    if (!r || r.status !== 'success') {
+      // Provide more helpful messages for common errors
+      var msg = (r && r.message) || 'Could not join. Check the room code and try again.';
+      if (msg.toLowerCase().indexOf('not found') !== -1 || msg.toLowerCase().indexOf('room') !== -1) {
+        msg = 'Room "' + code + '" not found. Double-check the code shown on your teacher\'s screen.';
+      } else if (msg.toLowerCase().indexOf('started') !== -1 || msg.toLowerCase().indexOf('already') !== -1) {
+        msg = 'This game has already started. Ask your teacher to open a new session.';
+      } else if (msg.toLowerCase().indexOf('name') !== -1 || msg.toLowerCase().indexOf('taken') !== -1) {
+        msg = 'That name is already taken in this session — try a different name.';
+      }
+      showErr('join-err', msg);
       return;
     }
 
@@ -843,10 +893,16 @@ function applyState(d) {
     if (!q) return;
 
     if (d.currentQ !== ui.currentQ) {
-      // Brand-new question — store absolute server deadline then render
       ui.currentQ        = d.currentQ;
       ui.answered        = false;
+      // Use questionEndTime from server if provided, else derive from startTime + timePerQ
       ui.questionEndTime = q.questionEndTime || '';
+      if (!ui.questionEndTime && q.startTime && q.timePerQ) {
+        var startMs = new Date(q.startTime).getTime();
+        if (!isNaN(startMs)) {
+          ui.questionEndTime = new Date(startMs + q.timePerQ * 1000).toISOString();
+        }
+      }
       renderQuestion(q, d);
 
     } else if (d.alreadyAnswered && !ui.answered) {
@@ -859,8 +915,6 @@ function applyState(d) {
     if (ui.phase !== 'leaderboard') {
       renderLeaderboard(d);
     } else {
-      // Already showing leaderboard — resync the countdown from server absolute time
-      // so the "20s gap" after countdown reaches 0 is eliminated
       updateLeaderboardCountdown(d);
     }
 
@@ -874,8 +928,6 @@ function applyState(d) {
 
 // ══════════════════════════════════════════════════════
 // QUESTION RENDER
-// FIX: All onclick strings now use proper JS escaping
-//      (no curly/smart quotes, no broken concatenation)
 // ══════════════════════════════════════════════════════
 function renderQuestion(q, d) {
   show('s-question');
@@ -884,7 +936,6 @@ function renderQuestion(q, d) {
   setText('q-num',   'Question ' + (d.currentQ + 1) + ' of ' + d.totalQ);
   setText('q-score', state.score.toLocaleString());
 
-  // Type badge
   var typeBadge = document.getElementById('q-type');
   var qType = (q.type || 'MCQ').toUpperCase();
   if (qType === 'TF') {
@@ -895,13 +946,11 @@ function renderQuestion(q, d) {
     typeBadge.textContent = 'Multiple Choice';
   }
 
-  // Reset timer display immediately so there's no blank flash
   var timerEl = document.getElementById('q-timer');
   var fillEl  = document.getElementById('timer-fill');
   if (timerEl) { timerEl.textContent = q.timePerQ || state.timePerQ; timerEl.className = 'q-timer'; }
   if (fillEl)  { fillEl.style.width = '100%'; fillEl.className = 'timer-fill'; }
 
-  // Render input area
   var container = document.getElementById('opts-container');
   if (qType === 'TF') {
     renderTrueFalse(container, q);
@@ -911,14 +960,9 @@ function renderQuestion(q, d) {
     renderMultipleChoice(container, q);
   }
 
-  // ── FIX: start timer from the absolute server-side questionEndTime.
-  // Every player calculates remaining = questionEndTime - Date.now(),
-  // which is identical regardless of poll timing or network latency.
-  // This eliminates the "some players time out early" bug entirely.
-  var endTime = ui.questionEndTime ? new Date(ui.questionEndTime).getTime() : 0;
   var timePerQ = q.timePerQ || state.timePerQ;
+  var endTime  = ui.questionEndTime ? new Date(ui.questionEndTime).getTime() : 0;
   if (!endTime) {
-    // Fallback: no server end time available — use full duration
     endTime = Date.now() + timePerQ * 1000;
   }
   startQuestionTimer(timePerQ, endTime);
@@ -929,7 +973,6 @@ function renderMultipleChoice(container, q) {
   var letters = ['A', 'B', 'C', 'D'];
   var opts    = q.options || [];
 
-  // Build grid using DOM (avoids any string-quote issues entirely)
   var grid = document.createElement('div');
   grid.className = 'opts-grid';
   grid.id = 'opts-grid';
@@ -949,7 +992,6 @@ function renderMultipleChoice(container, q) {
     btn.appendChild(letterDiv);
     btn.appendChild(textSpan);
 
-    // ✅ Clean event listener — no string concatenation, no quote issues
     btn.addEventListener('click', (function(qId, ltr, el) {
       return function() { submitAnswer(qId, ltr, el); };
     })(q.id, letter, btn));
@@ -990,12 +1032,10 @@ function renderTrueFalse(container, q) {
 function renderShortAnswer(container, q) {
   var wrap  = document.createElement('div');
   wrap.className = 'short-answer-container';
-  wrap.id = 'short-answer-container';
 
   var input = document.createElement('input');
   input.type        = 'text';
   input.className   = 'short-answer-input';
-  input.id          = 'short-answer-input';
   input.placeholder = 'Type your answer here...';
   input.maxLength   = 200;
   input.addEventListener('keydown', function(e) {
@@ -1019,7 +1059,9 @@ function renderShortAnswer(container, q) {
 
 function submitShortAnswer(questionId) {
   if (ui.answered) return;
-  var input  = document.getElementById('short-answer-input');
+  var input  = container.querySelector('.short-answer-input');
+  // querySelector fallback
+  if (!input) input = document.querySelector('.short-answer-input');
   var answer = input ? input.value.trim() : '';
 
   if (!answer) {
@@ -1090,10 +1132,8 @@ function showAnsweredState() {
 }
 
 // ══════════════════════════════════════════════════════
-// TIMER — driven entirely by the server's absolute questionEndTime
+// TIMER
 // ══════════════════════════════════════════════════════
-// endTimeMs = absolute millisecond timestamp when question expires.
-// totalSecs = question duration (for the % progress bar only).
 function startQuestionTimer(totalSecs, endTimeMs) {
   stopQuestionTimer();
 
@@ -1147,7 +1187,7 @@ function startQuestionTimer(totalSecs, endTimeMs) {
   }
 
   tick();
-  ui.timerHandle = setInterval(tick, 250); // 250ms is smooth enough, less CPU than 100ms
+  ui.timerHandle = setInterval(tick, 250);
 }
 
 function stopQuestionTimer() {
@@ -1222,29 +1262,36 @@ function renderLeaderboard(d) {
     div.appendChild(scoreCol);
     table.appendChild(div);
 
-    // Staggered animate-in
     setTimeout(function() { div.classList.add('animate-in'); }, i * 80);
   });
 
-  // ── FIX: drive the countdown from the absolute server timestamp.
-  // This way the display is always accurate regardless of when we polled.
   startLeaderboardCountdown(d);
 }
 
-// Can be called on subsequent polls while already on the leaderboard
-// to keep the displayed countdown accurate without re-rendering the list.
 function updateLeaderboardCountdown(d) {
-  // Only resync if no local countdown is running yet
-  // (avoid restarting it on every poll and causing jumpiness)
   if (!ui.countdownHandle) startLeaderboardCountdown(d);
 }
 
 function startLeaderboardCountdown(d) {
   stopCountdown();
 
-  // nextQuestionAt is an absolute ISO string from the server
-  var nextQuestionAt = d.nextQuestionAt || '';
-  var deadlineMs     = nextQuestionAt ? new Date(nextQuestionAt).getTime() : 0;
+  // nextQuestionDelay is seconds remaining (sent by getLiveState)
+  // nextQuestionAt is absolute ISO time (if server sends it)
+  var deadlineMs = 0;
+
+  if (d.nextQuestionAt) {
+    deadlineMs = new Date(d.nextQuestionAt).getTime();
+  } else if (d.nextQuestionDelay && d.nextQuestionDelay > 0) {
+    deadlineMs = Date.now() + d.nextQuestionDelay * 1000;
+  }
+
+  // Hide countdown if no next question (last question)
+  var countdownEl = document.getElementById('next-q-countdown');
+  if (!deadlineMs) {
+    if (countdownEl) countdownEl.style.display = 'none';
+    return;
+  }
+  if (countdownEl) countdownEl.style.display = '';
 
   function tick() {
     var secsLeft = deadlineMs
@@ -1255,14 +1302,11 @@ function startLeaderboardCountdown(d) {
 
     if (secsLeft <= 0) {
       stopCountdown();
-      // Immediate poll — next question should be live on the server already
       doPoll();
     }
   }
 
   tick();
-  // Run every 200ms so the countdown feels smooth and syncs immediately
-  // after the deadline even if there's a brief gap between ticks
   ui.countdownHandle = setInterval(tick, 200);
 }
 
@@ -1277,14 +1321,13 @@ function renderEnded(d) {
   var rank  = me ? me.rank : lb.length;
   var total = lb.length;
 
-  setText('ended-sub',  'Session complete — ' + total + ' players');
+  setText('ended-sub',  'Session complete — ' + total + ' player' + (total !== 1 ? 's' : ''));
   setText('ring-score', state.score.toLocaleString());
   setText('rank-pill',  'Rank #' + rank + ' of ' + total);
 
   var badge = rank === 1 ? '🏆' : rank <= 3 ? '🎉' : rank <= Math.ceil(total / 2) ? '👍' : '📋';
   setText('ended-badge', badge);
 
-  // Animate score ring
   var pct    = (me && lb[0]) ? (me.score / Math.max(lb[0].score, 1)) : 0;
   var circ   = 339.29;
   var ringEl = document.getElementById('ring-fill');
@@ -1295,7 +1338,6 @@ function renderEnded(d) {
     }, 200);
   }
 
-  // Top 5 leaderboard
   var medals  = ['🥇', '🥈', '🥉'];
   var endedLb = document.getElementById('ended-lb');
   if (!endedLb) return;
