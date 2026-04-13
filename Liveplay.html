@@ -668,9 +668,10 @@
 // ══════════════════════════════════════════════════════
 // CONFIG & STATE
 // ══════════════════════════════════════════════════════
-// ⚠️ PATCH 1: Reduced POLL_MS for tighter sync
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxtUEIH9MHgFRg_ECzGwVcZg2cC-xYXquQ2yKU9pZEM-IP0KUqHNRLk7HWrpYsZpvfOA/exec';
-var POLL_MS    = 1000;
+// !! Replace with your deployed Google Apps Script URL !!
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9b5OVF1Oo204hz5j4QN0rXaMr9I5f5bvT1YeC4I_mNa9Ha10MaLqwAq1YX0jjPxtsww/exec';
+var POLL_MS    = 1500;  // poll every 1.5s for snappier phase transitions
+
 var state = {
   playerId:   '',
   name:       '',
@@ -682,7 +683,6 @@ var state = {
   totalQ:     0
 };
 
-// ⚠️ PATCH 2: Removed serverStartTime from UI state
 var ui = {
   phase:           '',
   currentQ:        -1,
@@ -690,7 +690,8 @@ var ui = {
   pollHandle:      null,
   timerHandle:     null,
   countdownHandle: null,
-  qRenderedAt:     0
+  // Absolute ISO deadline from server — used by all timer calculations
+  questionEndTime: ''
 };
 
 // ══════════════════════════════════════════════════════
@@ -756,7 +757,8 @@ function escHtml(str) {
 }
 
 // ══════════════════════════════════════════════════════
-// JOIN
+// JOIN  — FIX: removed the false "not configured" guard
+//         so the button always attempts the fetch
 // ══════════════════════════════════════════════════════
 function doJoin() {
   clearErr('join-err');
@@ -841,9 +843,10 @@ function applyState(d) {
     if (!q) return;
 
     if (d.currentQ !== ui.currentQ) {
-      ui.currentQ = d.currentQ;
-      ui.answered = false;
-      // ⚠️ PATCH 3: Removed serverStartTime assignment
+      // Brand-new question — store absolute server deadline then render
+      ui.currentQ        = d.currentQ;
+      ui.answered        = false;
+      ui.questionEndTime = q.questionEndTime || '';
       renderQuestion(q, d);
 
     } else if (d.alreadyAnswered && !ui.answered) {
@@ -853,7 +856,13 @@ function applyState(d) {
 
   } else if (d.phase === 'leaderboard') {
     stopQuestionTimer();
-    if (ui.phase !== 'leaderboard') renderLeaderboard(d);
+    if (ui.phase !== 'leaderboard') {
+      renderLeaderboard(d);
+    } else {
+      // Already showing leaderboard — resync the countdown from server absolute time
+      // so the "20s gap" after countdown reaches 0 is eliminated
+      updateLeaderboardCountdown(d);
+    }
 
   } else if (d.phase === 'ended') {
     stopPoll();
@@ -864,83 +873,12 @@ function applyState(d) {
 }
 
 // ══════════════════════════════════════════════════════
-// ⏱️ TIMER FUNCTIONS (Moved UP to ensure availability)
-// ══════════════════════════════════════════════════════
-function startQuestionTimer(totalSecs, questionEndTimeISO) {
-  stopQuestionTimer();
-
-  var timerEl = document.getElementById('q-timer');
-  var fillEl  = document.getElementById('timer-fill');
-  
-  // Parse absolute end time from server
-  var endTimeMs = new Date(questionEndTimeISO).getTime();
-
-  function tick() {
-    var now = Date.now();
-    var remainingMs = Math.max(0, endTimeMs - now);
-    var remainingSecs = Math.ceil(remainingMs / 1000);
-    var pct = Math.max(0, remainingMs / (totalSecs * 1000)) * 100;
-
-    if (timerEl) {
-      timerEl.textContent = remainingSecs;
-      timerEl.className = 'q-timer';
-      if (remainingSecs <= totalSecs * 0.25) timerEl.classList.add('urgent');
-      else if (remainingSecs <= totalSecs * 0.5) timerEl.classList.add('warn');
-    }
-    if (fillEl) {
-      fillEl.style.width = pct + '%';
-      fillEl.className = 'timer-fill';
-      if (remainingSecs <= totalSecs * 0.25) fillEl.classList.add('urgent');
-      else if (remainingSecs <= totalSecs * 0.5) fillEl.classList.add('warn');
-    }
-
-    if (remainingMs <= 0) {
-      stopQuestionTimer();
-      if (!ui.answered) {
-        ui.answered = true;
-        var container = document.getElementById('opts-container');
-        if (container) {
-          var wrap = document.createElement('div');
-          wrap.className = 'answered-state';
-          var icon = document.createElement('div');
-          icon.className = 'ans-check';
-          icon.style.cssText = 'background:rgba(240,180,41,.15);border-color:rgba(240,180,41,.4)';
-          icon.textContent = '⏰';
-          var heading = document.createElement('div');
-          heading.className = 'ans-heading';
-          heading.style.color = 'var(--yel)';
-          heading.textContent = "Time's up!";
-          var sub = document.createElement('div');
-          sub.className = 'ans-subtext';
-          sub.textContent = 'Waiting for results...';
-          wrap.appendChild(icon); wrap.appendChild(heading); wrap.appendChild(sub);
-          container.innerHTML = ''; container.appendChild(wrap);
-        }
-      }
-    }
-  }
-
-  tick();
-  ui.timerHandle = setInterval(tick, 100);
-}
-
-function stopQuestionTimer() {
-  if (ui.timerHandle) clearInterval(ui.timerHandle);
-  ui.timerHandle = null;
-}
-
-function stopCountdown() {
-  if (ui.countdownHandle) clearInterval(ui.countdownHandle);
-  ui.countdownHandle = null;
-}
-
-// ══════════════════════════════════════════════════════
 // QUESTION RENDER
+// FIX: All onclick strings now use proper JS escaping
+//      (no curly/smart quotes, no broken concatenation)
 // ══════════════════════════════════════════════════════
 function renderQuestion(q, d) {
   show('s-question');
-
-  ui.qRenderedAt = Date.now();
 
   setText('q-text',  q.text);
   setText('q-num',   'Question ' + (d.currentQ + 1) + ' of ' + d.totalQ);
@@ -957,7 +895,7 @@ function renderQuestion(q, d) {
     typeBadge.textContent = 'Multiple Choice';
   }
 
-  // Reset timer display
+  // Reset timer display immediately so there's no blank flash
   var timerEl = document.getElementById('q-timer');
   var fillEl  = document.getElementById('timer-fill');
   if (timerEl) { timerEl.textContent = q.timePerQ || state.timePerQ; timerEl.className = 'q-timer'; }
@@ -973,101 +911,110 @@ function renderQuestion(q, d) {
     renderMultipleChoice(container, q);
   }
 
-  // Start timer with absolute end time
-  if (q.endTime) {
-    setTimeout(function() {
-      startQuestionTimer(q.timePerQ, q.endTime);
-    }, 100);
+  // ── FIX: start timer from the absolute server-side questionEndTime.
+  // Every player calculates remaining = questionEndTime - Date.now(),
+  // which is identical regardless of poll timing or network latency.
+  // This eliminates the "some players time out early" bug entirely.
+  var endTime = ui.questionEndTime ? new Date(ui.questionEndTime).getTime() : 0;
+  var timePerQ = q.timePerQ || state.timePerQ;
+  if (!endTime) {
+    // Fallback: no server end time available — use full duration
+    endTime = Date.now() + timePerQ * 1000;
   }
+  startQuestionTimer(timePerQ, endTime);
+}
 
-  // ── Inner Function Definitions ──────────────────────
-  function renderMultipleChoice(container, q) {
-    var letters = ['A', 'B', 'C', 'D'];
-    var opts    = q.options || [];
+// ── Multiple Choice ────────────────────────────────────────────
+function renderMultipleChoice(container, q) {
+  var letters = ['A', 'B', 'C', 'D'];
+  var opts    = q.options || [];
 
-    var grid = document.createElement('div');
-    grid.className = 'opts-grid';
-    grid.id = 'opts-grid';
+  // Build grid using DOM (avoids any string-quote issues entirely)
+  var grid = document.createElement('div');
+  grid.className = 'opts-grid';
+  grid.id = 'opts-grid';
 
-    opts.forEach(function(opt, i) {
-      var letter = letters[i] || String.fromCharCode(65 + i);
-      var btn    = document.createElement('button');
-      btn.className = 'opt-btn ' + letter;
+  opts.forEach(function(opt, i) {
+    var letter = letters[i] || String.fromCharCode(65 + i);
+    var btn    = document.createElement('button');
+    btn.className = 'opt-btn ' + letter;
 
-      var letterDiv = document.createElement('div');
-      letterDiv.className   = 'opt-letter';
-      letterDiv.textContent = letter;
+    var letterDiv = document.createElement('div');
+    letterDiv.className   = 'opt-letter';
+    letterDiv.textContent = letter;
 
-      var textSpan = document.createElement('span');
-      textSpan.textContent = opt;
+    var textSpan = document.createElement('span');
+    textSpan.textContent = opt;
 
-      btn.appendChild(letterDiv);
-      btn.appendChild(textSpan);
+    btn.appendChild(letterDiv);
+    btn.appendChild(textSpan);
 
-      btn.addEventListener('click', (function(qId, ltr, el) {
-        return function() { submitAnswer(qId, ltr, el); };
-      })(q.id, letter, btn));
+    // ✅ Clean event listener — no string concatenation, no quote issues
+    btn.addEventListener('click', (function(qId, ltr, el) {
+      return function() { submitAnswer(qId, ltr, el); };
+    })(q.id, letter, btn));
 
-      grid.appendChild(btn);
-    });
+    grid.appendChild(btn);
+  });
 
-    container.innerHTML = '';
-    container.appendChild(grid);
-  }
+  container.innerHTML = '';
+  container.appendChild(grid);
+}
 
-  function renderTrueFalse(container, q) {
-    var grid = document.createElement('div');
-    grid.className = 'tf-grid';
-    grid.id = 'tf-grid';
+// ── True / False ───────────────────────────────────────────────
+function renderTrueFalse(container, q) {
+  var grid = document.createElement('div');
+  grid.className = 'tf-grid';
+  grid.id = 'tf-grid';
 
-    [
-      { label: '✓  TRUE',  val: 'A', cls: 'true-btn'  },
-      { label: '✗  FALSE', val: 'B', cls: 'false-btn' }
-    ].forEach(function(item) {
-      var btn = document.createElement('button');
-      btn.className   = 'tf-btn ' + item.cls;
-      btn.textContent = item.label;
-
-      btn.addEventListener('click', (function(qId, val, el) {
-        return function() { submitAnswer(qId, val, el); };
-      })(q.id, item.val, btn));
-
-      grid.appendChild(btn);
-    });
-
-    container.innerHTML = '';
-    container.appendChild(grid);
-  }
-
-  function renderShortAnswer(container, q) {
-    var wrap  = document.createElement('div');
-    wrap.className = 'short-answer-container';
-    wrap.id = 'short-answer-container';
-
-    var input = document.createElement('input');
-    input.type        = 'text';
-    input.className   = 'short-answer-input';
-    input.id          = 'short-answer-input';
-    input.placeholder = 'Type your answer here...';
-    input.maxLength   = 200;
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') submitShortAnswer(q.id);
-    });
-
+  [
+    { label: '✓  TRUE',  val: 'A', cls: 'true-btn'  },
+    { label: '✗  FALSE', val: 'B', cls: 'false-btn' }
+  ].forEach(function(item) {
     var btn = document.createElement('button');
-    btn.className   = 'short-answer-btn';
-    btn.id          = 'short-answer-btn';
-    btn.textContent = 'Submit Answer';
-    btn.addEventListener('click', function() { submitShortAnswer(q.id); });
+    btn.className   = 'tf-btn ' + item.cls;
+    btn.textContent = item.label;
 
-    wrap.appendChild(input);
-    wrap.appendChild(btn);
+    btn.addEventListener('click', (function(qId, val, el) {
+      return function() { submitAnswer(qId, val, el); };
+    })(q.id, item.val, btn));
 
-    container.innerHTML = '';
-    container.appendChild(wrap);
+    grid.appendChild(btn);
+  });
 
-    setTimeout(function() { input.focus(); }, 100);
-  }
+  container.innerHTML = '';
+  container.appendChild(grid);
+}
+
+// ── Short Answer ───────────────────────────────────────────────
+function renderShortAnswer(container, q) {
+  var wrap  = document.createElement('div');
+  wrap.className = 'short-answer-container';
+  wrap.id = 'short-answer-container';
+
+  var input = document.createElement('input');
+  input.type        = 'text';
+  input.className   = 'short-answer-input';
+  input.id          = 'short-answer-input';
+  input.placeholder = 'Type your answer here...';
+  input.maxLength   = 200;
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') submitShortAnswer(q.id);
+  });
+
+  var btn = document.createElement('button');
+  btn.className   = 'short-answer-btn';
+  btn.id          = 'short-answer-btn';
+  btn.textContent = 'Submit Answer';
+  btn.addEventListener('click', function() { submitShortAnswer(q.id); });
+
+  wrap.appendChild(input);
+  wrap.appendChild(btn);
+
+  container.innerHTML = '';
+  container.appendChild(wrap);
+
+  setTimeout(function() { input.focus(); }, 100);
 }
 
 function submitShortAnswer(questionId) {
@@ -1143,6 +1090,77 @@ function showAnsweredState() {
 }
 
 // ══════════════════════════════════════════════════════
+// TIMER — driven entirely by the server's absolute questionEndTime
+// ══════════════════════════════════════════════════════
+// endTimeMs = absolute millisecond timestamp when question expires.
+// totalSecs = question duration (for the % progress bar only).
+function startQuestionTimer(totalSecs, endTimeMs) {
+  stopQuestionTimer();
+
+  var timerEl = document.getElementById('q-timer');
+  var fillEl  = document.getElementById('timer-fill');
+
+  function tick() {
+    var remaining = Math.max(0, (endTimeMs - Date.now()) / 1000);
+    var pct       = (remaining / totalSecs) * 100;
+
+    if (timerEl) {
+      timerEl.textContent = Math.ceil(remaining);
+      timerEl.className   = 'q-timer';
+      if      (remaining <= totalSecs * 0.25) timerEl.classList.add('urgent');
+      else if (remaining <= totalSecs * 0.5)  timerEl.classList.add('warn');
+    }
+    if (fillEl) {
+      fillEl.style.width = Math.max(0, pct) + '%';
+      fillEl.className   = 'timer-fill';
+      if      (remaining <= totalSecs * 0.25) fillEl.classList.add('urgent');
+      else if (remaining <= totalSecs * 0.5)  fillEl.classList.add('warn');
+    }
+
+    if (remaining <= 0) {
+      stopQuestionTimer();
+      if (!ui.answered) {
+        ui.answered = true;
+        var container = document.getElementById('opts-container');
+        if (container) {
+          var wrap = document.createElement('div');
+          wrap.className = 'answered-state';
+          var icon = document.createElement('div');
+          icon.className = 'ans-check';
+          icon.style.cssText = 'background:rgba(240,180,41,.15);border-color:rgba(240,180,41,.4)';
+          icon.textContent = '⏰';
+          var heading = document.createElement('div');
+          heading.className = 'ans-heading';
+          heading.style.color = 'var(--yel)';
+          heading.textContent = "Time's up!";
+          var sub = document.createElement('div');
+          sub.className   = 'ans-subtext';
+          sub.textContent = 'Waiting for results...';
+          wrap.appendChild(icon);
+          wrap.appendChild(heading);
+          wrap.appendChild(sub);
+          container.innerHTML = '';
+          container.appendChild(wrap);
+        }
+      }
+    }
+  }
+
+  tick();
+  ui.timerHandle = setInterval(tick, 250); // 250ms is smooth enough, less CPU than 100ms
+}
+
+function stopQuestionTimer() {
+  if (ui.timerHandle) clearInterval(ui.timerHandle);
+  ui.timerHandle = null;
+}
+
+function stopCountdown() {
+  if (ui.countdownHandle) clearInterval(ui.countdownHandle);
+  ui.countdownHandle = null;
+}
+
+// ══════════════════════════════════════════════════════
 // LEADERBOARD
 // ══════════════════════════════════════════════════════
 function renderLeaderboard(d) {
@@ -1169,31 +1187,29 @@ function renderLeaderboard(d) {
     if (i === 0) cls += ' top-1';
     else if (i === 1) cls += ' top-2';
     else if (i === 2) cls += ' top-3';
-    div.className        = cls;
-    div.dataset.index    = i;
+    div.className     = cls;
+    div.dataset.index = i;
 
     var medal = document.createElement('div');
     medal.className   = 'lb-medal';
     medal.textContent = i < 3 ? medals[i] : String(row.rank);
 
     var name = document.createElement('div');
-    name.className = 'lb-name';
+    name.className   = 'lb-name';
     name.textContent = row.name;
     if (isMe) {
       var you = document.createElement('span');
       you.style.cssText = 'color:var(--acc2);font-size:11px;margin-left:6px';
-      you.textContent = '← you';
+      you.textContent   = '← you';
       name.appendChild(you);
     }
 
     var scoreCol = document.createElement('div');
     scoreCol.className = 'lb-score-col';
-
     var pts = document.createElement('div');
     pts.className   = 'lb-pts';
     pts.textContent = row.score.toLocaleString();
     scoreCol.appendChild(pts);
-
     if (row.lastPoints > 0) {
       var gain = document.createElement('div');
       gain.className   = 'lb-gain';
@@ -1206,37 +1222,48 @@ function renderLeaderboard(d) {
     div.appendChild(scoreCol);
     table.appendChild(div);
 
-    setTimeout(function() { div.classList.add('animate-in'); }, i * 100);
+    // Staggered animate-in
+    setTimeout(function() { div.classList.add('animate-in'); }, i * 80);
   });
 
-  // ⚠️ PATCH 6: Absolute timestamp countdown for next question
-  var nextQuestionAt = d.nextQuestionAt;  // ISO string from server
-  var timeLeft = d.nextQuestionDelay || 5;
-  setText('next-q-timer', timeLeft);
+  // ── FIX: drive the countdown from the absolute server timestamp.
+  // This way the display is always accurate regardless of when we polled.
+  startLeaderboardCountdown(d);
+}
 
-  if (nextQuestionAt) {
-    // ✅ Use absolute timestamp for precise, drift-free countdown
-    var endTimeMs = new Date(nextQuestionAt).getTime();
-    
-    ui.countdownHandle = setInterval(function() {
-      var remaining = Math.max(0, Math.ceil((endTimeMs - Date.now()) / 1000));
-      setText('next-q-timer', remaining);
-      if (remaining <= 0) {
-        stopCountdown();
-        doPoll();  // immediate poll for next question
-      }
-    }, 100);
-  } else {
-    // Fallback if no absolute timestamp (legacy)
-    ui.countdownHandle = setInterval(function() {
-      timeLeft--;
-      setText('next-q-timer', timeLeft);
-      if (timeLeft <= 0) {
-        stopCountdown();
-        doPoll();
-      }
-    }, 1000);
+// Can be called on subsequent polls while already on the leaderboard
+// to keep the displayed countdown accurate without re-rendering the list.
+function updateLeaderboardCountdown(d) {
+  // Only resync if no local countdown is running yet
+  // (avoid restarting it on every poll and causing jumpiness)
+  if (!ui.countdownHandle) startLeaderboardCountdown(d);
+}
+
+function startLeaderboardCountdown(d) {
+  stopCountdown();
+
+  // nextQuestionAt is an absolute ISO string from the server
+  var nextQuestionAt = d.nextQuestionAt || '';
+  var deadlineMs     = nextQuestionAt ? new Date(nextQuestionAt).getTime() : 0;
+
+  function tick() {
+    var secsLeft = deadlineMs
+      ? Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000))
+      : 0;
+
+    setText('next-q-timer', secsLeft);
+
+    if (secsLeft <= 0) {
+      stopCountdown();
+      // Immediate poll — next question should be live on the server already
+      doPoll();
+    }
   }
+
+  tick();
+  // Run every 200ms so the countdown feels smooth and syncs immediately
+  // after the deadline even if there's a brief gap between ticks
+  ui.countdownHandle = setInterval(tick, 200);
 }
 
 // ══════════════════════════════════════════════════════
