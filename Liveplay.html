@@ -906,16 +906,11 @@ function renderQuestion(q, d) {
     renderMultipleChoice(container, q);
   }
 
-  // Start timer — account for server-side elapsed time
-  var timePerQ = q.timePerQ || state.timePerQ;
-  var elapsed  = 0;
-  if (ui.serverStartTime && ui.qRenderedAt > ui.serverStartTime) {
-    elapsed = (ui.qRenderedAt - ui.serverStartTime) / 1000;
-  }
-  var remaining = Math.max(1, timePerQ - elapsed);
 
+  // In renderQuestion, when starting timer:
+if (q.endTime) {
   setTimeout(function() {
-    startQuestionTimer(timePerQ, remaining);
+    startQuestionTimer(q.timePerQ, q.endTime);  // ← PASS endTime, not remaining
   }, 100);
 }
 
@@ -1087,66 +1082,63 @@ function showAnsweredState() {
 // ══════════════════════════════════════════════════════
 // TIMER
 // ══════════════════════════════════════════════════════
-function startQuestionTimer(totalSecs, remainingSecs) {
+function startQuestionTimer(totalSecs, questionEndTimeISO) {
   stopQuestionTimer();
 
   var timerEl = document.getElementById('q-timer');
   var fillEl  = document.getElementById('timer-fill');
-  var endTime = Date.now() + (remainingSecs * 1000);
+  
+  // Parse absolute end time from server
+  var endTimeMs = new Date(questionEndTimeISO).getTime();
 
   function tick() {
-    var now       = Date.now();
-    var remaining = Math.max(0, (endTime - now) / 1000);
-    var pct       = (remaining / totalSecs) * 100;
+    var now = Date.now();
+    var remainingMs = Math.max(0, endTimeMs - now);
+    var remainingSecs = Math.ceil(remainingMs / 1000);
+    var pct = Math.max(0, remainingMs / (totalSecs * 1000)) * 100;
 
     if (timerEl) {
-      timerEl.textContent = Math.ceil(remaining);
-      timerEl.className   = 'q-timer';
-      if      (remaining <= totalSecs * 0.25) timerEl.classList.add('urgent');
-      else if (remaining <= totalSecs * 0.5)  timerEl.classList.add('warn');
+      timerEl.textContent = remainingSecs;
+      timerEl.className = 'q-timer';
+      if (remainingSecs <= totalSecs * 0.25) timerEl.classList.add('urgent');
+      else if (remainingSecs <= totalSecs * 0.5) timerEl.classList.add('warn');
     }
     if (fillEl) {
       fillEl.style.width = pct + '%';
-      fillEl.className   = 'timer-fill';
-      if      (remaining <= totalSecs * 0.25) fillEl.classList.add('urgent');
-      else if (remaining <= totalSecs * 0.5)  fillEl.classList.add('warn');
+      fillEl.className = 'timer-fill';
+      if (remainingSecs <= totalSecs * 0.25) fillEl.classList.add('urgent');
+      else if (remainingSecs <= totalSecs * 0.5) fillEl.classList.add('warn');
     }
 
-    if (remaining <= 0) {
+    if (remainingMs <= 0) {
       stopQuestionTimer();
       if (!ui.answered) {
         ui.answered = true;
+        // Show timeout state (your existing code)
         var container = document.getElementById('opts-container');
         if (container) {
           var wrap = document.createElement('div');
           wrap.className = 'answered-state';
-
           var icon = document.createElement('div');
           icon.className = 'ans-check';
           icon.style.cssText = 'background:rgba(240,180,41,.15);border-color:rgba(240,180,41,.4)';
           icon.textContent = '⏰';
-
           var heading = document.createElement('div');
           heading.className = 'ans-heading';
           heading.style.color = 'var(--yel)';
           heading.textContent = "Time's up!";
-
           var sub = document.createElement('div');
-          sub.className   = 'ans-subtext';
+          sub.className = 'ans-subtext';
           sub.textContent = 'Waiting for results...';
-
-          wrap.appendChild(icon);
-          wrap.appendChild(heading);
-          wrap.appendChild(sub);
-          container.innerHTML = '';
-          container.appendChild(wrap);
+          wrap.appendChild(icon); wrap.appendChild(heading); wrap.appendChild(sub);
+          container.innerHTML = ''; container.appendChild(wrap);
         }
       }
     }
   }
 
   tick();
-  ui.timerHandle = setInterval(tick, 100);
+  ui.timerHandle = setInterval(tick, 100); // 100ms for smooth countdown
 }
 
 function stopQuestionTimer() {
@@ -1228,18 +1220,34 @@ function renderLeaderboard(d) {
   });
 
   // Auto-next countdown
-  var timeLeft = d.nextQuestionDelay || 5;
-  setText('next-q-timer', timeLeft);
+  var nextQuestionAt = d.nextQuestionAt;  // ← ISO string from server
+var timeLeft = d.nextQuestionDelay || 5;
+setText('next-q-timer', timeLeft);
 
+if (nextQuestionAt) {
+  // ✅ Use absolute timestamp for precise, drift-free countdown
+  var endTimeMs = new Date(nextQuestionAt).getTime();
+  
+  ui.countdownHandle = setInterval(function() {
+    var remaining = Math.max(0, Math.ceil((endTimeMs - Date.now()) / 1000));
+    setText('next-q-timer', remaining);
+    if (remaining <= 0) {
+      stopCountdown();
+      doPoll();  // immediate poll for next question
+    }
+  }, 100);  // ← 100ms for smooth countdown
+} else {
+  // Fallback if no absolute timestamp (legacy)
   ui.countdownHandle = setInterval(function() {
     timeLeft--;
     setText('next-q-timer', timeLeft);
     if (timeLeft <= 0) {
       stopCountdown();
-      doPoll(); // immediate poll to get next question
+      doPoll();
     }
   }, 1000);
 }
+
 
 // ══════════════════════════════════════════════════════
 // ENDED
