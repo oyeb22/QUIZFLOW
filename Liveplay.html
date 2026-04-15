@@ -54,6 +54,11 @@
     .waiting span:nth-child(2) { animation-delay: 0.2s; }
     .waiting span:nth-child(3) { animation-delay: 0.4s; }
     
+    /* PREP COUNTDOWN */
+    #s-prep { align-items: center; justify-content: center; padding: 32px; text-align: center; }
+    .prep-count { font-size: 120px; font-weight: 900; color: var(--yellow); animation: pulse 1s infinite; }
+    .prep-text { font-size: 24px; margin-top: 24px; }
+    
     /* QUESTION */
     #s-question { flex-direction: column; }
     .q-header { background: rgba(0,0,0,0.2); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
@@ -143,6 +148,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
     @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
     @media (max-width: 480px) { .q-text { font-size: 20px; } .ans-shape { font-size: 32px; } }
   </style>
 </head>
@@ -189,6 +195,11 @@
     <div style="opacity:0.8">players</div>
   </div>
   <div class="waiting"><span></span><span></span><span></span></div>
+</div>
+
+<div class="screen" id="s-prep">
+  <div class="prep-count" id="prep-count">3</div>
+  <div class="prep-text">Get Ready!</div>
 </div>
 
 <div class="screen" id="s-question">
@@ -242,12 +253,12 @@
 
 <script>
 // CONFIG
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx5E2jZQRYJMCE3fA1TO2uwqEiloviT1eiz8SbrMsZLTDa4H8cHdyWBgxhRCFrfWJv4zQ/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxT1IMOisB7fVbxRadW1hkFkLIJQ35JFfUjbPMNotbZxzDSzhXClTKLSnW1nDUqHndH5w/exec'; // REPLACE THIS
 
 // STATE
 var state = {
   playerId: '', name: '', roomCode: '', score: 0, correct: 0, streak: 0, totalQ: 0, currentQ: -1,
-  serverOffset: 0, lastState: null, answered: false
+  serverOffset: 0, lastState: null, answered: false, prepTimer: null
 };
 
 var pollTimer = null, syncTimer = null, countdownTimer = null;
@@ -270,7 +281,7 @@ function post(action, data, callback) {
   function tryRequest() {
     attempts++;
     var xhr = new XMLHttpRequest();
-    xhr.timeout = 10000; // 10 second timeout
+    xhr.timeout = 10000;
     
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4) {
@@ -285,12 +296,11 @@ function post(action, data, callback) {
           }
         } else {
           if (attempts < maxAttempts) {
-            setTimeout(tryRequest, 1000 * attempts); // Exponential backoff
+            setTimeout(tryRequest, 1000 * attempts);
           } else {
             isReconnecting = true;
             showConnOverlay();
-            if (callback) callback(new Error('Failed after ' + maxAttempts + ' attempts'), null);
-            // Auto-retry polling
+            if (callback) callback(new Error('Failed'), null);
             setTimeout(function() { if (state.roomCode) doPoll(); }, 2000);
           }
         }
@@ -349,9 +359,6 @@ function doJoin() {
     
     if (e || !r || r.status !== 'success') {
       var msg = (r && r.message) || 'Connection failed';
-      if (msg.includes('not found')) msg = 'Game not found. Check PIN.';
-      else if (msg.includes('started')) msg = 'Game already started!';
-      else if (msg.includes('name')) msg = 'Name taken, try another.';
       showErr(msg);
       return;
     }
@@ -361,7 +368,7 @@ function doJoin() {
     state.roomCode = r.data.roomCode;
     state.totalQ = r.data.totalQ || 0;
     
-    // Sync clock
+    // Sync clock once
     syncClock(function() {
       document.getElementById('lobby-name').textContent = state.name;
       document.getElementById('lobby-room').textContent = state.roomCode;
@@ -395,11 +402,11 @@ function getServerTime() {
   return Date.now() + state.serverOffset;
 }
 
-// POLLING - Adaptive rate
+// POLLING
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
-  doPoll(); // Immediate first poll
-  pollTimer = setInterval(doPoll, 1500); // Poll every 1.5s (not too fast)
+  doPoll();
+  pollTimer = setInterval(doPoll, 1500);
 }
 
 function stopPolling() {
@@ -410,7 +417,6 @@ function stopPolling() {
 function doPoll() {
   if (!state.playerId || !state.roomCode) return;
   
-  // Don't poll if already polling (prevent overlap)
   var now = Date.now();
   if (now - lastPollTime < 1000) return;
   lastPollTime = now;
@@ -419,10 +425,7 @@ function doPoll() {
     roomCode: state.roomCode,
     playerId: state.playerId
   }, function(e, r) {
-    if (e) {
-      // Silent retry - overlay already shown by post()
-      return;
-    }
+    if (e) return;
     if (!r || r.status !== 'success') return;
     
     applyState(r.data);
@@ -431,20 +434,29 @@ function doPoll() {
 
 // STATE MACHINE
 function applyState(d) {
-  // Debounce - ignore if same state
+  // Debounce
   var stateKey = d.phase + '-' + d.currentQ + '-' + d.myScore;
-  if (stateKey === state.lastState) return;
+  if (stateKey === state.lastState) {
+    // Still update player count in lobby
+    if (d.phase === 'lobby') {
+      document.getElementById('lobby-count').textContent = d.playerCount || 1;
+    }
+    return;
+  }
   state.lastState = stateKey;
   
   state.score = d.myScore || 0;
   state.correct = d.myCorrect || 0;
   state.streak = d.myStreak || 0;
   
-  // Phase handling
   switch(d.phase) {
     case 'lobby':
       if (!isScreen('s-lobby')) show('s-lobby');
       document.getElementById('lobby-count').textContent = d.playerCount || 1;
+      break;
+      
+    case 'prep':
+      showPrep(d);
       break;
       
     case 'question':
@@ -477,8 +489,30 @@ function isScreen(id) {
 }
 
 function show(id) {
+  // Clear any prep timer
+  if (state.prepTimer) {
+    clearInterval(state.prepTimer);
+    state.prepTimer = null;
+  }
   document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('on'); });
   document.getElementById(id).classList.add('on');
+}
+
+// PREP SCREEN
+function showPrep(d) {
+  show('s-prep');
+  var count = 3;
+  document.getElementById('prep-count').textContent = count;
+  
+  state.prepTimer = setInterval(function() {
+    count--;
+    if (count > 0) {
+      document.getElementById('prep-count').textContent = count;
+    } else {
+      clearInterval(state.prepTimer);
+      state.prepTimer = null;
+    }
+  }, 1000);
 }
 
 // QUESTION SCREEN
@@ -519,9 +553,10 @@ function showQuestion(d) {
     }
   }
   
-  // Start timer sync
-  state.questionStart = new Date(d.questionStartsAt).getTime();
-  state.questionEnd = new Date(d.questionEndsAt).getTime();
+  // Store timing
+  state.questionStart = d.questionStartsAt ? new Date(d.questionStartsAt).getTime() : Date.now();
+  state.questionEnd = d.questionEndsAt ? new Date(d.questionEndsAt).getTime() : (Date.now() + 20000);
+  
   if (syncTimer) clearInterval(syncTimer);
   syncTimer = setInterval(function() { updateTimer(d); }, 100);
 }
@@ -534,7 +569,7 @@ function updateTimer(d) {
   var now = getServerTime();
   var remaining = Math.max(0, state.questionEnd - now);
   var total = state.questionEnd - state.questionStart;
-  var pct = remaining / total;
+  var pct = total > 0 ? remaining / total : 0;
   
   document.getElementById('q-timer').textContent = Math.ceil(remaining / 1000);
   
@@ -556,16 +591,17 @@ function answer(ans, btn) {
   if (state.answered) return;
   state.answered = true;
   
-  btn.classList.add('sel');
-  document.querySelectorAll('.ans-btn, .tf-btn').forEach(function(b) {
-    if (b !== btn) b.disabled = true;
-  });
-  
-  // Show locked overlay
-  var lock = document.createElement('div');
-  lock.className = 'locked';
-  lock.textContent = '✓';
-  btn.appendChild(lock);
+  if (btn && btn.classList) {
+    btn.classList.add('sel');
+    document.querySelectorAll('.ans-btn, .tf-btn').forEach(function(b) {
+      if (b !== btn) b.disabled = true;
+    });
+    
+    var lock = document.createElement('div');
+    lock.className = 'locked';
+    lock.textContent = '✓';
+    btn.appendChild(lock);
+  }
   
   post('submitLiveAnswer', {
     roomCode: state.roomCode,
@@ -631,7 +667,7 @@ function showLeaderboard(d) {
   // Podium (top 3)
   var pod = document.getElementById('podium');
   pod.innerHTML = '';
-  var order = [1, 0, 2]; // 2nd, 1st, 3rd visually
+  var order = [1, 0, 2];
   order.forEach(function(idx) {
     var p = lb[idx];
     if (!p) return;
@@ -639,7 +675,7 @@ function showLeaderboard(d) {
     div.className = 'pod-place';
     div.innerHTML = '<div class="pod-av">' + (idx === 0 ? '🥈' : idx === 1 ? '🥇' : '🥉') + '</div>' +
                     '<div class="pod-name">' + escapeHtml(p.name) + '</div>' +
-                    '<div class="pod-score">' + p.score.toLocaleString() + '</div>' +
+                    '<div class="pod-score">' + (p.score || 0).toLocaleString() + '</div>' +
                     '<div class="pod-block">' + (idx + 1) + '</div>';
     pod.appendChild(div);
   });
@@ -653,7 +689,7 @@ function showLeaderboard(d) {
     row.innerHTML = '<div class="lb-rank">' + (i + 1) + '</div>' +
                     '<div class="lb-av">' + (i < 3 ? ['🥈','🥇','🥉'][i] : '👤') + '</div>' +
                     '<div class="lb-name">' + escapeHtml(p.name) + (p.name === state.name ? '<span>YOU</span>' : '') + '</div>' +
-                    '<div class="lb-score">' + p.score.toLocaleString() + '</div>';
+                    '<div class="lb-score">' + (p.score || 0).toLocaleString() + '</div>';
     list.appendChild(row);
   });
 }
@@ -672,7 +708,6 @@ function updateNextTimer(d) {
     document.getElementById('next-count').textContent = Math.max(0, remaining);
     if (remaining <= 0) {
       clearInterval(countdownTimer);
-      doPoll();
     }
   }
   
@@ -701,6 +736,7 @@ window.onbeforeunload = function() {
   stopPolling();
   if (syncTimer) clearInterval(syncTimer);
   if (countdownTimer) clearInterval(countdownTimer);
+  if (state.prepTimer) clearInterval(state.prepTimer);
 };
 </script>
 </body>
