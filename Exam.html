@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -499,6 +498,91 @@
       border-radius: var(--radius);
       padding: clamp(16px, 4vw, 24px);
     }
+    
+    /* NEW: Instruction header for grouped questions */
+    .instruction-header {
+      background: rgba(91,110,245,0.08);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      margin: 0 0 16px 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+    .instruction-header .label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 4px;
+      display: block;
+    }
+    
+    /* NEW: Image container for question diagrams */
+    .question-image {
+      max-width: 100%;
+      margin: 0 0 16px 0;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+    }
+    .question-image img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: contain;
+      max-height: 300px;
+    }
+    .question-image .img-error {
+      padding: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+    
+    /* NEW: Passage split-panel layout (desktop) */
+    .passage-panel {
+      display: none; /* Hidden by default; shown when passage_id present */
+      margin: 0 0 16px 0;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--surface2);
+    }
+    @media (min-width: 768px) {
+      .passage-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+      }
+    }
+    .passage-content {
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+      border-right: 1px solid var(--border2);
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    @media (max-width: 767px) {
+      .passage-content {
+        border-right: none;
+        border-bottom: 1px solid var(--border2);
+        max-height: 250px;
+      }
+    }
+    .passage-placeholder {
+      padding: 16px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      font-style: italic;
+    }
+    
     .q-meta {
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 14px;
@@ -728,21 +812,21 @@
        RESULTS SCREEN
     ════════════════════════════════════════════ */
     #resultsScreen {
-  position: fixed;
-  inset: 0;
-  z-index: 5000;
-  overflow-y: auto;
-  background:
-    radial-gradient(ellipse 50% 40% at 50% 0%, rgba(91,110,245,0.07) 0%, transparent 70%),
-    var(--bg);
-  padding: 20px 14px 40px;
-  display: none;              /* hidden by default */
-  align-items: flex-start;
-  justify-content: center;
-}
-#resultsScreen.active {
-  display: flex;              /* shown as flex when active */
-}
+      position: fixed;
+      inset: 0;
+      z-index: 5000;
+      overflow-y: auto;
+      background:
+        radial-gradient(ellipse 50% 40% at 50% 0%, rgba(91,110,245,0.07) 0%, transparent 70%),
+        var(--bg);
+      padding: 20px 14px 40px;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    #resultsScreen.active {
+      display: flex;
+    }
 
     .results-card {
       background: var(--surface);
@@ -1569,6 +1653,7 @@ function startExam(){
       }
     });
 
+    // ✅ START PHOTO CAPTURE — Already wired correctly in your original code
     setTimeout(function(){ capturePhoto('start'); }, 2000);
   });
 }
@@ -1592,7 +1677,10 @@ function updateTimer(){
 function pad(n){ return String(n).padStart(2, '0'); }
 
 // ================================================================
-// QUESTIONS
+// QUESTIONS — UPDATED WITH INSTRUCTIONS, IMAGES, PASSAGES
+// ================================================================
+// ================================================================
+// QUESTIONS — UPDATED WITH PASSAGE FETCHING
 // ================================================================
 function renderQuestion(){
   if (!questions.length) return;
@@ -1607,8 +1695,41 @@ function renderQuestion(){
   if (pb) pb.style.width = pct + '%';
 
   var typeLabel = q.type === 'MCQ' ? 'Multiple Choice' : q.type === 'TF' ? 'True / False' : 'Short Answer';
-  var html = '<div class="q-card">'
-    + '<div class="q-meta">'
+  
+  // Start building question HTML
+  var html = '<div class="q-card">';
+  
+  // NEW: Render instruction header if present
+  if (q.instruction_text && q.instruction_text.trim() !== '') {
+    html += '<div class="instruction-header">'
+          + '<span class="label">📋 Instructions</span>'
+          + q.instruction_text
+          + '</div>';
+  }
+  
+  // NEW: Render image if present
+  if (q.image_url && q.image_url.trim() !== '') {
+    html += '<div class="question-image">'
+          + '<img src="' + q.image_url + '" alt="Question diagram" onerror="this.parentElement.innerHTML=\'<div class=\\\'img-error\\\'>🖼️ Image unavailable</div>\';" loading="lazy">'
+          + '</div>';
+  }
+  
+  // NEW: Render passage panel if passage_id present
+  if (q.passage_id && q.passage_id.trim() !== '') {
+    html += '<div class="passage-panel" id="passage_' + q.passage_id + '">'
+          + '<div class="passage-content" id="passage_body_' + q.passage_id + '">'
+          + '<div class="passage-placeholder">📖 Loading passage...</div>'
+          + '</div>'
+          + '<div class="passage-content" style="border-right:none;border-left:1px solid var(--border2);">'
+          + '<div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Question</div>'
+          + '</div>'
+          + '</div>';
+    // Fetch passage content asynchronously
+    fetchPassageContent(q.passage_id);
+  }
+  
+  // Question metadata and text
+  html += '<div class="q-meta">'
     + '<span><span class="q-type-badge">' + typeLabel + '</span><span class="q-num">Q' + (qIndex+1) + ' of ' + questions.length + '</span></span>'
     + '<span class="q-pts">' + q.points + ' pt' + (q.points !== 1 ? 's' : '') + '</span>'
     + '</div>'
@@ -1655,6 +1776,25 @@ function renderQuestion(){
   updateVioDisplay();
 }
 
+// NEW: Fetch and display passage content
+function fetchPassageContent(passageId) {
+  var container = document.getElementById('passage_body_' + passageId);
+  if (!container) return;
+  
+  post('getPassage', { passage_id: passageId }, function(e, r) {
+    if (!container) return; // Question may have changed
+    
+    if (e || !r || r.status !== 'success') {
+      container.innerHTML = '<div class="passage-placeholder" style="color:var(--red)">⚠️ Passage unavailable</div>';
+      return;
+    }
+    
+    var p = r.data;
+    container.innerHTML = 
+      (p.title ? '<div style="font-weight:700;font-size:14px;margin-bottom:8px;color:var(--text)">' + p.title + '</div>' : '') +
+      '<div style="line-height:1.7;font-size:13px;color:var(--text)">' + p.body + '</div>';
+  });
+}
 function selectAns(qId, letter, el){
   answers[qId] = letter;
   var parent = el.closest('.options');
@@ -1932,13 +2072,10 @@ function showResults(data){
         : '<span class="review-badge bad">✗ Wrong</span>';
 
     // ── Correct answer written out (MCQ letter + full text) ──
-    // correctAnswer from server is already the full text (e.g. "Paris")
-    // correctAnswerLetter is the letter (e.g. "B")
     var correctDisplay = '';
     if (!a.isCorrect) {
       var letter = a.correctAnswerLetter || '';
       var text   = a.correctAnswer || '';
-      // If we have both letter and text and they differ, show "B — Paris"
       if (letter && text && text !== letter) {
         correctDisplay = letter + ' — ' + text;
       } else {
@@ -1970,27 +2107,16 @@ function showResults(data){
       + '<div class="review-q">'
       + '<span class="review-q-text">Q' + (i+1) + '. ' + (a.questionText || 'Question ' + (i+1)) + '</span>'
       + badge + '</div>'
-
-      // Student's answer
       + '<div class="review-row"><span class="review-label">Your Answer</span>'
       + '<span class="review-val ' + (a.isCorrect ? 'ok' : skipped ? '' : 'bad') + '">' + (a.studentAnswer || '(no answer)') + '</span></div>'
-
-      // Correct answer — only shown when wrong/skipped, written out in full
       + (!a.isCorrect
           ? '<div class="review-row"><span class="review-label">Correct Answer</span>'
             + '<span class="review-val ok">' + correctDisplay + '</span></div>'
           : '')
-
-      // Points
       + '<div class="review-row"><span class="review-label">Points</span>'
       + '<span class="review-val">' + a.pointsEarned + ' / ' + a.maxPoints + '</span></div>'
-
-      // QB explanation (static)
       + explainBlock
-
-      // AI explanation button
       + aiBlock
-
       + '</div>';
   }).join('');
 }
@@ -2006,7 +2132,6 @@ function fetchAiExplanation(idx) {
   var box  = document.getElementById('ai_box_' + idx);
   if (!btn || !box || !a) return;
 
-  // Return cached result without hitting the API again
   if (_explainCache[idx]) {
     box.innerHTML = _explainCache[idx];
     btn.style.display = 'none';
