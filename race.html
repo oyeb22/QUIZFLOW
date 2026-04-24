@@ -17,13 +17,15 @@
       min-height: 100vh; padding: 20px; display: flex; align-items: center; justify-content: center;
     }
     .container { max-width: 900px; width: 100%; }
-    
+
     /* Login Panel */
     #login { text-align: center; padding: 40px 20px; }
-    #login h1 { font-size: 28px; margin-bottom: 24px; color: var(--accent); }
+    #login h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
+    #login .subtitle { color: #94a3b8; margin-bottom: 24px; font-size: 14px; }
     #login input {
       padding: 14px; border: 2px solid var(--accent); background: var(--panel);
       color: var(--text); border-radius: 10px; font-size: 16px; width: 250px; margin: 8px;
+      display: block; margin: 8px auto;
     }
     #login button {
       padding: 14px 32px; background: var(--accent); color: white; border: none;
@@ -32,13 +34,14 @@
     }
     #login button:hover { background: #2563eb; transform: translateY(-2px); }
     #login button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    
+    .hint { font-size: 12px; color: #64748b; margin-top: 12px; }
+
     /* Game Panel */
     #game { display: none; }
     .header { text-align: center; margin-bottom: 20px; }
     .header h2 { font-size: 22px; margin-bottom: 8px; }
-    .header .status { color: var(--txt2); font-size: 14px; }
-    
+    .header .status { color: #94a3b8; font-size: 14px; }
+
     /* Track */
     .track-container {
       background: var(--panel); border-radius: 12px; padding: 20px;
@@ -55,7 +58,7 @@
       position: relative; padding-left: 8px;
     }
     .player-name {
-      position: absolute; left: 0; font-size: 12px; color: var(--txt2);
+      position: absolute; left: 0; font-size: 12px; color: #94a3b8;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;
     }
     .stickman {
@@ -70,8 +73,8 @@
     }
     .stickman.running .legs { animation: walk 0.5s infinite alternate; }
     @keyframes walk { 0% { transform: scaleX(1); } 100% { transform: scaleX(0.75); } }
-    .stickman.finished .legs { animation: none; border-top-style: solid; transform: rotate(3deg); }
-    
+    .stickman.finished .legs { animation: none; }
+
     /* Question Area */
     .question-card {
       background: var(--panel); border-radius: 12px; padding: 24px;
@@ -88,13 +91,13 @@
     .opt-btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .opt-btn.correct { background: var(--success); border-color: #16a34a; }
     .opt-btn.wrong { background: var(--danger); border-color: #dc2626; }
-    
+
     .short-input {
       width: 100%; padding: 14px; background: var(--track); border: 2px solid var(--track);
       border-radius: 10px; color: var(--text); font-size: 16px; margin-bottom: 12px;
     }
     .short-input:focus { outline: none; border-color: var(--accent); }
-    
+
     .submit-btn {
       width: 100%; padding: 14px; background: var(--accent); color: white; border: none;
       border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
@@ -102,7 +105,7 @@
     }
     .submit-btn:hover { background: #2563eb; }
     .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    
+
     /* Score Popup */
     .score-popup {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -114,7 +117,7 @@
       20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
       100% { opacity: 0; transform: translate(-50%, -70%) scale(1); }
     }
-    
+
     /* Leaderboard */
     .leaderboard {
       background: var(--panel); border-radius: 12px; padding: 20px;
@@ -135,14 +138,15 @@
     .lb-name { flex: 1; font-size: 14px; margin-left: 12px; }
     .lb-stats { text-align: right; font-size: 13px; }
     .lb-score { font-weight: 700; color: var(--success); }
-    .lb-progress { color: var(--txt2); font-size: 12px; }
-    
+    .lb-progress { color: #94a3b8; font-size: 12px; }
+
     /* Utilities */
     .hidden { display: none !important; }
     .text-center { text-align: center; }
     .mt-2 { margin-top: 16px; }
     .mb-2 { margin-bottom: 16px; }
-    
+    .error-msg { color: var(--danger); margin-top: 12px; font-size: 14px; }
+
     @media (max-width: 600px) {
       .options { grid-template-columns: 1fr; }
       #login input { width: 100%; max-width: 280px; }
@@ -155,13 +159,12 @@
     <!-- Login Panel -->
     <div id="login">
       <h1>🏁 Live Exam Race</h1>
-      <p style="color: var(--txt2); margin-bottom: 20px;">Enter your race code and name to join</p>
-      <input type="text" id="raceCode" placeholder="Race Code (8 chars)" maxlength="8" style="text-transform:uppercase">
-      <br>
+      <p class="subtitle">Enter your race code and name to join</p>
+      <input type="text" id="raceCode" placeholder="Race Code (e.g. AB12CD)" maxlength="8" style="text-transform:uppercase; font-family:monospace; letter-spacing:3px;">
       <input type="text" id="playerName" placeholder="Your Name" maxlength="15">
-      <br>
-      <button id="joinBtn" onclick="joinRace()">Join Race</button>
-      <p id="joinError" style="color: var(--danger); margin-top: 12px; display: none;"></p>
+      <button id="joinBtn" onclick="joinRace()">Join Race 🏁</button>
+      <p class="hint">Get the race code from your teacher's screen</p>
+      <p id="joinError" class="error-msg" style="display:none;"></p>
     </div>
 
     <!-- Game Panel -->
@@ -170,25 +173,24 @@
         <h2 id="gameTitle">Race in Progress</h2>
         <div class="status" id="gameStatus">Answer questions to move forward!</div>
       </div>
-      
+
       <!-- Track -->
       <div class="track-container" id="track">
         <div class="finish-line"></div>
-        <!-- Lanes injected dynamically -->
       </div>
-      
+
       <!-- Leaderboard -->
       <div class="leaderboard mb-2">
         <div class="lb-title">🏆 Live Leaderboard</div>
         <div class="lb-list" id="lbList"></div>
       </div>
-      
+
       <!-- Question -->
       <div class="question-card" id="questionCard">
         <div class="question-text" id="questionText">Loading question...</div>
         <div id="answerArea"></div>
       </div>
-      
+
       <!-- Score Popup -->
       <div class="score-popup hidden" id="scorePopup"></div>
     </div>
@@ -197,14 +199,12 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-  
+
   <script>
     // ═══════════════════════════════════════════════════════════
-    // CONFIGURATION — EDIT THESE VALUES
+    // FIREBASE CONFIG
     // ═══════════════════════════════════════════════════════════
-    
-    // 🔧 PASTE YOUR FIREBASE CONFIG HERE (from Firebase Console → Project Settings → Web App)
-    const firebaseConfig = {
+    var firebaseConfig = {
       apiKey: "AIzaSyDpKPol5g5iZQpi6zw5aODpNH4MzejOBfw",
       authDomain: "examrace-31854.firebaseapp.com",
       databaseURL: "https://examrace-31854-default-rtdb.firebaseio.com",
@@ -213,28 +213,23 @@
       messagingSenderId: "698483423316",
       appId: "1:698483423316:web:d5dd780bb186d8253115c1"
     };
-    
-    // ═══════════════════════════════════════════════════════════
-    // INITIALIZATION
-    // ═══════════════════════════════════════════════════════════
-    
+
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    
+    var db = firebase.database();
+
     // Read GAS Web App URL from URL parameter ?script=...
     function getScriptUrl() {
       var params = new URLSearchParams(window.location.search);
       var url = params.get('script');
       if (!url) {
-        // Fallback for testing — replace with your deployed GAS URL
-        console.warn('No ?script= parameter found. Using fallback URL.');
-        return 'https://script.google.com/macros/s/YOUR_DEPLOYED_ID/exec';
+        console.warn('No ?script= parameter found.');
+        return '';
       }
       return url;
     }
     var GAS_URL = getScriptUrl();
-    
+
     // Game state
     var raceId = '';
     var playerId = '';
@@ -245,41 +240,42 @@
     var correctCount = 0;
     var totalQuestions = 0;
     var raceUnsub = null;
-    var clockOffset = 0; // For perfect timer sync
-    
+
     // ═══════════════════════════════════════════════════════════
     // CORE FUNCTIONS
     // ═══════════════════════════════════════════════════════════
-    
+
     function joinRace() {
       var codeInput = document.getElementById('raceCode');
       var nameInput = document.getElementById('playerName');
-      var errorEl = document.getElementById('joinError');
-      var btn = document.getElementById('joinBtn');
-      
-      raceId = (codeInput.value || '').trim().toUpperCase();
+      var errorEl   = document.getElementById('joinError');
+      var btn       = document.getElementById('joinBtn');
+
+      raceId     = (codeInput.value || '').trim().toUpperCase();
       playerName = (nameInput.value || '').trim();
-      
-      // Validation
+
       if (!raceId || raceId.length < 6) {
-        showError(errorEl, 'Enter a valid 8-character Race Code');
+        showError(errorEl, 'Enter a valid Race Code (6-8 characters)');
         return;
       }
       if (!playerName || playerName.length < 2) {
         showError(errorEl, 'Enter your name (min 2 characters)');
         return;
       }
-      
-      // Disable UI
+      if (!GAS_URL) {
+        showError(errorEl, 'Missing backend URL. Open this page via your teacher\'s link.');
+        return;
+      }
+
       btn.disabled = true;
       btn.textContent = 'Joining...';
       errorEl.style.display = 'none';
-      
+
       // Generate unique player ID
-      playerId = raceId + '_' + playerName.replace(/\s+/g, '_').toLowerCase() + '_' + Date.now().toString(36);
-      playerColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-      
-      // Fetch questions from GAS backend
+      playerId    = 'p_' + playerName.replace(/\s+/g, '_').toLowerCase() + '_' + Date.now().toString(36);
+      playerColor = '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
+
+      // ─── KEY FIX: send raceId (not raceCode) to match Code.gs ───
       fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -288,254 +284,216 @@
       .then(function(res) { return res.json(); })
       .then(function(result) {
         if (result.status !== 'success') {
-          showError(errorEl, result.message || 'Failed to load questions');
+          showError(errorEl, result.message || 'Failed to load questions. Check your race code.');
           btn.disabled = false;
-          btn.textContent = 'Join Race';
+          btn.textContent = 'Join Race 🏁';
           return;
         }
-        
-        // Success — switch to game view
-        questions = result.data;
+
+        questions      = result.data;
         totalQuestions = questions.length;
-        
+
         document.getElementById('login').style.display = 'none';
-        document.getElementById('game').style.display = 'block';
+        document.getElementById('game').style.display  = 'block';
         document.getElementById('gameTitle').textContent = 'Race: ' + raceId;
-        
-        // Register player in Firebase
+
         registerPlayer();
-        
-        // Start listening to live updates
         initRealtimeSync();
-        
-        // Load first question
         loadQuestion();
       })
       .catch(function(err) {
         console.error('Join error:', err);
-        showError(errorEl, 'Connection error — check your internet');
+        showError(errorEl, 'Connection error — check your internet and try again.');
         btn.disabled = false;
-        btn.textContent = 'Join Race';
+        btn.textContent = 'Join Race 🏁';
       });
     }
-    
+
     function showError(el, msg) {
       el.textContent = msg;
       el.style.display = 'block';
     }
-    
+
     function registerPlayer() {
-      db.ref('race/players/' + playerId).set({
-        name: playerName,
-        color: playerColor,
-        progress: 0,
-        correct: 0,
-        finished: false,
-        finishTime: null,
-        joinedAt: firebase.database.ServerValue.TIMESTAMP,
+      db.ref('race/' + raceId + '/players/' + playerId).set({
+        name:      playerName,
+        color:     playerColor,
+        progress:  0,
+        correct:   0,
+        finished:  false,
+        finishTime:null,
+        joinedAt:  firebase.database.ServerValue.TIMESTAMP,
         updatedAt: firebase.database.ServerValue.TIMESTAMP
       });
     }
-    
+
     function initRealtimeSync() {
-      // Sync clock offset to Firebase server time
-      db.ref('.info/serverTimeOffset').on('value', function(snapshot) {
-        clockOffset = snapshot.val() || 0;
-      });
-      
-      // Listen to all players for live stickman sync
-      raceUnsub = db.ref('race/players').orderByChild('updatedAt').on('value', function(snapshot) {
+      raceUnsub = db.ref('race/' + raceId + '/players').on('value', function(snapshot) {
         var players = snapshot.val() || {};
         renderTrack(players);
         renderLeaderboard(players);
       });
     }
-    
+
     function loadQuestion() {
       var questionCard = document.getElementById('questionCard');
       var questionText = document.getElementById('questionText');
-      var answerArea = document.getElementById('answerArea');
-      
-      // Check if race is finished
+      var answerArea   = document.getElementById('answerArea');
+
       if (currentQIndex >= totalQuestions) {
-        questionCard.innerHTML = '<div class="text-center"><h3>✅ Race Complete!</h3><p class="mt-2">Check the leaderboard for final results.</p></div>';
+        questionCard.innerHTML =
+          '<div class="text-center"><h3 style="color:var(--success)">✅ Race Complete!</h3>' +
+          '<p class="mt-2" style="color:#94a3b8">Check the leaderboard for final results.</p></div>';
         return;
       }
-      
+
       var q = questions[currentQIndex];
       questionText.textContent = 'Q' + (currentQIndex + 1) + '/' + totalQuestions + ': ' + q.question;
       answerArea.innerHTML = '';
-      
-      // Render answer options based on question type
+
       if (q.type === 'MCQ' || q.type === 'TF') {
         answerArea.className = 'options';
         var opts = q.options || [];
-        opts.forEach(function(opt, i) {
-          var btn = document.createElement('button');
-          btn.className = 'opt-btn';
+        opts.forEach(function(opt) {
+          var btn    = document.createElement('button');
+          btn.className   = 'opt-btn';
           btn.textContent = opt;
-          btn.onclick = (function(index, option) {
-            return function() { submitAnswer(option, btn); };
-          })(i, opt);
+          btn.onclick = (function(option, el) {
+            return function() { submitAnswer(option, el); };
+          })(opt, btn);
           answerArea.appendChild(btn);
         });
       } else if (q.type === 'SHORT') {
         answerArea.className = '';
-        var input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'short-input';
-        input.id = 'shortAnswer';
+        var input     = document.createElement('input');
+        input.type        = 'text';
+        input.className   = 'short-input';
         input.placeholder = 'Type your answer...';
-        input.maxLength = 100;
-        
-        var submitBtn = document.createElement('button');
-        submitBtn.className = 'submit-btn';
+        input.maxLength   = 100;
+
+        var submitBtn     = document.createElement('button');
+        submitBtn.className   = 'submit-btn';
         submitBtn.textContent = 'Submit Answer';
         submitBtn.onclick = function() {
           var val = input.value.trim();
           if (!val) { alert('Please enter an answer'); return; }
           submitAnswer(val, null);
         };
-        
-        // Allow Enter key to submit
         input.addEventListener('keydown', function(e) {
           if (e.key === 'Enter') submitBtn.click();
         });
-        
         answerArea.appendChild(input);
         answerArea.appendChild(submitBtn);
         input.focus();
       }
     }
-    
+
     function submitAnswer(answer, btnEl) {
-      // Disable inputs
-      var inputs = document.querySelectorAll('#answerArea button, #answerArea input');
+      var inputs  = document.querySelectorAll('#answerArea button, #answerArea input');
       for (var i = 0; i < inputs.length; i++) inputs[i].disabled = true;
-      
+
       var statusEl = document.getElementById('gameStatus');
-      statusEl.textContent = 'Validating...';
-      
-      // Submit to GAS for server-side validation
+      statusEl.textContent = 'Checking...';
+
+      // ─── KEY FIX: send raceId (not raceCode) to match Code.gs ───
       fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'validateRaceAnswer',
-          raceId: raceId,
-          playerId: playerId,
+          action:     'validateRaceAnswer',
+          raceId:     raceId,
+          playerId:   playerId,
           questionId: questions[currentQIndex].id,
-          answer: answer
+          answer:     answer
         })
       })
       .then(function(res) { return res.json(); })
       .then(function(result) {
         if (result.status !== 'success') {
-          alert(result.message || 'Validation failed');
+          alert(result.message || 'Validation failed. Try again.');
           for (var i = 0; i < inputs.length; i++) inputs[i].disabled = false;
           statusEl.textContent = 'Answer questions to move forward!';
           return;
         }
-        
+
         var data = result.data;
-        
-        // Visual feedback
-        if (btnEl) {
-          btnEl.classList.add(data.isCorrect ? 'correct' : 'wrong');
-        }
-        
-        // Show score popup
+
+        if (btnEl) btnEl.classList.add(data.isCorrect ? 'correct' : 'wrong');
+
         if (data.isCorrect) {
           showPopup('+' + data.correctCount + ' ✓', '#22c55e');
+          correctCount++;
         } else {
-          showPopup('✗ Keep going!', '#ef4444');
+          showPopup('✗', '#ef4444');
         }
-        
-        // Update local state
-        if (data.isCorrect) correctCount++;
-        
-        // Update Firebase with new progress
-        updateFirebaseProgress(data);
-        
-        // Move to next question after delay
+
+        // Update Firebase progress
+        db.ref('race/' + raceId + '/players/' + playerId).update({
+          progress:  data.progress,
+          correct:   data.correctCount,
+          finished:  data.finished,
+          finishTime:data.finished ? firebase.database.ServerValue.TIMESTAMP : null,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        });
+
         currentQIndex++;
         setTimeout(function() {
           statusEl.textContent = 'Answer questions to move forward!';
           loadQuestion();
-        }, 1000);
+        }, 900);
       })
       .catch(function(err) {
         console.error('Submit error:', err);
-        alert('Submission failed — check connection');
+        alert('Submission failed — check your connection.');
         for (var i = 0; i < inputs.length; i++) inputs[i].disabled = false;
         statusEl.textContent = 'Answer questions to move forward!';
       });
     }
-    
-    function updateFirebaseProgress(data) {
-      db.ref('race/players/' + playerId).update({
-        progress: data.progress,
-        correct: data.correctCount,
-        finished: data.finished,
-        finishTime: data.finished ? firebase.database.ServerValue.TIMESTAMP : null,
-        updatedAt: firebase.database.ServerValue.TIMESTAMP
-      });
-    }
-    
+
     function showPopup(text, color) {
       var popup = document.getElementById('scorePopup');
       popup.textContent = text;
       popup.style.color = color;
       popup.classList.remove('hidden');
-      
-      // Auto-hide after animation
-      setTimeout(function() {
-        popup.classList.add('hidden');
-      }, 1200);
+      // Clone to restart animation
+      var clone = popup.cloneNode(true);
+      popup.parentNode.replaceChild(clone, popup);
     }
-    
+
     function renderTrack(players) {
       var track = document.getElementById('track');
-      // Keep finish line
       track.innerHTML = '<div class="finish-line"></div>';
-      
-      // Sort players by progress (descending), then by finish time
+
       var playerList = [];
       for (var id in players) {
         if (players.hasOwnProperty(id)) playerList.push(players[id]);
       }
       playerList.sort(function(a, b) {
         if (b.progress !== a.progress) return b.progress - a.progress;
-        if (a.finished && !b.finished) return 1;
-        if (!a.finished && b.finished) return -1;
         return (a.finishTime || Infinity) - (b.finishTime || Infinity);
       });
-      
-      // Render each player's lane
+
       for (var i = 0; i < playerList.length; i++) {
-        var p = playerList[i];
-        // Cap visual position at 90% to keep stickman visible before finish
-        var posPercent = Math.min(p.progress * 90, 90);
-        
-        var lane = document.createElement('div');
+        var p          = playerList[i];
+        var posPercent = Math.min((p.progress || 0) * 88, 88);
+
+        var lane       = document.createElement('div');
         lane.className = 'lane';
-        
-        lane.innerHTML = 
+        lane.innerHTML =
           '<span class="player-name" style="color:' + p.color + '">' + escapeHtml(p.name) + '</span>' +
           '<div class="stickman ' + (p.finished ? 'finished' : 'running') + '" ' +
-          'style="left:calc(5px + ' + posPercent + '%); color:' + p.color + '">' +
+          'style="left:calc(8px + ' + posPercent + '%); color:' + p.color + '">' +
             '<div class="head"></div><div class="body"></div><div class="legs"></div>' +
           '</div>';
-        
+
         track.appendChild(lane);
       }
     }
-    
+
     function renderLeaderboard(players) {
       var list = document.getElementById('lbList');
       list.innerHTML = '';
-      
-      // Sort by score/progress for leaderboard
+
       var playerList = [];
       for (var id in players) {
         if (players.hasOwnProperty(id)) playerList.push(players[id]);
@@ -545,52 +503,53 @@
         if (b.progress !== a.progress) return b.progress - a.progress;
         return (a.finishTime || Infinity) - (b.finishTime || Infinity);
       });
-      
-      // Show top 10
+
       var topPlayers = playerList.slice(0, 10);
-      
+      var medals     = ['🥇', '🥈', '🥉'];
+
       for (var i = 0; i < topPlayers.length; i++) {
-        var p = topPlayers[i];
-        var row = document.createElement('div');
-        row.className = 'lb-row';
+        var p          = topPlayers[i];
+        var row        = document.createElement('div');
+        row.className  = 'lb-row';
         row.style.animationDelay = (i * 0.04) + 's';
-        
-        var progressPct = Math.round(p.progress * 100);
-        var statusText = p.finished ? '🏁 Done' : (progressPct === 0 ? '⏳' : '🏃 ' + progressPct + '%');
-        
-        row.innerHTML = 
-          '<div class="lb-rank">' + (i + 1) + '</div>' +
+
+        var progressPct = Math.round((p.progress || 0) * 100);
+        var statusText  = p.finished ? '🏁 Finished' : (progressPct === 0 ? '⏳ Starting' : '🏃 ' + progressPct + '%');
+
+        row.innerHTML =
+          '<div class="lb-rank">' + (medals[i] || (i + 1)) + '</div>' +
           '<div class="lb-name">' + escapeHtml(p.name) + '</div>' +
           '<div class="lb-stats">' +
-            '<div class="lb-score">' + p.correct + '/' + totalQuestions + '</div>' +
+            '<div class="lb-score">' + (p.correct || 0) + '/' + totalQuestions + '</div>' +
             '<div class="lb-progress">' + statusText + '</div>' +
           '</div>';
-        
+
         list.appendChild(row);
       }
     }
-    
-    // Simple HTML escape to prevent XSS
+
     function escapeHtml(str) {
       if (!str) return '';
       return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     }
-    
-    // Cleanup on page unload
+
     window.addEventListener('beforeunload', function() {
       if (raceUnsub) raceUnsub();
     });
-    
-    // Allow Enter key on race code input
+
     document.addEventListener('DOMContentLoaded', function() {
       var codeInput = document.getElementById('raceCode');
       if (codeInput) {
         codeInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') document.getElementById('playerName').focus();
+        });
+      }
+      var nameInput = document.getElementById('playerName');
+      if (nameInput) {
+        nameInput.addEventListener('keydown', function(e) {
           if (e.key === 'Enter') joinRace();
         });
       }
