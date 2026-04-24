@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizFlow Live Race</title>
+  <style>
+    :root { --bg: #1a1a2e; --panel: #16213e; --accent: #e94560; --success: #0f3460; --gold: #f5c518; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 800px; padding: 20px; box-sizing: border-box; animation: fadeSlide 0.4s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    input, button { padding: 14px; border: none; border-radius: 10px; font-size: 16px; margin: 6px; }
+    input { background: #0f3460; color: #fff; width: 220px; }
+    button { background: var(--accent); color: #fff; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    button:hover { transform: scale(1.03); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    
+    .timer-bar { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+    .timer-fill { height: 100%; background: var(--accent); width: 100%; transition: width 0.1s linear; }
+    .timer-text { font-size: 28px; font-weight: 800; color: var(--gold); margin-bottom: 10px; }
+    
+    .q-text { font-size: 22px; text-align: center; margin: 15px 0; min-height: 60px; }
+    .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+    .opt-btn { padding: 18px; background: #0f3460; color: #fff; border: 2px solid transparent; border-radius: 10px; cursor: pointer; font-size: 16px; transition: 0.2s; }
+    .opt-btn:hover { border-color: var(--accent); background: #1a1a40; }
+    .opt-btn.correct { background: #2ecc71; border-color: #27ae60; }
+    .opt-btn.wrong { background: #e74c3c; border-color: #c0392b; }
+    
+    .short-ans { width: 100%; margin-bottom: 10px; }
+    
+    .lb-container { width: 100%; max-height: 60vh; overflow-y: auto; margin-top: 20px; }
+    .lb-row { display: flex; justify-content: space-between; padding: 12px; background: #0f3460; margin: 6px 0; border-radius: 8px; animation: slideIn 0.3s ease backwards; }
+    .lb-row:nth-child(1) { background: linear-gradient(90deg, #f5c518, #d4af37); color: #000; font-weight: bold; }
+    .lb-row:nth-child(2) { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); }
+    .lb-row:nth-child(3) { background: linear-gradient(90deg, #cd7f32, #a0522d); }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    
+    .score-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 900; pointer-events: none; animation: popUp 1s forwards; }
+    @keyframes popUp { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(1); } }
+  </style>
+</head>
+<body>
+  <div id="lobby" class="screen active">
+    <h1>🏁 QuizFlow Live Race</h1>
+    <input type="text" id="sId" placeholder="Room Code" maxlength="13">
+    <input type="text" id="pName" placeholder="Your Name" maxlength="15">
+    <button onclick="joinGame()">Join Race</button>
+  </div>
+
+  <div id="countdown" class="screen">
+    <h1>Get Ready</h1>
+    <div class="timer-text" id="cd-text">3</div>
+  </div>
+
+  <div id="question" class="screen">
+    <div class="timer-text" id="timer">00</div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+    <div class="q-text" id="q-text"></div>
+    <div id="answer-area"></div>
+    <div class="score-popup" id="score-popup" style="display:none"></div>
+  </div>
+
+  <div id="leaderboard" class="screen">
+    <h2>📊 Leaderboard</h2>
+    <div class="lb-container" id="lb-list"></div>
+    <button id="next-btn" onclick="hostAdvance()" style="margin-top:20px; display:none;">Next Question</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script>
+    // 🔧 REPLACE THESE
+    const firebaseConfig = { apiKey: "...", authDomain: "...", databaseURL: "...", projectId: "..." };
+    const GAS_URL = "YOUR_WEB_APP_URL";
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let sessionId, playerId, playerName, playerColor, timePerQ;
+    let questions = [], currentQ = 0, streak = 0;
+    let timerEnd = 0, clockOffset = 0, rafId;
+    let unsub = null;
+
+    function joinGame() {
+      sessionId = document.getElementById('sId').value.trim().toUpperCase();
+      playerName = document.getElementById('pName').value.trim() || "Player";
+      if (!sessionId) return alert("Enter a valid Room Code");
+      
+      playerId = sessionId + '_' + playerName.replace(/\s/g,'_') + '_' + Date.now().toString(36);
+      playerColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+
+      // Fetch questions & config from GAS
+      fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'createKahootSession', examCode: 'YOUR_EXAM_CODE_HERE', timePerQ: 20 }) // Replace with your examCode
+      }).then(r => r.json()).then(res => {
+        if (res.status !== 'success') return alert(res.message);
+        questions = res.data.questions;
+        timePerQ = res.data.timePerQ;
+        screen('countdown');
+        startCountdown();
+        initSync();
+      });
+    }
+
+    function screen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function startCountdown() {
+      let c = 3;
+      document.getElementById('cd-text').textContent = c;
+      const iv = setInterval(() => {
+        c--;
+        if (c <= 0) { clearInterval(iv); loadQuestion(0); }
+        else document.getElementById('cd-text').textContent = c;
+      }, 1000);
+    }
+
+    function loadQuestion(idx) {
+      currentQ = idx;
+      if (currentQ >= questions.length) return screen('leaderboard');
+      
+      const q = questions[currentQ];
+      document.getElementById('q-text').textContent = `Q${currentQ+1}: ${q.question}`;
+      const area = document.getElementById('answer-area');
+      area.innerHTML = '';
+
+      if (q.type === 'MCQ') {
+        area.className = 'opts';
+        q.options.forEach((opt, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'opt-btn';
+          btn.textContent = opt;
+          btn.onclick = () => submitAnswer(opt, btn);
+          area.appendChild(btn);
+        });
+      } else if (q.type === 'TF') {
+        area.className = 'opts';
+        ['True', 'False'].forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'opt-btn';
+          btn.textContent = opt;
+          btn.onclick = () => submitAnswer(opt, btn);
+          area.appendChild(btn);
+        });
+      } else { // SHORT
+        area.className = '';
+        area.innerHTML = `<input class="short-ans" id="sInput" placeholder="Type your answer..."><button onclick="submitShort()">Submit</button>`;
+      }
+      
+      screen('question');
+      startPerfectTimer();
+    }
+
+    // ⏱️ PERFECT SYNC TIMER
+    function startPerfectTimer() {
+      timerEnd = Date.now() + (timePerQ * 1000); // Host-synced in real app, simplified here
+      cancelAnimationFrame(rafId);
+      updateTimer();
+    }
+
+    function updateTimer() {
+      const now = Date.now() + clockOffset;
+      const rem = Math.max(0, timerEnd - now);
+      const sec = Math.ceil(rem / 1000);
+      
+      document.getElementById('timer').textContent = sec < 10 ? '0' + sec : sec;
+      document.getElementById('timer-fill').style.width = (rem / (timePerQ * 1000) * 100) + '%';
+      
+      if (sec <= 0) {
+        disableInputs();
+        showPopup("⏰ Time's Up!", '#e74c3c');
+        setTimeout(() => showLeaderboard(), 1500);
+        return;
+      }
+      rafId = requestAnimationFrame(updateTimer);
+    }
+
+    function submitAnswer(ans, btn) {
+      if (btn) btn.classList.add('loading');
+      disableInputs();
+      
+      const timeRem = Math.max(0, timerEnd - Date.now() - clockOffset) / 1000;
+      
+      fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'validateKahootAnswer', sessionId, playerId,
+          qIndex: currentQ, answer: ans,
+          timeRemaining: timeRem, currentStreak: streak
+        })
+      }).then(r => r.json()).then(res => {
+        if (res.status === 'success') {
+          streak = res.data.newStreak;
+          if (btn) btn.classList.add(res.data.isCorrect ? 'correct' : 'wrong');
+          if (res.data.isCorrect) showPopup(`+${res.data.pointsEarned}`, '#2ecc71');
+          else showPopup(`❌ Streak Reset`, '#e74c3c');
+          updateFirebase(res.data);
+          setTimeout(showLeaderboard, 1500);
+        } else { alert(res.message); enableInputs(); }
+      });
+    }
+
+    function submitShort() {
+      const val = document.getElementById('sInput').value.trim();
+      if (!val) return alert("Type an answer");
+      submitAnswer(val, null);
+    }
+
+    function disableInputs() {
+      document.querySelectorAll('button, input').forEach(el => el.disabled = true);
+    }
+    function enableInputs() {
+      document.querySelectorAll('button, input').forEach(el => el.disabled = false);
+    }
+
+    function showPopup(text, color) {
+      const el = document.getElementById('score-popup');
+      el.textContent = text; el.style.color = color; el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 1200);
+    }
+
+    function updateFirebase(data) {
+      db.ref(`kahoot/${sessionId}/players/${playerId}`).update({
+        name: playerName, color: playerColor,
+        score: data.totalScore, streak: data.newStreak,
+        progress: data.progress, lastUpdated: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+
+    function showLeaderboard() {
+      screen('leaderboard');
+      cancelAnimationFrame(rafId);
+      // Unsubscribe from previous if exists
+      if (unsub) unsub();
+      
+      unsub = db.ref(`kahoot/${sessionId}/players`).orderByChild('score').on('value', snap => {
+        const list = document.getElementById('lb-list');
+        list.innerHTML = '';
+        const players = [];
+        snap.forEach(ch => players.push(ch.val()));
+        players.sort((a,b) => b.score - a.score || b.streak - a.streak);
+        
+        players.slice(0, 15).forEach((p, i) => {
+          const row = document.createElement('div');
+          row.className = 'lb-row';
+          row.style.animationDelay = `${i * 0.05}s`;
+          row.innerHTML = `<span>${i+1}. ${p.name} ${p.color ? '🔘' : ''}</span><span>🏆 ${p.score || 0} 🔥 ${p.streak || 0}</span>`;
+          list.appendChild(row);
+        });
+      });
+    }
+
+    function initSync() {
+      // Register player
+      db.ref(`kahoot/${sessionId}/players/${playerId}`).set({
+        name: playerName, color: playerColor, score: 0, streak: 0, progress: 0
+      });
+      
+      // Sync clock offset to Firebase server time
+      const ref = db.ref('.info/serverTimeOffset');
+      ref.on('value', s => { clockOffset = s.val(); });
+    }
+
+    window.addEventListener('beforeunload', () => { if(unsub) unsub(); });
+  </script>
+</body>
+</html>
