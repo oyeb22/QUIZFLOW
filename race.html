@@ -1,195 +1,600 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Exam Race</title>
+  <title>QuizFlow Pro — Live Exam Race</title>
   <style>
-    :root { --bg: #0f172a; --panel: #1e293b; --track: #334155; --text: #f8fafc; --accent: #3b82f6; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-    h1, h2 { margin: 0 0 10px; text-align: center; }
-    .container { max-width: 1000px; margin: 0 auto; }
-    .panel { background: var(--panel); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    :root {
+      --bg: #0f172a; --panel: #1e293b; --track: #334155;
+      --text: #f8fafc; --accent: #3b82f6; --success: #22c55e; --danger: #ef4444;
+      --gold: #f59e0b; --font: system-ui, -apple-system, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font); background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 20px; display: flex; align-items: center; justify-content: center;
+    }
+    .container { max-width: 900px; width: 100%; }
     
+    /* Login Panel */
     #login { text-align: center; padding: 40px 20px; }
-    input { padding: 12px; border: 2px solid var(--accent); background: var(--bg); color: var(--text); border-radius: 8px; font-size: 16px; width: 250px; margin: 5px; }
-    button { padding: 12px 24px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 5px; transition: 0.2s; }
-    button:hover { background: #2563eb; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #login h1 { font-size: 28px; margin-bottom: 24px; color: var(--accent); }
+    #login input {
+      padding: 14px; border: 2px solid var(--accent); background: var(--panel);
+      color: var(--text); border-radius: 10px; font-size: 16px; width: 250px; margin: 8px;
+    }
+    #login button {
+      padding: 14px 32px; background: var(--accent); color: white; border: none;
+      border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin: 8px;
+      transition: transform 0.15s, background 0.15s;
+    }
+    #login button:hover { background: #2563eb; transform: translateY(-2px); }
+    #login button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     
-    .track-container { background: var(--bg); border-radius: 10px; padding: 15px; overflow-x: hidden; position: relative; }
-    .finish-line { position: absolute; right: 30px; top: 0; bottom: 0; width: 6px; background: repeating-linear-gradient(45deg, #fbbf24, #fbbf24 8px, transparent 8px, transparent 16px); border-radius: 3px; }
+    /* Game Panel */
+    #game { display: none; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h2 { font-size: 22px; margin-bottom: 8px; }
+    .header .status { color: var(--txt2); font-size: 14px; }
     
-    .lane { display: flex; align-items: center; height: 50px; border-bottom: 1px dashed #475569; position: relative; padding-left: 10px; }
-    .stickman { position: absolute; left: 0; transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; flex-direction: column; align-items: center; }
-    .head { width: 12px; height: 12px; border-radius: 50%; background: currentColor; }
-    .body { width: 3px; height: 16px; background: currentColor; margin-top: 2px; }
-    .legs { width: 18px; height: 10px; border-top: 3px solid currentColor; border-radius: 0 0 9px 9px; margin-top: 2px; }
-    .running .legs { animation: run 0.4s infinite alternate; }
-    @keyframes run { 0% { transform: scaleX(1); } 100% { transform: scaleX(0.7); } }
-    .finished .legs { animation: none; border-top-style: solid; transform: rotate(5deg); }
+    /* Track */
+    .track-container {
+      background: var(--panel); border-radius: 12px; padding: 20px;
+      margin-bottom: 24px; position: relative; overflow: hidden;
+      border: 1px solid var(--track);
+    }
+    .finish-line {
+      position: absolute; right: 30px; top: 0; bottom: 0; width: 4px;
+      background: repeating-linear-gradient(45deg, var(--gold), var(--gold) 6px, transparent 6px, transparent 12px);
+      border-radius: 2px;
+    }
+    .lane {
+      display: flex; align-items: center; height: 48px; border-bottom: 1px dashed var(--track);
+      position: relative; padding-left: 8px;
+    }
+    .player-name {
+      position: absolute; left: 0; font-size: 12px; color: var(--txt2);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;
+    }
+    .stickman {
+      position: absolute; left: 0; transition: left 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex; flex-direction: column; align-items: center; pointer-events: none;
+    }
+    .stickman .head { width: 11px; height: 11px; border-radius: 50%; background: currentColor; }
+    .stickman .body { width: 3px; height: 15px; background: currentColor; margin: 2px 0; }
+    .stickman .legs {
+      width: 16px; height: 9px; border-top: 3px solid currentColor;
+      border-radius: 0 0 8px 8px; margin-top: 1px;
+    }
+    .stickman.running .legs { animation: walk 0.5s infinite alternate; }
+    @keyframes walk { 0% { transform: scaleX(1); } 100% { transform: scaleX(0.75); } }
+    .stickman.finished .legs { animation: none; border-top-style: solid; transform: rotate(3deg); }
     
-    .player-name { position: absolute; left: 0; font-size: 12px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+    /* Question Area */
+    .question-card {
+      background: var(--panel); border-radius: 12px; padding: 24px;
+      border: 1px solid var(--track); margin-bottom: 20px;
+    }
+    .question-text { font-size: 18px; font-weight: 600; margin-bottom: 16px; line-height: 1.4; }
+    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .opt-btn {
+      padding: 14px; background: var(--track); color: var(--text); border: 2px solid transparent;
+      border-radius: 10px; cursor: pointer; font-size: 15px; text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .opt-btn:hover { border-color: var(--accent); background: #334155; }
+    .opt-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .opt-btn.correct { background: var(--success); border-color: #16a34a; }
+    .opt-btn.wrong { background: var(--danger); border-color: #dc2626; }
     
-    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-    .opt-btn { padding: 14px; background: #334155; color: white; border: 2px solid #475569; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.2s; }
-    .opt-btn:hover { border-color: var(--accent); background: #475569; }
-    .opt-btn.correct { background: #22c55e; border-color: #16a34a; }
-    .opt-btn.wrong { background: #ef4444; border-color: #dc2626; }
+    .short-input {
+      width: 100%; padding: 14px; background: var(--track); border: 2px solid var(--track);
+      border-radius: 10px; color: var(--text); font-size: 16px; margin-bottom: 12px;
+    }
+    .short-input:focus { outline: none; border-color: var(--accent); }
     
-    .timer { font-size: 28px; font-weight: bold; color: #f59e0b; text-align: center; margin: 10px 0; font-variant-numeric: tabular-nums; }
-    .status { text-align: center; color: #94a3b8; font-size: 14px; }
+    .submit-btn {
+      width: 100%; padding: 14px; background: var(--accent); color: white; border: none;
+      border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .submit-btn:hover { background: #2563eb; }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    /* Score Popup */
+    .score-popup {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 32px; font-weight: 900; pointer-events: none; z-index: 100;
+      animation: popUp 1s forwards; text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    @keyframes popUp {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+      100% { opacity: 0; transform: translate(-50%, -70%) scale(1); }
+    }
+    
+    /* Leaderboard */
+    .leaderboard {
+      background: var(--panel); border-radius: 12px; padding: 20px;
+      border: 1px solid var(--track);
+    }
+    .lb-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+    .lb-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+    .lb-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; background: var(--track); border-radius: 10px;
+      animation: slideIn 0.3s ease backwards;
+    }
+    .lb-row:nth-child(1) { background: linear-gradient(90deg, rgba(245,158,11,0.2), transparent); border: 1px solid var(--gold); }
+    .lb-row:nth-child(2) { background: linear-gradient(90deg, rgba(156,163,175,0.2), transparent); }
+    .lb-row:nth-child(3) { background: linear-gradient(90deg, rgba(234,179,8,0.15), transparent); }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+    .lb-rank { font-weight: 700; width: 28px; text-align: center; }
+    .lb-name { flex: 1; font-size: 14px; margin-left: 12px; }
+    .lb-stats { text-align: right; font-size: 13px; }
+    .lb-score { font-weight: 700; color: var(--success); }
+    .lb-progress { color: var(--txt2); font-size: 12px; }
+    
+    /* Utilities */
+    .hidden { display: none !important; }
+    .text-center { text-align: center; }
+    .mt-2 { margin-top: 16px; }
+    .mb-2 { margin-bottom: 16px; }
+    
+    @media (max-width: 600px) {
+      .options { grid-template-columns: 1fr; }
+      #login input { width: 100%; max-width: 280px; }
+      .player-name { max-width: 80px; font-size: 11px; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div id="login" class="panel">
+    <!-- Login Panel -->
+    <div id="login">
       <h1>🏁 Live Exam Race</h1>
-      <input type="text" id="raceCode" placeholder="Enter Race Code" maxlength="12" style="text-transform:uppercase">
+      <p style="color: var(--txt2); margin-bottom: 20px;">Enter your race code and name to join</p>
+      <input type="text" id="raceCode" placeholder="Race Code (8 chars)" maxlength="8" style="text-transform:uppercase">
+      <br>
       <input type="text" id="playerName" placeholder="Your Name" maxlength="15">
       <br>
-      <button onclick="joinRace()">Join Race</button>
+      <button id="joinBtn" onclick="joinRace()">Join Race</button>
+      <p id="joinError" style="color: var(--danger); margin-top: 12px; display: none;"></p>
     </div>
 
-    <div id="race" style="display:none">
-      <div class="timer" id="timer">00:00</div>
-      <div class="status" id="status">Waiting for start...</div>
-      <div class="panel track-container" id="track">
+    <!-- Game Panel -->
+    <div id="game">
+      <div class="header">
+        <h2 id="gameTitle">Race in Progress</h2>
+        <div class="status" id="gameStatus">Answer questions to move forward!</div>
+      </div>
+      
+      <!-- Track -->
+      <div class="track-container" id="track">
         <div class="finish-line"></div>
+        <!-- Lanes injected dynamically -->
       </div>
-      <div class="panel" id="question-panel">
-        <h2 id="q-text">Loading...</h2>
-        <div class="options" id="options"></div>
+      
+      <!-- Leaderboard -->
+      <div class="leaderboard mb-2">
+        <div class="lb-title">🏆 Live Leaderboard</div>
+        <div class="lb-list" id="lbList"></div>
       </div>
+      
+      <!-- Question -->
+      <div class="question-card" id="questionCard">
+        <div class="question-text" id="questionText">Loading question...</div>
+        <div id="answerArea"></div>
+      </div>
+      
+      <!-- Score Popup -->
+      <div class="score-popup hidden" id="scorePopup"></div>
     </div>
   </div>
 
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  
   <script>
-    // 🔧 REPLACE WITH YOUR FIREBASE CONFIG
-    const firebaseConfig = {apiKey: "AIzaSyDpKPol5g5iZQpi6zw5aODpNH4MzejOBfw",
-  authDomain: "examrace-31854.firebaseapp.com",
-  projectId: "examrace-31854",
-  storageBucket: "examrace-31854.firebasestorage.app",
-  messagingSenderId: "698483423316",
-  appId: "1:698483423316:web:d5dd780bb186d8253115c1"};
+    // ═══════════════════════════════════════════════════════════
+    // CONFIGURATION — EDIT THESE VALUES
+    // ═══════════════════════════════════════════════════════════
+    
+    // 🔧 PASTE YOUR FIREBASE CONFIG HERE (from Firebase Console → Project Settings → Web App)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    
+    // ═══════════════════════════════════════════════════════════
+    // INITIALIZATION
+    // ═══════════════════════════════════════════════════════════
+    
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyHFBKrJgE1AVGkiZkKn2rmnKZc30jXces0SgLQ_5meVYwv4PTzykbJkQu7TL81bz-n/exec"; // Paste your deployed Apps Script URL here
-    let raceId, playerId, playerName, playerColor;
-    let currentQIndex = 0, questions = [], startTime, timerInterval;
-    let raceUnsub = null;
-
+    
+    // Read GAS Web App URL from URL parameter ?script=...
+    function getScriptUrl() {
+      var params = new URLSearchParams(window.location.search);
+      var url = params.get('script');
+      if (!url) {
+        // Fallback for testing — replace with your deployed GAS URL
+        console.warn('No ?script= parameter found. Using fallback URL.');
+        return 'https://script.google.com/macros/s/YOUR_DEPLOYED_ID/exec';
+      }
+      return url;
+    }
+    var GAS_URL = getScriptUrl();
+    
+    // Game state
+    var raceId = '';
+    var playerId = '';
+    var playerName = '';
+    var playerColor = '';
+    var questions = [];
+    var currentQIndex = 0;
+    var correctCount = 0;
+    var totalQuestions = 0;
+    var raceUnsub = null;
+    var clockOffset = 0; // For perfect timer sync
+    
+    // ═══════════════════════════════════════════════════════════
+    // CORE FUNCTIONS
+    // ═══════════════════════════════════════════════════════════
+    
     function joinRace() {
-      raceId = document.getElementById('raceCode').value.trim().toUpperCase();
-      playerName = document.getElementById('playerName').value.trim() || "Student";
-      if (!raceId) return alert("Enter a race code");
-      playerId = raceId + '_' + playerName.replace(/\s/g,'_') + '_' + Date.now().toString(36);
-      playerColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-
-      document.getElementById('login').style.display = 'none';
-      document.getElementById('race').style.display = 'block';
+      var codeInput = document.getElementById('raceCode');
+      var nameInput = document.getElementById('playerName');
+      var errorEl = document.getElementById('joinError');
+      var btn = document.getElementById('joinBtn');
       
-      // Fetch questions securely from GAS
-      fetch(GAS_URL, {
-        method: 'POST', body: JSON.stringify({ action: 'getRaceQuestions', raceId: raceId })
-      }).then(r => r.json()).then(res => {
-        if (res.status !== 'success') return alert(res.message);
-        questions = res.data;
-        startTime = Date.now();
-        startTimer();
-        loadQuestion();
-        initRealtimeSync();
-      });
-    }
-
-    function startTimer() {
-      timerInterval = setInterval(() => {
-        const s = Math.floor((Date.now() - startTime) / 1000);
-        const m = Math.floor(s / 60).toString().padStart(2, '0');
-        const sec = (s % 60).toString().padStart(2, '0');
-        document.getElementById('timer').textContent = `${m}:${sec}`;
-      }, 1000);
-    }
-
-    function loadQuestion() {
-      if (currentQIndex >= questions.length) {
-        document.getElementById('question-panel').innerHTML = '<h2>🏁 Race Finished! Check leaderboard.</h2>';
+      raceId = (codeInput.value || '').trim().toUpperCase();
+      playerName = (nameInput.value || '').trim();
+      
+      // Validation
+      if (!raceId || raceId.length < 6) {
+        showError(errorEl, 'Enter a valid 8-character Race Code');
         return;
       }
-      const q = questions[currentQIndex];
-      document.getElementById('q-text').textContent = `Q${currentQIndex+1}/${questions.length}: ${q.question}`;
-      const optsDiv = document.getElementById('options');
-      optsDiv.innerHTML = '';
-      q.options.forEach((opt, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'opt-btn';
-        btn.textContent = opt;
-        btn.onclick = () => submitAnswer(i, btn);
-        optsDiv.appendChild(btn);
-      });
-    }
-
-    function submitAnswer(idx, btn) {
-      document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
-      document.getElementById('status').textContent = 'Validating...';
+      if (!playerName || playerName.length < 2) {
+        showError(errorEl, 'Enter your name (min 2 characters)');
+        return;
+      }
       
+      // Disable UI
+      btn.disabled = true;
+      btn.textContent = 'Joining...';
+      errorEl.style.display = 'none';
+      
+      // Generate unique player ID
+      playerId = raceId + '_' + playerName.replace(/\s+/g, '_').toLowerCase() + '_' + Date.now().toString(36);
+      playerColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+      
+      // Fetch questions from GAS backend
       fetch(GAS_URL, {
-        method: 'POST', body: JSON.stringify({
-          action: 'validateRaceAnswer', raceId, playerId,
-          questionId: questions[currentQIndex].id, answer: questions[currentQIndex].options[idx]
-        })
-      }).then(r => r.json()).then(res => {
-        if (res.status === 'success') {
-          btn.classList.add(res.isCorrect ? 'correct' : 'wrong');
-          updateFirebaseProgress(res);
-          currentQIndex++;
-          setTimeout(loadQuestion, 800);
-        } else {
-          alert(res.message);
-          document.querySelectorAll('.opt-btn').forEach(b => b.disabled = false);
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'getRaceQuestions', raceId: raceId })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(result) {
+        if (result.status !== 'success') {
+          showError(errorEl, result.message || 'Failed to load questions');
+          btn.disabled = false;
+          btn.textContent = 'Join Race';
+          return;
         }
-        document.getElementById('status').textContent = '';
+        
+        // Success — switch to game view
+        questions = result.data;
+        totalQuestions = questions.length;
+        
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('game').style.display = 'block';
+        document.getElementById('gameTitle').textContent = 'Race: ' + raceId;
+        
+        // Register player in Firebase
+        registerPlayer();
+        
+        // Start listening to live updates
+        initRealtimeSync();
+        
+        // Load first question
+        loadQuestion();
+      })
+      .catch(function(err) {
+        console.error('Join error:', err);
+        showError(errorEl, 'Connection error — check your internet');
+        btn.disabled = false;
+        btn.textContent = 'Join Race';
       });
     }
-
-    function updateFirebaseProgress(data) {
-      db.ref(`races/${raceId}/players/${playerId}`).update({
-        name: playerName, color: playerColor, progress: data.progress,
-        correct: data.correctCount, finished: data.finished,
-        finishTime: data.finishTime || firebase.database.ServerValue.TIMESTAMP,
+    
+    function showError(el, msg) {
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+    
+    function registerPlayer() {
+      db.ref('race/players/' + playerId).set({
+        name: playerName,
+        color: playerColor,
+        progress: 0,
+        correct: 0,
+        finished: false,
+        finishTime: null,
+        joinedAt: firebase.database.ServerValue.TIMESTAMP,
         updatedAt: firebase.database.ServerValue.TIMESTAMP
       });
     }
-
+    
     function initRealtimeSync() {
-      raceUnsub = db.ref(`races/${raceId}/players`).orderByChild('updatedAt').on('value', snap => {
-        const players = snap.val() || {};
-        renderTrack(players);
+      // Sync clock offset to Firebase server time
+      db.ref('.info/serverTimeOffset').on('value', function(snapshot) {
+        clockOffset = snapshot.val() || 0;
       });
-    }
-
-    function renderTrack(players) {
-      const track = document.getElementById('track');
-      track.innerHTML = '<div class="finish-line"></div>';
-      const sorted = Object.values(players).sort((a,b) => b.progress - a.progress || a.finishTime - b.finishTime);
       
-      sorted.forEach(p => {
-        const pos = Math.min(p.progress * 85, 85);
-        const lane = document.createElement('div');
-        lane.className = 'lane';
-        lane.innerHTML = `
-          <span class="player-name" style="color:${p.color}">${p.name}</span>
-          <div class="stickman ${p.finished ? 'finished' : 'running'}" style="left:${pos}%; color:${p.color}">
-            <div class="head"></div><div class="body"></div><div class="legs"></div>
-          </div>`;
-        track.appendChild(lane);
+      // Listen to all players for live stickman sync
+      raceUnsub = db.ref('race/players').orderByChild('updatedAt').on('value', function(snapshot) {
+        var players = snapshot.val() || {};
+        renderTrack(players);
+        renderLeaderboard(players);
       });
     }
-
-    window.addEventListener('beforeunload', () => { if(raceUnsub) raceUnsub(); });
+    
+    function loadQuestion() {
+      var questionCard = document.getElementById('questionCard');
+      var questionText = document.getElementById('questionText');
+      var answerArea = document.getElementById('answerArea');
+      
+      // Check if race is finished
+      if (currentQIndex >= totalQuestions) {
+        questionCard.innerHTML = '<div class="text-center"><h3>✅ Race Complete!</h3><p class="mt-2">Check the leaderboard for final results.</p></div>';
+        return;
+      }
+      
+      var q = questions[currentQIndex];
+      questionText.textContent = 'Q' + (currentQIndex + 1) + '/' + totalQuestions + ': ' + q.question;
+      answerArea.innerHTML = '';
+      
+      // Render answer options based on question type
+      if (q.type === 'MCQ' || q.type === 'TF') {
+        answerArea.className = 'options';
+        var opts = q.options || [];
+        opts.forEach(function(opt, i) {
+          var btn = document.createElement('button');
+          btn.className = 'opt-btn';
+          btn.textContent = opt;
+          btn.onclick = (function(index, option) {
+            return function() { submitAnswer(option, btn); };
+          })(i, opt);
+          answerArea.appendChild(btn);
+        });
+      } else if (q.type === 'SHORT') {
+        answerArea.className = '';
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'short-input';
+        input.id = 'shortAnswer';
+        input.placeholder = 'Type your answer...';
+        input.maxLength = 100;
+        
+        var submitBtn = document.createElement('button');
+        submitBtn.className = 'submit-btn';
+        submitBtn.textContent = 'Submit Answer';
+        submitBtn.onclick = function() {
+          var val = input.value.trim();
+          if (!val) { alert('Please enter an answer'); return; }
+          submitAnswer(val, null);
+        };
+        
+        // Allow Enter key to submit
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') submitBtn.click();
+        });
+        
+        answerArea.appendChild(input);
+        answerArea.appendChild(submitBtn);
+        input.focus();
+      }
+    }
+    
+    function submitAnswer(answer, btnEl) {
+      // Disable inputs
+      var inputs = document.querySelectorAll('#answerArea button, #answerArea input');
+      for (var i = 0; i < inputs.length; i++) inputs[i].disabled = true;
+      
+      var statusEl = document.getElementById('gameStatus');
+      statusEl.textContent = 'Validating...';
+      
+      // Submit to GAS for server-side validation
+      fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'validateRaceAnswer',
+          raceId: raceId,
+          playerId: playerId,
+          questionId: questions[currentQIndex].id,
+          answer: answer
+        })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(result) {
+        if (result.status !== 'success') {
+          alert(result.message || 'Validation failed');
+          for (var i = 0; i < inputs.length; i++) inputs[i].disabled = false;
+          statusEl.textContent = 'Answer questions to move forward!';
+          return;
+        }
+        
+        var data = result.data;
+        
+        // Visual feedback
+        if (btnEl) {
+          btnEl.classList.add(data.isCorrect ? 'correct' : 'wrong');
+        }
+        
+        // Show score popup
+        if (data.isCorrect) {
+          showPopup('+' + data.correctCount + ' ✓', '#22c55e');
+        } else {
+          showPopup('✗ Keep going!', '#ef4444');
+        }
+        
+        // Update local state
+        if (data.isCorrect) correctCount++;
+        
+        // Update Firebase with new progress
+        updateFirebaseProgress(data);
+        
+        // Move to next question after delay
+        currentQIndex++;
+        setTimeout(function() {
+          statusEl.textContent = 'Answer questions to move forward!';
+          loadQuestion();
+        }, 1000);
+      })
+      .catch(function(err) {
+        console.error('Submit error:', err);
+        alert('Submission failed — check connection');
+        for (var i = 0; i < inputs.length; i++) inputs[i].disabled = false;
+        statusEl.textContent = 'Answer questions to move forward!';
+      });
+    }
+    
+    function updateFirebaseProgress(data) {
+      db.ref('race/players/' + playerId).update({
+        progress: data.progress,
+        correct: data.correctCount,
+        finished: data.finished,
+        finishTime: data.finished ? firebase.database.ServerValue.TIMESTAMP : null,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+    
+    function showPopup(text, color) {
+      var popup = document.getElementById('scorePopup');
+      popup.textContent = text;
+      popup.style.color = color;
+      popup.classList.remove('hidden');
+      
+      // Auto-hide after animation
+      setTimeout(function() {
+        popup.classList.add('hidden');
+      }, 1200);
+    }
+    
+    function renderTrack(players) {
+      var track = document.getElementById('track');
+      // Keep finish line
+      track.innerHTML = '<div class="finish-line"></div>';
+      
+      // Sort players by progress (descending), then by finish time
+      var playerList = [];
+      for (var id in players) {
+        if (players.hasOwnProperty(id)) playerList.push(players[id]);
+      }
+      playerList.sort(function(a, b) {
+        if (b.progress !== a.progress) return b.progress - a.progress;
+        if (a.finished && !b.finished) return 1;
+        if (!a.finished && b.finished) return -1;
+        return (a.finishTime || Infinity) - (b.finishTime || Infinity);
+      });
+      
+      // Render each player's lane
+      for (var i = 0; i < playerList.length; i++) {
+        var p = playerList[i];
+        // Cap visual position at 90% to keep stickman visible before finish
+        var posPercent = Math.min(p.progress * 90, 90);
+        
+        var lane = document.createElement('div');
+        lane.className = 'lane';
+        
+        lane.innerHTML = 
+          '<span class="player-name" style="color:' + p.color + '">' + escapeHtml(p.name) + '</span>' +
+          '<div class="stickman ' + (p.finished ? 'finished' : 'running') + '" ' +
+          'style="left:calc(5px + ' + posPercent + '%); color:' + p.color + '">' +
+            '<div class="head"></div><div class="body"></div><div class="legs"></div>' +
+          '</div>';
+        
+        track.appendChild(lane);
+      }
+    }
+    
+    function renderLeaderboard(players) {
+      var list = document.getElementById('lbList');
+      list.innerHTML = '';
+      
+      // Sort by score/progress for leaderboard
+      var playerList = [];
+      for (var id in players) {
+        if (players.hasOwnProperty(id)) playerList.push(players[id]);
+      }
+      playerList.sort(function(a, b) {
+        if (b.correct !== a.correct) return b.correct - a.correct;
+        if (b.progress !== a.progress) return b.progress - a.progress;
+        return (a.finishTime || Infinity) - (b.finishTime || Infinity);
+      });
+      
+      // Show top 10
+      var topPlayers = playerList.slice(0, 10);
+      
+      for (var i = 0; i < topPlayers.length; i++) {
+        var p = topPlayers[i];
+        var row = document.createElement('div');
+        row.className = 'lb-row';
+        row.style.animationDelay = (i * 0.04) + 's';
+        
+        var progressPct = Math.round(p.progress * 100);
+        var statusText = p.finished ? '🏁 Done' : (progressPct === 0 ? '⏳' : '🏃 ' + progressPct + '%');
+        
+        row.innerHTML = 
+          '<div class="lb-rank">' + (i + 1) + '</div>' +
+          '<div class="lb-name">' + escapeHtml(p.name) + '</div>' +
+          '<div class="lb-stats">' +
+            '<div class="lb-score">' + p.correct + '/' + totalQuestions + '</div>' +
+            '<div class="lb-progress">' + statusText + '</div>' +
+          '</div>';
+        
+        list.appendChild(row);
+      }
+    }
+    
+    // Simple HTML escape to prevent XSS
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+      if (raceUnsub) raceUnsub();
+    });
+    
+    // Allow Enter key on race code input
+    document.addEventListener('DOMContentLoaded', function() {
+      var codeInput = document.getElementById('raceCode');
+      if (codeInput) {
+        codeInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') joinRace();
+        });
+      }
+    });
   </script>
 </body>
 </html>
