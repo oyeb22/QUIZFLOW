@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Exam Race</title>
+  <style>
+    :root { --bg: #0f172a; --panel: #1e293b; --track: #334155; --text: #f8fafc; --accent: #3b82f6; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+    h1, h2 { margin: 0 0 10px; text-align: center; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .panel { background: var(--panel); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    
+    #login { text-align: center; padding: 40px 20px; }
+    input { padding: 12px; border: 2px solid var(--accent); background: var(--bg); color: var(--text); border-radius: 8px; font-size: 16px; width: 250px; margin: 5px; }
+    button { padding: 12px 24px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 5px; transition: 0.2s; }
+    button:hover { background: #2563eb; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .track-container { background: var(--bg); border-radius: 10px; padding: 15px; overflow-x: hidden; position: relative; }
+    .finish-line { position: absolute; right: 30px; top: 0; bottom: 0; width: 6px; background: repeating-linear-gradient(45deg, #fbbf24, #fbbf24 8px, transparent 8px, transparent 16px); border-radius: 3px; }
+    
+    .lane { display: flex; align-items: center; height: 50px; border-bottom: 1px dashed #475569; position: relative; padding-left: 10px; }
+    .stickman { position: absolute; left: 0; transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; flex-direction: column; align-items: center; }
+    .head { width: 12px; height: 12px; border-radius: 50%; background: currentColor; }
+    .body { width: 3px; height: 16px; background: currentColor; margin-top: 2px; }
+    .legs { width: 18px; height: 10px; border-top: 3px solid currentColor; border-radius: 0 0 9px 9px; margin-top: 2px; }
+    .running .legs { animation: run 0.4s infinite alternate; }
+    @keyframes run { 0% { transform: scaleX(1); } 100% { transform: scaleX(0.7); } }
+    .finished .legs { animation: none; border-top-style: solid; transform: rotate(5deg); }
+    
+    .player-name { position: absolute; left: 0; font-size: 12px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+    
+    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .opt-btn { padding: 14px; background: #334155; color: white; border: 2px solid #475569; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.2s; }
+    .opt-btn:hover { border-color: var(--accent); background: #475569; }
+    .opt-btn.correct { background: #22c55e; border-color: #16a34a; }
+    .opt-btn.wrong { background: #ef4444; border-color: #dc2626; }
+    
+    .timer { font-size: 28px; font-weight: bold; color: #f59e0b; text-align: center; margin: 10px 0; font-variant-numeric: tabular-nums; }
+    .status { text-align: center; color: #94a3b8; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="login" class="panel">
+      <h1>🏁 Live Exam Race</h1>
+      <input type="text" id="raceCode" placeholder="Enter Race Code" maxlength="12" style="text-transform:uppercase">
+      <input type="text" id="playerName" placeholder="Your Name" maxlength="15">
+      <br>
+      <button onclick="joinRace()">Join Race</button>
+    </div>
+
+    <div id="race" style="display:none">
+      <div class="timer" id="timer">00:00</div>
+      <div class="status" id="status">Waiting for start...</div>
+      <div class="panel track-container" id="track">
+        <div class="finish-line"></div>
+      </div>
+      <div class="panel" id="question-panel">
+        <h2 id="q-text">Loading...</h2>
+        <div class="options" id="options"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script>
+    // 🔧 REPLACE WITH YOUR FIREBASE CONFIG
+    const firebaseConfig = {apiKey: "AIzaSyDpKPol5g5iZQpi6zw5aODpNH4MzejOBfw",
+  authDomain: "examrace-31854.firebaseapp.com",
+  projectId: "examrace-31854",
+  storageBucket: "examrace-31854.firebasestorage.app",
+  messagingSenderId: "698483423316",
+  appId: "1:698483423316:web:d5dd780bb186d8253115c1"};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyUCIk-T2ntKdnEiQ4AweTA8VsBwIY_SU6d3kct6gfnF8lq1ET67IQp1IG6P1lJB15q/exec"; // Paste your deployed Apps Script URL here
+    let raceId, playerId, playerName, playerColor;
+    let currentQIndex = 0, questions = [], startTime, timerInterval;
+    let raceUnsub = null;
+
+    function joinRace() {
+      raceId = document.getElementById('raceCode').value.trim().toUpperCase();
+      playerName = document.getElementById('playerName').value.trim() || "Student";
+      if (!raceId) return alert("Enter a race code");
+      playerId = raceId + '_' + playerName.replace(/\s/g,'_') + '_' + Date.now().toString(36);
+      playerColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('race').style.display = 'block';
+      
+      // Fetch questions securely from GAS
+      fetch(GAS_URL, {
+        method: 'POST', body: JSON.stringify({ action: 'getRaceQuestions', raceId: raceId })
+      }).then(r => r.json()).then(res => {
+        if (res.status !== 'success') return alert(res.message);
+        questions = res.data;
+        startTime = Date.now();
+        startTimer();
+        loadQuestion();
+        initRealtimeSync();
+      });
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        const s = Math.floor((Date.now() - startTime) / 1000);
+        const m = Math.floor(s / 60).toString().padStart(2, '0');
+        const sec = (s % 60).toString().padStart(2, '0');
+        document.getElementById('timer').textContent = `${m}:${sec}`;
+      }, 1000);
+    }
+
+    function loadQuestion() {
+      if (currentQIndex >= questions.length) {
+        document.getElementById('question-panel').innerHTML = '<h2>🏁 Race Finished! Check leaderboard.</h2>';
+        return;
+      }
+      const q = questions[currentQIndex];
+      document.getElementById('q-text').textContent = `Q${currentQIndex+1}/${questions.length}: ${q.question}`;
+      const optsDiv = document.getElementById('options');
+      optsDiv.innerHTML = '';
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.textContent = opt;
+        btn.onclick = () => submitAnswer(i, btn);
+        optsDiv.appendChild(btn);
+      });
+    }
+
+    function submitAnswer(idx, btn) {
+      document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+      document.getElementById('status').textContent = 'Validating...';
+      
+      fetch(GAS_URL, {
+        method: 'POST', body: JSON.stringify({
+          action: 'validateRaceAnswer', raceId, playerId,
+          questionId: questions[currentQIndex].id, answer: questions[currentQIndex].options[idx]
+        })
+      }).then(r => r.json()).then(res => {
+        if (res.status === 'success') {
+          btn.classList.add(res.isCorrect ? 'correct' : 'wrong');
+          updateFirebaseProgress(res);
+          currentQIndex++;
+          setTimeout(loadQuestion, 800);
+        } else {
+          alert(res.message);
+          document.querySelectorAll('.opt-btn').forEach(b => b.disabled = false);
+        }
+        document.getElementById('status').textContent = '';
+      });
+    }
+
+    function updateFirebaseProgress(data) {
+      db.ref(`races/${raceId}/players/${playerId}`).update({
+        name: playerName, color: playerColor, progress: data.progress,
+        correct: data.correctCount, finished: data.finished,
+        finishTime: data.finishTime || firebase.database.ServerValue.TIMESTAMP,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+
+    function initRealtimeSync() {
+      raceUnsub = db.ref(`races/${raceId}/players`).orderByChild('updatedAt').on('value', snap => {
+        const players = snap.val() || {};
+        renderTrack(players);
+      });
+    }
+
+    function renderTrack(players) {
+      const track = document.getElementById('track');
+      track.innerHTML = '<div class="finish-line"></div>';
+      const sorted = Object.values(players).sort((a,b) => b.progress - a.progress || a.finishTime - b.finishTime);
+      
+      sorted.forEach(p => {
+        const pos = Math.min(p.progress * 85, 85);
+        const lane = document.createElement('div');
+        lane.className = 'lane';
+        lane.innerHTML = `
+          <span class="player-name" style="color:${p.color}">${p.name}</span>
+          <div class="stickman ${p.finished ? 'finished' : 'running'}" style="left:${pos}%; color:${p.color}">
+            <div class="head"></div><div class="body"></div><div class="legs"></div>
+          </div>`;
+        track.appendChild(lane);
+      });
+    }
+
+    window.addEventListener('beforeunload', () => { if(raceUnsub) raceUnsub(); });
+  </script>
+</body>
+</html>
