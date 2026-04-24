@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuizFlow Pro — Kahoot Quiz</title>
@@ -17,592 +16,380 @@
       min-height: 100vh; padding: 20px; display: flex; align-items: center; justify-content: center;
     }
     .container { max-width: 900px; width: 100%; }
-    
-    /* Login Panel */
     #login { text-align: center; padding: 40px 20px; }
-    #login h1 { font-size: 28px; margin-bottom: 24px; color: var(--accent); }
+    #login h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
+    #login .subtitle { color: #94a3b8; margin-bottom: 24px; font-size: 14px; }
     #login input {
       padding: 14px; border: 2px solid var(--accent); background: var(--panel);
-      color: var(--text); border-radius: 10px; font-size: 16px; width: 250px; margin: 8px;
+      color: var(--text); border-radius: 10px; font-size: 16px; width: 280px;
+      display: block; margin: 8px auto; outline: none; font-family: var(--font);
     }
-    #login button {
-      padding: 14px 32px; background: var(--accent); color: white; border: none;
-      border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin: 8px;
-      transition: transform 0.15s, background 0.15s;
+    #login input:focus { border-color: #a78bfa; }
+    #joinBtn {
+      padding: 14px 36px; background: var(--accent); color: white; border: none;
+      border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 12px;
+      transition: transform 0.15s, background 0.15s; font-family: var(--font); display: inline-block;
     }
-    #login button:hover { background: #7c3aed; transform: translateY(-2px); }
-    #login button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    
-    /* Game Panel */
+    #joinBtn:hover { background: #7c3aed; transform: translateY(-2px); }
+    #joinBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .hint { font-size: 12px; color: #64748b; margin-top: 10px; }
+    .error-msg { color: var(--danger); margin-top: 12px; font-size: 14px; min-height: 18px; }
+    #fatal-error { display:none; text-align:center; padding:40px 20px; }
+    #fatal-error h2 { color:var(--danger); font-size:22px; margin-bottom:12px; }
+    #fatal-error p { color:#94a3b8; font-size:14px; line-height:1.6; }
     #game { display: none; }
-    .header { text-align: center; margin-bottom: 20px; }
-    .header h2 { font-size: 22px; margin-bottom: 8px; }
-    .header .status { color: var(--txt2); font-size: 14px; }
-    
-    /* Timer */
-    .timer-bar { width: 100%; height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; margin: 12px 0; }
-    .timer-fill { height: 100%; background: var(--accent); width: 100%; transition: width 0.1s linear; }
-    .timer-text { font-size: 32px; font-weight: 800; color: var(--gold); text-align: center; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
-    
-    /* Question Area */
-    .question-card {
-      background: var(--panel); border-radius: 12px; padding: 24px;
-      border: 1px solid var(--track); margin-bottom: 20px;
-    }
-    .question-text { font-size: 20px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; text-align: center; }
-    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .opt-btn {
-      padding: 16px; background: var(--track); color: var(--text); border: 2px solid transparent;
-      border-radius: 10px; cursor: pointer; font-size: 16px; text-align: left;
-      transition: border-color 0.15s, background 0.15s, transform 0.1s;
-    }
-    .opt-btn:hover { border-color: var(--accent); background: #334155; transform: translateY(-1px); }
-    .opt-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    .opt-btn.correct { background: var(--success); border-color: #16a34a; animation: pulse 0.3s; }
-    .opt-btn.wrong { background: var(--danger); border-color: #dc2626; animation: shake 0.3s; }
-    
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-    
-    .short-input {
-      width: 100%; padding: 14px; background: var(--track); border: 2px solid var(--track);
-      border-radius: 10px; color: var(--text); font-size: 16px; margin-bottom: 12px;
-    }
-    .short-input:focus { outline: none; border-color: var(--accent); }
-    
-    .submit-btn {
-      width: 100%; padding: 14px; background: var(--accent); color: white; border: none;
-      border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
-      transition: background 0.15s;
-    }
-    .submit-btn:hover { background: #7c3aed; }
-    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    
-    /* Score Popup */
-    .score-popup {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      font-size: 36px; font-weight: 900; pointer-events: none; z-index: 100;
-      animation: popUp 1s forwards; text-shadow: 0 2px 12px rgba(0,0,0,0.6);
-    }
-    @keyframes popUp {
-      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-      100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
-    }
-    
-    /* Leaderboard */
-    .leaderboard {
-      background: var(--panel); border-radius: 12px; padding: 20px;
-      border: 1px solid var(--track);
-    }
+    .game-status { color: #94a3b8; font-size: 14px; text-align: center; margin-bottom: 12px; }
+    .timer-text { font-size: 32px; font-weight: 800; color: var(--gold); text-align: center; margin-bottom: 8px; }
+    .timer-bar { width: 100%; height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; margin-bottom: 16px; }
+    .timer-fill { height: 100%; background: var(--success); width: 100%; transition: background 0.5s; }
+    .leaderboard { background: var(--panel); border-radius: 12px; padding: 20px; border: 1px solid var(--track); margin-bottom: 20px; }
     .lb-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; text-align: center; }
-    .lb-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
-    .lb-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 16px; background: var(--track); border-radius: 10px;
-      animation: slideIn 0.3s ease backwards;
+    .lb-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+    .lb-row { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--track); border-radius:10px; }
+    .lb-row:nth-child(1) { background:linear-gradient(90deg,rgba(245,158,11,.25),transparent); border:1px solid var(--gold); }
+    .lb-row:nth-child(2) { background:linear-gradient(90deg,rgba(156,163,175,.25),transparent); }
+    .lb-row:nth-child(3) { background:linear-gradient(90deg,rgba(234,179,8,.2),transparent); }
+    .lb-rank { font-weight:700; width:28px; text-align:center; }
+    .lb-name { flex:1; font-size:14px; margin-left:10px; }
+    .lb-score { font-weight:700; color:var(--success); font-size:13px; }
+    .lb-streak { color:var(--gold); font-size:12px; }
+    .question-card { background:var(--panel); border-radius:12px; padding:24px; border:1px solid var(--track); margin-bottom:20px; }
+    .question-text { font-size:20px; font-weight:600; margin-bottom:20px; line-height:1.4; text-align:center; }
+    .options { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .opt-btn {
+      padding:16px; background:var(--track); color:var(--text); border:2px solid transparent;
+      border-radius:10px; cursor:pointer; font-size:15px; text-align:left;
+      transition:border-color .15s,background .15s; font-family:var(--font);
     }
-    .lb-row:nth-child(1) { background: linear-gradient(90deg, rgba(245,158,11,0.25), transparent); border: 1px solid var(--gold); }
-    .lb-row:nth-child(2) { background: linear-gradient(90deg, rgba(156,163,175,0.25), transparent); }
-    .lb-row:nth-child(3) { background: linear-gradient(90deg, rgba(234,179,8,0.2), transparent); }
-    @keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
-    .lb-rank { font-weight: 700; width: 28px; text-align: center; }
-    .lb-name { flex: 1; font-size: 14px; margin-left: 12px; }
-    .lb-stats { text-align: right; font-size: 13px; }
-    .lb-score { font-weight: 700; color: var(--success); }
-    .lb-streak { color: var(--gold); font-size: 12px; }
-    
-    /* Utilities */
-    .hidden { display: none !important; }
-    .text-center { text-align: center; }
-    .mt-2 { margin-top: 16px; }
-    .mb-2 { margin-bottom: 16px; }
-    
-    @media (max-width: 600px) {
-      .options { grid-template-columns: 1fr; }
-      #login input { width: 100%; max-width: 280px; }
-      .timer-text { font-size: 28px; }
-      .question-text { font-size: 18px; }
-    }
+    .opt-btn:hover:not(:disabled) { border-color:var(--accent); }
+    .opt-btn:disabled { opacity:.6; cursor:not-allowed; }
+    .opt-btn.correct { background:var(--success); border-color:#16a34a; }
+    .opt-btn.wrong   { background:var(--danger);  border-color:#dc2626; }
+    .short-input { width:100%; padding:14px; background:var(--track); border:2px solid var(--track); border-radius:10px; color:var(--text); font-size:16px; margin-bottom:12px; font-family:var(--font); outline:none; }
+    .short-input:focus { border-color:var(--accent); }
+    .submit-btn { width:100%; padding:14px; background:var(--accent); color:white; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; font-family:var(--font); }
+    .submit-btn:hover:not(:disabled) { background:#7c3aed; }
+    .submit-btn:disabled { opacity:.5; cursor:not-allowed; }
+    .score-popup { position:fixed; top:38%; left:50%; transform:translateX(-50%); font-size:36px; font-weight:900; pointer-events:none; z-index:100; text-shadow:0 2px 12px rgba(0,0,0,.6); animation:popUp 1.1s ease forwards; }
+    @keyframes popUp { 0%{opacity:0;transform:translateX(-50%) scale(.5)} 20%{opacity:1;transform:translateX(-50%) scale(1.2)} 80%{opacity:1;transform:translateX(-50%) translateY(-16px) scale(1)} 100%{opacity:0;transform:translateX(-50%) translateY(-36px) scale(.9)} }
+    @media(max-width:600px){ .options{grid-template-columns:1fr} #login input{width:100%;max-width:300px} }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Login Panel -->
-    <div id="login">
-      <h1>🎯 Kahoot Quiz</h1>
-      <p style="color: var(--txt2); margin-bottom: 20px;">Enter room code and your name to join</p>
-      <input type="text" id="sessionId" placeholder="Room Code (8 chars)" maxlength="8" style="text-transform:uppercase">
-      <br>
-      <input type="text" id="playerName" placeholder="Your Name" maxlength="15">
-      <br>
-      <button id="joinBtn" onclick="joinGame()">Join Quiz</button>
-      <p id="joinError" style="color: var(--danger); margin-top: 12px; display: none;"></p>
-    </div>
+<div class="container">
 
-    <!-- Game Panel -->
-    <div id="game">
-      <div class="header">
-        <h2 id="gameTitle">Quiz in Progress</h2>
-        <div class="status" id="gameStatus">Answer fast for bonus points!</div>
-      </div>
-      
-      <!-- Timer -->
-      <div class="timer-text" id="timer">20</div>
-      <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
-      
-      <!-- Leaderboard -->
-      <div class="leaderboard mb-2">
-        <div class="lb-title">🏆 Live Leaderboard</div>
-        <div class="lb-list" id="lbList"></div>
-      </div>
-      
-      <!-- Question -->
-      <div class="question-card" id="questionCard">
-        <div class="question-text" id="questionText">Loading question...</div>
-        <div id="answerArea"></div>
-      </div>
-      
-      <!-- Score Popup -->
-      <div class="score-popup hidden" id="scorePopup"></div>
+  <div id="fatal-error">
+    <h2>⚠️ Cannot Start</h2>
+    <p id="fatal-msg">Please open this page using the link your teacher provided.</p>
+  </div>
+
+  <div id="login">
+    <h1>🎯 Kahoot Quiz</h1>
+    <p class="subtitle">Enter room code and your name to join</p>
+    <input type="text" id="inp-code" placeholder="Room Code (e.g. KHABCDE1)"
+           maxlength="8" autocomplete="off" spellcheck="false"
+           style="text-transform:uppercase;letter-spacing:3px;font-family:monospace;">
+    <input type="text" id="inp-name" placeholder="Your Name" maxlength="20" autocomplete="off">
+    <br>
+    <button id="joinBtn">Join Quiz 🎯</button>
+    <p class="hint">Get the room code from your teacher's screen</p>
+    <p id="joinError" class="error-msg"></p>
+  </div>
+
+  <div id="game">
+    <div style="text-align:center;margin-bottom:20px;">
+      <h2 id="gameTitle" style="font-size:22px;margin-bottom:4px;">Quiz in Progress</h2>
+    </div>
+    <div class="game-status" id="gameStatus">Answer fast for bonus points!</div>
+    <div class="timer-text" id="timer">--</div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+    <div class="leaderboard">
+      <div class="lb-title">🏆 Live Leaderboard</div>
+      <div class="lb-list" id="lbList"></div>
+    </div>
+    <div class="question-card" id="questionCard">
+      <div class="question-text" id="questionText">Loading...</div>
+      <div id="answerArea"></div>
     </div>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-  
-  <script>
-    // ═══════════════════════════════════════════════════════════
-    // CONFIGURATION — EDIT THESE VALUES
-    // ═══════════════════════════════════════════════════════════
-    
-    // 🔧 PASTE YOUR FIREBASE CONFIG HERE (from Firebase Console → Project Settings → Web App)
-    const firebaseConfig = {
-      const firebaseConfig = {
-  apiKey: "AIzaSyCLfySFzCpbz3CBX1bjha5KxvA0MrJExIc",
-  authDomain: "kahoot-24063.firebaseapp.com",
-  databaseURL: "https://kahoot-24063-default-rtdb.firebaseio.com",
-  projectId: "kahoot-24063",
-  storageBucket: "kahoot-24063.firebasestorage.app",
-  messagingSenderId: "962917873467",
-  appId: "1:962917873467:web:a6b526aee30cd15c92291e"
+</div>
+
+<!-- Firebase MUST load before our script -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<script>
+/* ──────────────────────────────────────────────────────────────
+   Everything inside an IIFE so one error can't kill joinGame.
+   Functions are NOT attached via onclick="" — they use
+   addEventListener so they exist even if the HTML is parsed
+   before the script runs.
+────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  /* 1 ── URL params */
+  var params     = new URLSearchParams(window.location.search);
+  var GAS_URL    = (params.get('script') || '').trim();
+  var presetRoom = (params.get('room')   || '').trim().toUpperCase();
+
+  /* 2 ── Fatal-error helper */
+  function fatal(msg) {
+    document.getElementById('login').style.display      = 'none';
+    document.getElementById('game').style.display       = 'none';
+    document.getElementById('fatal-error').style.display = 'block';
+    document.getElementById('fatal-msg').textContent    = msg;
+    console.error('[Kahoot]', msg);
+  }
+
+  /* 3 ── Need GAS URL */
+  if (!GAS_URL) {
+    // Show error after DOM ready
+    document.addEventListener('DOMContentLoaded', function () {
+      fatal('Missing ?script= URL. Please open this page using the link your teacher shared.');
+    });
+    return;
+  }
+
+  /* 4 ── Firebase init (guarded) */
+  var db;
+  try {
+    var cfg = {
+      apiKey:            'AIzaSyCLfySFzCpbz3CBX1bjha5KxvA0MrJExIc',
+      authDomain:        'kahoot-24063.firebaseapp.com',
+      databaseURL:       'https://kahoot-24063-default-rtdb.firebaseio.com',
+      projectId:         'kahoot-24063',
+      storageBucket:     'kahoot-24063.firebasestorage.app',
+      messagingSenderId: '962917873467',
+      appId:             '1:962917873467:web:a6b526aee30cd15c92291e'
     };
-    
-    // ═══════════════════════════════════════════════════════════
-    // INITIALIZATION
-    // ═══════════════════════════════════════════════════════════
-    
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    
-    // Read GAS Web App URL from URL parameter ?script=...
-    function getScriptUrl() {
-      var params = new URLSearchParams(window.location.search);
-      var url = params.get('script');
-      if (!url) {
-        console.warn('No ?script= parameter found. Using fallback URL.');
-        return 'https://script.google.com/macros/s/YOUR_DEPLOYED_ID/exec';
-      }
-      return url;
-    }
-    var GAS_URL = getScriptUrl();
-    
-    // Game state
-    var sessionId = '';
-    var playerId = '';
-    var playerName = '';
-    var playerColor = '';
-    var questions = [];
-    var currentQIndex = 0;
-    var streak = 0;
-    var totalQuestions = 0;
-    var timePerQ = 20;
-    var timerEnd = 0;
-    var clockOffset = 0; // For perfect timer sync
-    var rafId = null;
-    var gameUnsub = null;
-    
-    // ═══════════════════════════════════════════════════════════
-    // CORE FUNCTIONS
-    // ═══════════════════════════════════════════════════════════
-    
-    function joinGame() {
-      var codeInput = document.getElementById('sessionId');
-      var nameInput = document.getElementById('playerName');
-      var errorEl = document.getElementById('joinError');
-      var btn = document.getElementById('joinBtn');
-      
-      sessionId = (codeInput.value || '').trim().toUpperCase();
-      playerName = (nameInput.value || '').trim();
-      
-      // Validation
-      if (!sessionId || sessionId.length < 6) {
-        showError(errorEl, 'Enter a valid 8-character Room Code');
+    var app = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(cfg);
+    db = firebase.database(app);
+  } catch (e) {
+    document.addEventListener('DOMContentLoaded', function () {
+      fatal('Firebase error: ' + e.message);
+    });
+    return;
+  }
+
+  /* 5 ── State */
+  var sessionId = '', playerId = '', playerName = '', playerColor = '';
+  var questions = [], currentQIndex = 0, streak = 0, totalQuestions = 0;
+  var timePerQ = 20, timerEnd = 0, clockOffset = 0;
+  var rafId = null, gameUnsub = null, answered = false;
+
+  /* 6 ── DOM wiring (runs once DOM is ready) */
+  document.addEventListener('DOMContentLoaded', function () {
+
+    /* Pre-fill room code from URL ?room= */
+    if (presetRoom) document.getElementById('inp-code').value = presetRoom;
+
+    /* Enter-key shortcuts */
+    document.getElementById('inp-code').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') document.getElementById('inp-name').focus();
+    });
+    document.getElementById('inp-name').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') joinGame();
+    });
+
+    /* ← THIS is why "joinGame is not defined" happened:
+       the old file used onclick="joinGame()" in HTML, which
+       executes before the IIFE script tag runs.
+       Using addEventListener here guarantees the function exists. */
+    document.getElementById('joinBtn').addEventListener('click', joinGame);
+  });
+
+  /* 7 ── Join */
+  function joinGame() {
+    var codeEl  = document.getElementById('inp-code');
+    var nameEl  = document.getElementById('inp-name');
+    var errorEl = document.getElementById('joinError');
+    var btn     = document.getElementById('joinBtn');
+
+    sessionId  = (codeEl.value || '').trim().toUpperCase();
+    playerName = (nameEl.value || '').trim();
+    errorEl.textContent = '';
+
+    if (sessionId.length < 6) { errorEl.textContent = 'Enter a valid room code (6–8 characters)'; return; }
+    if (playerName.length < 2) { errorEl.textContent = 'Enter your name (at least 2 characters)'; return; }
+
+    btn.disabled = true; btn.textContent = 'Joining...';
+    playerId    = 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    playerColor = '#' + (Math.floor(Math.random() * 0x999999) + 0x444444).toString(16).slice(-6);
+
+    gasPost({ action: 'getKahootSession', sessionId: sessionId }, function (err, res) {
+      if (err || !res || res.status !== 'success') {
+        errorEl.textContent = (res && res.message) || 'Room not found. Check your code.';
+        btn.disabled = false; btn.textContent = 'Join Quiz 🎯';
         return;
       }
-      if (!playerName || playerName.length < 2) {
-        showError(errorEl, 'Enter your name (min 2 characters)');
+      questions      = res.data.questions  || [];
+      totalQuestions = res.data.totalQ     || questions.length;
+      timePerQ       = res.data.timePerQ   || 20;
+
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('game').style.display  = 'block';
+      document.getElementById('gameTitle').textContent = 'Quiz: ' + sessionId;
+
+      registerPlayer();
+      initSync();
+      setTimeout(loadQuestion, 600);
+    });
+  }
+
+  /* 8 ── Firebase */
+  function registerPlayer() {
+    db.ref('kahoot/' + sessionId + '/players/' + playerId).set({
+      name: playerName, color: playerColor,
+      score: 0, streak: 0, progress: 0, finished: false,
+      joinedAt: firebase.database.ServerValue.TIMESTAMP,
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+  }
+  function initSync() {
+    db.ref('.info/serverTimeOffset').on('value', function (s) { clockOffset = s.val() || 0; });
+    gameUnsub = db.ref('kahoot/' + sessionId + '/players').on('value', function (s) {
+      renderLeaderboard(s.val() || {});
+    });
+  }
+
+  /* 9 ── Question */
+  function loadQuestion() {
+    answered = false; stopTimer();
+    var card = document.getElementById('questionCard');
+    var qTxt = document.getElementById('questionText');
+    var area = document.getElementById('answerArea');
+    document.getElementById('gameStatus').textContent = 'Answer fast for bonus points!';
+
+    if (currentQIndex >= totalQuestions) {
+      card.innerHTML = '<div style="text-align:center"><h3 style="color:var(--success)">✅ Quiz Complete!</h3><p style="color:#94a3b8;margin-top:8px">Check the leaderboard for final results.</p></div>';
+      document.getElementById('timer').textContent = '🏁';
+      document.getElementById('timer-fill').style.width = '0';
+      return;
+    }
+
+    var q = questions[currentQIndex];
+    qTxt.textContent = 'Q' + (currentQIndex + 1) + '/' + totalQuestions + ': ' + q.question;
+    area.innerHTML   = '';
+
+    if (q.type === 'MCQ' || q.type === 'TF') {
+      area.className = 'options';
+      (q.options || []).forEach(function (opt) {
+        var b = document.createElement('button');
+        b.className   = 'opt-btn';
+        b.textContent = opt;
+        b.addEventListener('click', (function (o, el) {
+          return function () { if (!answered) submitAnswer(o, el); };
+        })(opt, b));
+        area.appendChild(b);
+      });
+    } else {
+      area.className = '';
+      var inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'short-input';
+      inp.placeholder = 'Type your answer...'; inp.maxLength = 120;
+      var sb  = document.createElement('button');
+      sb.className = 'submit-btn'; sb.textContent = 'Submit Answer';
+      sb.addEventListener('click', function () { if (!answered && inp.value.trim()) submitAnswer(inp.value.trim(), null); });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') sb.click(); });
+      area.appendChild(inp); area.appendChild(sb);
+      setTimeout(function () { inp.focus(); }, 80);
+    }
+    startTimer();
+  }
+
+  /* 10 ── Timer */
+  function startTimer() {
+    stopTimer();
+    timerEnd = Date.now() + timePerQ * 1000;
+    tick();
+  }
+  function stopTimer() { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
+  function tick() {
+    var rem   = Math.max(0, timerEnd - Date.now());
+    var sec   = Math.ceil(rem / 1000);
+    var ratio = rem / (timePerQ * 1000);
+    document.getElementById('timer').textContent      = sec < 10 ? '0' + sec : '' + sec;
+    document.getElementById('timer-fill').style.width = (ratio * 100) + '%';
+    document.getElementById('timer-fill').style.background =
+      ratio > 0.5 ? '#22c55e' : ratio > 0.25 ? '#f59e0b' : '#ef4444';
+    if (rem <= 0) {
+      if (!answered) { answered = true; disableInputs(); popup('⏰ Time\'s Up!', '#ef4444'); setTimeout(function () { currentQIndex++; loadQuestion(); }, 1800); }
+      return;
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  /* 11 ── Submit */
+  function submitAnswer(answer, btnEl) {
+    answered = true; stopTimer(); disableInputs();
+    document.getElementById('gameStatus').textContent = 'Checking...';
+    var tr = Math.max(0, (timerEnd - Date.now()) / 1000);
+
+    gasPost({ action: 'validateKahootAnswer', sessionId: sessionId, playerId: playerId,
+              qIndex: currentQIndex, answer: answer, timeRemaining: tr, currentStreak: streak },
+    function (err, res) {
+      if (err || !res || res.status !== 'success') {
+        popup('⚠️ Error', '#f59e0b');
+        setTimeout(function () { currentQIndex++; loadQuestion(); }, 1500);
         return;
       }
-      
-      // Disable UI
-      btn.disabled = true;
-      btn.textContent = 'Joining...';
-      errorEl.style.display = 'none';
-      
-      // Generate unique player ID
-      playerId = sessionId + '_' + playerName.replace(/\s+/g, '_').toLowerCase() + '_' + Date.now().toString(36);
-      playerColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-      
-      // Fetch questions from GAS backend
-      fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'createKahootSession', sessionId: sessionId })
-      })
-      .then(function(res) { return res.json(); })
-      .then(function(result) {
-        if (result.status !== 'success') {
-          showError(errorEl, result.message || 'Failed to load quiz');
-          btn.disabled = false;
-          btn.textContent = 'Join Quiz';
-          return;
-        }
-        
-        // Success — switch to game view
-        questions = result.data.questions;
-        totalQuestions = result.data.totalQ;
-        timePerQ = result.data.timePerQ;
-        
-        document.getElementById('login').style.display = 'none';
-        document.getElementById('game').style.display = 'block';
-        document.getElementById('gameTitle').textContent = 'Quiz: ' + sessionId;
-        
-        // Register player in Firebase
-        registerPlayer();
-        
-        // Start listening to live updates
-        initRealtimeSync();
-        
-        // Load first question after brief delay
-        setTimeout(loadQuestion, 1000);
-      })
-      .catch(function(err) {
-        console.error('Join error:', err);
-        showError(errorEl, 'Connection error — check your internet');
-        btn.disabled = false;
-        btn.textContent = 'Join Quiz';
-      });
-    }
-    
-    function showError(el, msg) {
-      el.textContent = msg;
-      el.style.display = 'block';
-    }
-    
-    function registerPlayer() {
-      db.ref('kahoot/' + sessionId + '/players/' + playerId).set({
-        name: playerName,
-        color: playerColor,
-        score: 0,
-        streak: 0,
-        progress: 0,
-        finished: false,
-        joinedAt: firebase.database.ServerValue.TIMESTAMP,
-        updatedAt: firebase.database.ServerValue.TIMESTAMP
-      });
-    }
-    
-    function initRealtimeSync() {
-      // Sync clock offset to Firebase server time for perfect timer sync
-      db.ref('.info/serverTimeOffset').on('value', function(snapshot) {
-        clockOffset = snapshot.val() || 0;
-      });
-      
-      // Listen to all players for live leaderboard sync
-      gameUnsub = db.ref('kahoot/' + sessionId + '/players').orderByChild('updatedAt').on('value', function(snapshot) {
-        var players = snapshot.val() || {};
-        renderLeaderboard(players);
-      });
-    }
-    
-    function loadQuestion() {
-      var questionCard = document.getElementById('questionCard');
-      var questionText = document.getElementById('questionText');
-      var answerArea = document.getElementById('answerArea');
-      
-      // Check if quiz is finished
-      if (currentQIndex >= totalQuestions) {
-        questionCard.innerHTML = '<div class="text-center"><h3>✅ Quiz Complete!</h3><p class="mt-2">Check the leaderboard for final results.</p></div>';
-        stopTimer();
-        return;
-      }
-      
-      var q = questions[currentQIndex];
-      questionText.textContent = 'Q' + (currentQIndex + 1) + '/' + totalQuestions + ': ' + q.question;
-      answerArea.innerHTML = '';
-      
-      // Render answer options based on question type
-      if (q.type === 'MCQ' || q.type === 'TF') {
-        answerArea.className = 'options';
-        var opts = q.options || [];
-        opts.forEach(function(opt, i) {
-          var btn = document.createElement('button');
-          btn.className = 'opt-btn';
-          btn.textContent = opt;
-          btn.onclick = (function(index, option) {
-            return function() { submitAnswer(option, btn); };
-          })(i, opt);
-          answerArea.appendChild(btn);
-        });
-      } else if (q.type === 'SHORT') {
-        answerArea.className = '';
-        var input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'short-input';
-        input.id = 'shortAnswer';
-        input.placeholder = 'Type your answer...';
-        input.maxLength = 100;
-        
-        var submitBtn = document.createElement('button');
-        submitBtn.className = 'submit-btn';
-        submitBtn.textContent = 'Submit Answer';
-        submitBtn.onclick = function() {
-          var val = input.value.trim();
-          if (!val) { alert('Please enter an answer'); return; }
-          submitAnswer(val, null);
-        };
-        
-        // Allow Enter key to submit
-        input.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') submitBtn.click();
-        });
-        
-        answerArea.appendChild(input);
-        answerArea.appendChild(submitBtn);
-        input.focus();
-      }
-      
-      // Start timer for this question
-      startTimer();
-    }
-    
-    function startTimer() {
-      stopTimer(); // Clear any existing timer
-      timerEnd = Date.now() + (timePerQ * 1000) + clockOffset;
-      updateTimerDisplay();
-    }
-    
-    function updateTimerDisplay() {
-      var now = Date.now() + clockOffset;
-      var rem = Math.max(0, timerEnd - now);
-      var sec = Math.ceil(rem / 1000);
-      
-      document.getElementById('timer').textContent = sec < 10 ? '0' + sec : sec;
-      document.getElementById('timer-fill').style.width = (rem / (timePerQ * 1000) * 100) + '%';
-      
-      // Color shift: green → yellow → red
-      if (sec > timePerQ * 0.6) {
-        document.getElementById('timer-fill').style.background = '#22c55e';
-      } else if (sec > timePerQ * 0.3) {
-        document.getElementById('timer-fill').style.background = '#f59e0b';
-      } else {
-        document.getElementById('timer-fill').style.background = '#ef4444';
-      }
-      
-      if (sec <= 0) {
-        stopTimer();
-        disableInputs();
-        showPopup('⏰ Time\'s Up!', '#ef4444');
-        setTimeout(showLeaderboard, 1500);
-        return;
-      }
-      rafId = requestAnimationFrame(updateTimerDisplay);
-    }
-    
-    function stopTimer() {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-        rafId = null;
-      }
-    }
-    
-    function submitAnswer(answer, btnEl) {
-      // Disable inputs
-      var inputs = document.querySelectorAll('#answerArea button, #answerArea input');
-      for (var i = 0; i < inputs.length; i++) inputs[i].disabled = true;
-      
-      var statusEl = document.getElementById('gameStatus');
-      statusEl.textContent = 'Validating...';
-      
-      // Calculate time remaining for speed bonus
-      var now = Date.now() + clockOffset;
-      var timeRemaining = Math.max(0, (timerEnd - now) / 1000);
-      
-      // Submit to GAS for server-side validation
-      fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'validateKahootAnswer',
-          sessionId: sessionId,
-          playerId: playerId,
-          qIndex: currentQIndex,
-          answer: answer,
-          timeRemaining: timeRemaining,
-          currentStreak: streak
-        })
-      })
-      .then(function(res) { return res.json(); })
-      .then(function(result) {
-        if (result.status !== 'success') {
-          alert(result.message || 'Validation failed');
-          for (var i = 0; i < inputs.length; i++) inputs[i].disabled = false;
-          statusEl.textContent = 'Answer fast for bonus points!';
-          return;
-        }
-        
-        var data = result.data;
-        
-        // Visual feedback
-        if (btnEl) {
-          btnEl.classList.add(data.isCorrect ? 'correct' : 'wrong');
-        }
-        
-        // Show score popup with animation
-        if (data.isCorrect) {
-          var popupText = '+' + data.pointsEarned;
-          if (data.streakBonus > 0) popupText += ' 🔥';
-          showPopup(popupText, '#22c55e');
-          streak = data.newStreak;
-        } else {
-          showPopup('✗ Streak Reset', '#ef4444');
-          streak = 0;
-        }
-        
-        // Update Firebase with new progress
-        updateFirebaseProgress(data);
-        
-        // Move to next question after delay
-        currentQIndex++;
-        setTimeout(function() {
-          statusEl.textContent = 'Answer fast for bonus points!';
-          loadQuestion();
-        }, 1500);
-      })
-      .catch(function(err) {
-        console.error('Submit error:', err);
-        alert('Submission failed — check connection');
-        for (var i = 0; i < inputs.length; i++) inputs[i].disabled = false;
-        statusEl.textContent = 'Answer fast for bonus points!';
-      });
-    }
-    
-    function updateFirebaseProgress(data) {
+      var d = res.data;
+      if (btnEl) btnEl.classList.add(d.isCorrect ? 'correct' : 'wrong');
+      if (d.isCorrect) {
+        streak = d.newStreak;
+        popup('+' + d.pointsEarned + (d.streakBonus > 0 ? '  🔥×' + d.newStreak : ''), '#22c55e');
+      } else { streak = 0; popup('✗ Wrong', '#ef4444'); }
       db.ref('kahoot/' + sessionId + '/players/' + playerId).update({
-        score: data.totalScore,
-        streak: data.newStreak,
-        progress: data.progress,
-        finished: data.progress >= 1,
+        score: d.totalScore || 0, streak: d.newStreak || 0, progress: d.progress || 0,
+        finished: (currentQIndex + 1) >= totalQuestions,
         updatedAt: firebase.database.ServerValue.TIMESTAMP
       });
-    }
-    
-    function showPopup(text, color) {
-      var popup = document.getElementById('scorePopup');
-      popup.textContent = text;
-      popup.style.color = color;
-      popup.classList.remove('hidden');
-      
-      // Auto-hide after animation completes
-      setTimeout(function() {
-        popup.classList.add('hidden');
-      }, 1200);
-    }
-    
-    function disableInputs() {
-      var inputs = document.querySelectorAll('#answerArea button, #answerArea input');
-      for (var i = 0; i < inputs.length; i++) inputs[i].disabled = true;
-    }
-    
-    function renderLeaderboard(players) {
-      var list = document.getElementById('lbList');
-      list.innerHTML = '';
-      
-      // Sort by score (descending), then by streak, then by finish time
-      var playerList = [];
-      for (var id in players) {
-        if (players.hasOwnProperty(id)) playerList.push(players[id]);
-      }
-      playerList.sort(function(a, b) {
-        if (b.score !== a.score) return b.score - a.score;
-        if (b.streak !== a.streak) return b.streak - a.streak;
-        return (a.finished && !b.finished) ? 1 : (!a.finished && b.finished) ? -1 : 0;
-      });
-      
-      // Show top 10 players
-      var topPlayers = playerList.slice(0, 10);
-      
-      for (var i = 0; i < topPlayers.length; i++) {
-        var p = topPlayers[i];
-        var row = document.createElement('div');
-        row.className = 'lb-row';
-        row.style.animationDelay = (i * 0.04) + 's';
-        
-        var statusText = p.finished ? '🏁 Done' : (p.streak > 2 ? '🔥 ' + p.streak : '');
-        
-        row.innerHTML = 
-          '<div class="lb-rank">' + (i + 1) + '</div>' +
-          '<div class="lb-name">' + escapeHtml(p.name) + '</div>' +
-          '<div class="lb-stats">' +
-            '<div class="lb-score">' + p.score + '</div>' +
-            (statusText ? '<div class="lb-streak">' + statusText + '</div>' : '') +
-          '</div>';
-        
-        list.appendChild(row);
-      }
-    }
-    
-    function showLeaderboard() {
-      stopTimer();
-      document.getElementById('questionCard').style.display = 'none';
-      document.getElementById('lbList').scrollTo(0, 0);
-      
-      // Auto-advance to next question after delay (simulated — in real app, host controls)
-      setTimeout(function() {
-        document.getElementById('questionCard').style.display = 'block';
-        loadQuestion();
-      }, 5000);
-    }
-    
-    // Simple HTML escape to prevent XSS
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-    
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', function() {
-      if (gameUnsub) gameUnsub();
-      stopTimer();
+      document.getElementById('gameStatus').textContent = d.isCorrect ? '✅ Correct!' : '❌ Wrong!';
+      setTimeout(function () { currentQIndex++; loadQuestion(); }, 1500);
     });
-    
-    // Allow Enter key on room code input
-    document.addEventListener('DOMContentLoaded', function() {
-      var codeInput = document.getElementById('sessionId');
-      if (codeInput) {
-        codeInput.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') joinGame();
-        });
-      }
-    });
-  </script>
+  }
+
+  /* 12 ── Helpers */
+  function disableInputs() {
+    var els = document.querySelectorAll('#answerArea button, #answerArea input');
+    for (var i = 0; i < els.length; i++) els[i].disabled = true;
+  }
+  function popup(text, color) {
+    var old = document.getElementById('_pop');
+    if (old) old.parentNode.removeChild(old);
+    var el = document.createElement('div');
+    el.id = '_pop'; el.className = 'score-popup';
+    el.style.color = color; el.textContent = text;
+    document.body.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1200);
+  }
+  function renderLeaderboard(players) {
+    var arr = [];
+    for (var id in players) { if (players.hasOwnProperty(id)) arr.push(players[id]); }
+    arr.sort(function (a, b) { return (b.score || 0) - (a.score || 0); });
+    var medals = ['🥇','🥈','🥉'];
+    document.getElementById('lbList').innerHTML = arr.length ? arr.slice(0, 10).map(function (p, i) {
+      return '<div class="lb-row">' +
+        '<div class="lb-rank">' + (medals[i] || (i + 1)) + '</div>' +
+        '<div class="lb-name">' + esc(p.name) + (p.finished ? ' 🏁' : '') + '</div>' +
+        '<div><div class="lb-score">' + (p.score || 0).toLocaleString() + ' pts</div>' +
+        (p.streak > 2 ? '<div class="lb-streak">🔥 ' + p.streak + '</div>' : '') + '</div>' +
+      '</div>';
+    }).join('') : '<div style="text-align:center;color:#64748b;padding:10px;font-size:13px">No players yet</div>';
+  }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function gasPost(body, cb) {
+    fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(d){ cb(null,d); })
+      .catch(function(e){ console.error('[gasPost]',e); cb(e,null); });
+  }
+
+  window.addEventListener('beforeunload', function () { if (gameUnsub) gameUnsub(); stopTimer(); });
+
+}()); // end IIFE
+</script>
 </body>
 </html>
