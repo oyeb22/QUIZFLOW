@@ -1,272 +1,608 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuizFlow Live Race</title>
+  <title>QuizFlow Pro — Kahoot Quiz</title>
   <style>
-    :root { --bg: #1a1a2e; --panel: #16213e; --accent: #e94560; --success: #0f3460; --gold: #f5c518; }
-    body { font-family: system-ui, sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
-    .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 800px; padding: 20px; box-sizing: border-box; animation: fadeSlide 0.4s ease; }
-    .screen.active { display: flex; }
-    @keyframes fadeSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    :root {
+      --bg: #0f172a; --panel: #1e293b; --track: #334155;
+      --text: #f8fafc; --accent: #8b5cf6; --success: #22c55e; --danger: #ef4444;
+      --gold: #f59e0b; --font: system-ui, -apple-system, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font); background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 20px; display: flex; align-items: center; justify-content: center;
+    }
+    .container { max-width: 900px; width: 100%; }
     
-    input, button { padding: 14px; border: none; border-radius: 10px; font-size: 16px; margin: 6px; }
-    input { background: #0f3460; color: #fff; width: 220px; }
-    button { background: var(--accent); color: #fff; cursor: pointer; font-weight: bold; transition: 0.2s; }
-    button:hover { transform: scale(1.03); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    /* Login Panel */
+    #login { text-align: center; padding: 40px 20px; }
+    #login h1 { font-size: 28px; margin-bottom: 24px; color: var(--accent); }
+    #login input {
+      padding: 14px; border: 2px solid var(--accent); background: var(--panel);
+      color: var(--text); border-radius: 10px; font-size: 16px; width: 250px; margin: 8px;
+    }
+    #login button {
+      padding: 14px 32px; background: var(--accent); color: white; border: none;
+      border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin: 8px;
+      transition: transform 0.15s, background 0.15s;
+    }
+    #login button:hover { background: #7c3aed; transform: translateY(-2px); }
+    #login button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     
-    .timer-bar { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+    /* Game Panel */
+    #game { display: none; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h2 { font-size: 22px; margin-bottom: 8px; }
+    .header .status { color: var(--txt2); font-size: 14px; }
+    
+    /* Timer */
+    .timer-bar { width: 100%; height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; margin: 12px 0; }
     .timer-fill { height: 100%; background: var(--accent); width: 100%; transition: width 0.1s linear; }
-    .timer-text { font-size: 28px; font-weight: 800; color: var(--gold); margin-bottom: 10px; }
+    .timer-text { font-size: 32px; font-weight: 800; color: var(--gold); text-align: center; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
     
-    .q-text { font-size: 22px; text-align: center; margin: 15px 0; min-height: 60px; }
-    .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
-    .opt-btn { padding: 18px; background: #0f3460; color: #fff; border: 2px solid transparent; border-radius: 10px; cursor: pointer; font-size: 16px; transition: 0.2s; }
-    .opt-btn:hover { border-color: var(--accent); background: #1a1a40; }
-    .opt-btn.correct { background: #2ecc71; border-color: #27ae60; }
-    .opt-btn.wrong { background: #e74c3c; border-color: #c0392b; }
+    /* Question Area */
+    .question-card {
+      background: var(--panel); border-radius: 12px; padding: 24px;
+      border: 1px solid var(--track); margin-bottom: 20px;
+    }
+    .question-text { font-size: 20px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; text-align: center; }
+    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .opt-btn {
+      padding: 16px; background: var(--track); color: var(--text); border: 2px solid transparent;
+      border-radius: 10px; cursor: pointer; font-size: 16px; text-align: left;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    }
+    .opt-btn:hover { border-color: var(--accent); background: #334155; transform: translateY(-1px); }
+    .opt-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .opt-btn.correct { background: var(--success); border-color: #16a34a; animation: pulse 0.3s; }
+    .opt-btn.wrong { background: var(--danger); border-color: #dc2626; animation: shake 0.3s; }
     
-    .short-ans { width: 100%; margin-bottom: 10px; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
     
-    .lb-container { width: 100%; max-height: 60vh; overflow-y: auto; margin-top: 20px; }
-    .lb-row { display: flex; justify-content: space-between; padding: 12px; background: #0f3460; margin: 6px 0; border-radius: 8px; animation: slideIn 0.3s ease backwards; }
-    .lb-row:nth-child(1) { background: linear-gradient(90deg, #f5c518, #d4af37); color: #000; font-weight: bold; }
-    .lb-row:nth-child(2) { background: linear-gradient(90deg, #c0c0c0, #a0a0a0); }
-    .lb-row:nth-child(3) { background: linear-gradient(90deg, #cd7f32, #a0522d); }
-    @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    .short-input {
+      width: 100%; padding: 14px; background: var(--track); border: 2px solid var(--track);
+      border-radius: 10px; color: var(--text); font-size: 16px; margin-bottom: 12px;
+    }
+    .short-input:focus { outline: none; border-color: var(--accent); }
     
-    .score-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 900; pointer-events: none; animation: popUp 1s forwards; }
-    @keyframes popUp { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(1); } }
+    .submit-btn {
+      width: 100%; padding: 14px; background: var(--accent); color: white; border: none;
+      border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .submit-btn:hover { background: #7c3aed; }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    /* Score Popup */
+    .score-popup {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 36px; font-weight: 900; pointer-events: none; z-index: 100;
+      animation: popUp 1s forwards; text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    }
+    @keyframes popUp {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+      100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
+    }
+    
+    /* Leaderboard */
+    .leaderboard {
+      background: var(--panel); border-radius: 12px; padding: 20px;
+      border: 1px solid var(--track);
+    }
+    .lb-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+    .lb-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+    .lb-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; background: var(--track); border-radius: 10px;
+      animation: slideIn 0.3s ease backwards;
+    }
+    .lb-row:nth-child(1) { background: linear-gradient(90deg, rgba(245,158,11,0.25), transparent); border: 1px solid var(--gold); }
+    .lb-row:nth-child(2) { background: linear-gradient(90deg, rgba(156,163,175,0.25), transparent); }
+    .lb-row:nth-child(3) { background: linear-gradient(90deg, rgba(234,179,8,0.2), transparent); }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+    .lb-rank { font-weight: 700; width: 28px; text-align: center; }
+    .lb-name { flex: 1; font-size: 14px; margin-left: 12px; }
+    .lb-stats { text-align: right; font-size: 13px; }
+    .lb-score { font-weight: 700; color: var(--success); }
+    .lb-streak { color: var(--gold); font-size: 12px; }
+    
+    /* Utilities */
+    .hidden { display: none !important; }
+    .text-center { text-align: center; }
+    .mt-2 { margin-top: 16px; }
+    .mb-2 { margin-bottom: 16px; }
+    
+    @media (max-width: 600px) {
+      .options { grid-template-columns: 1fr; }
+      #login input { width: 100%; max-width: 280px; }
+      .timer-text { font-size: 28px; }
+      .question-text { font-size: 18px; }
+    }
   </style>
 </head>
 <body>
-  <div id="lobby" class="screen active">
-    <h1>🏁 QuizFlow Live Race</h1>
-    <input type="text" id="sId" placeholder="Room Code" maxlength="13">
-    <input type="text" id="pName" placeholder="Your Name" maxlength="15">
-    <button onclick="joinGame()">Join Race</button>
+  <div class="container">
+    <!-- Login Panel -->
+    <div id="login">
+      <h1>🎯 Kahoot Quiz</h1>
+      <p style="color: var(--txt2); margin-bottom: 20px;">Enter room code and your name to join</p>
+      <input type="text" id="sessionId" placeholder="Room Code (8 chars)" maxlength="8" style="text-transform:uppercase">
+      <br>
+      <input type="text" id="playerName" placeholder="Your Name" maxlength="15">
+      <br>
+      <button id="joinBtn" onclick="joinGame()">Join Quiz</button>
+      <p id="joinError" style="color: var(--danger); margin-top: 12px; display: none;"></p>
+    </div>
+
+    <!-- Game Panel -->
+    <div id="game">
+      <div class="header">
+        <h2 id="gameTitle">Quiz in Progress</h2>
+        <div class="status" id="gameStatus">Answer fast for bonus points!</div>
+      </div>
+      
+      <!-- Timer -->
+      <div class="timer-text" id="timer">20</div>
+      <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+      
+      <!-- Leaderboard -->
+      <div class="leaderboard mb-2">
+        <div class="lb-title">🏆 Live Leaderboard</div>
+        <div class="lb-list" id="lbList"></div>
+      </div>
+      
+      <!-- Question -->
+      <div class="question-card" id="questionCard">
+        <div class="question-text" id="questionText">Loading question...</div>
+        <div id="answerArea"></div>
+      </div>
+      
+      <!-- Score Popup -->
+      <div class="score-popup hidden" id="scorePopup"></div>
+    </div>
   </div>
 
-  <div id="countdown" class="screen">
-    <h1>Get Ready</h1>
-    <div class="timer-text" id="cd-text">3</div>
-  </div>
-
-  <div id="question" class="screen">
-    <div class="timer-text" id="timer">00</div>
-    <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
-    <div class="q-text" id="q-text"></div>
-    <div id="answer-area"></div>
-    <div class="score-popup" id="score-popup" style="display:none"></div>
-  </div>
-
-  <div id="leaderboard" class="screen">
-    <h2>📊 Leaderboard</h2>
-    <div class="lb-container" id="lb-list"></div>
-    <button id="next-btn" onclick="hostAdvance()" style="margin-top:20px; display:none;">Next Question</button>
-  </div>
-
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  
   <script>
-    // 🔧 REPLACE THESE
-    const firebaseConfig = { apiKey: "...", authDomain: "...", databaseURL: "...", projectId: "..." };
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyHFBKrJgE1AVGkiZkKn2rmnKZc30jXces0SgLQ_5meVYwv4PTzykbJkQu7TL81bz-n/exec";
-
+    // ═══════════════════════════════════════════════════════════
+    // CONFIGURATION — EDIT THESE VALUES
+    // ═══════════════════════════════════════════════════════════
+    
+    // 🔧 PASTE YOUR FIREBASE CONFIG HERE (from Firebase Console → Project Settings → Web App)
+    const firebaseConfig = {
+      const firebaseConfig = {
+  apiKey: "AIzaSyCLfySFzCpbz3CBX1bjha5KxvA0MrJExIc",
+  authDomain: "kahoot-24063.firebaseapp.com",
+  databaseURL: "https://kahoot-24063-default-rtdb.firebaseio.com",
+  projectId: "kahoot-24063",
+  storageBucket: "kahoot-24063.firebasestorage.app",
+  messagingSenderId: "962917873467",
+  appId: "1:962917873467:web:a6b526aee30cd15c92291e"
+    };
+    
+    // ═══════════════════════════════════════════════════════════
+    // INITIALIZATION
+    // ═══════════════════════════════════════════════════════════
+    
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    let sessionId, playerId, playerName, playerColor, timePerQ;
-    let questions = [], currentQ = 0, streak = 0;
-    let timerEnd = 0, clockOffset = 0, rafId;
-    let unsub = null;
-
+    
+    // Read GAS Web App URL from URL parameter ?script=...
+    function getScriptUrl() {
+      var params = new URLSearchParams(window.location.search);
+      var url = params.get('script');
+      if (!url) {
+        console.warn('No ?script= parameter found. Using fallback URL.');
+        return 'https://script.google.com/macros/s/YOUR_DEPLOYED_ID/exec';
+      }
+      return url;
+    }
+    var GAS_URL = getScriptUrl();
+    
+    // Game state
+    var sessionId = '';
+    var playerId = '';
+    var playerName = '';
+    var playerColor = '';
+    var questions = [];
+    var currentQIndex = 0;
+    var streak = 0;
+    var totalQuestions = 0;
+    var timePerQ = 20;
+    var timerEnd = 0;
+    var clockOffset = 0; // For perfect timer sync
+    var rafId = null;
+    var gameUnsub = null;
+    
+    // ═══════════════════════════════════════════════════════════
+    // CORE FUNCTIONS
+    // ═══════════════════════════════════════════════════════════
+    
     function joinGame() {
-      sessionId = document.getElementById('sId').value.trim().toUpperCase();
-      playerName = document.getElementById('pName').value.trim() || "Player";
-      if (!sessionId) return alert("Enter a valid Room Code");
+      var codeInput = document.getElementById('sessionId');
+      var nameInput = document.getElementById('playerName');
+      var errorEl = document.getElementById('joinError');
+      var btn = document.getElementById('joinBtn');
       
-      playerId = sessionId + '_' + playerName.replace(/\s/g,'_') + '_' + Date.now().toString(36);
-      playerColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-
-      // Fetch questions & config from GAS
-      fetch(GAS_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'createKahootSession', examCode: 'YOUR_EXAM_CODE_HERE', timePerQ: 20 }) // Replace with your examCode
-      }).then(r => r.json()).then(res => {
-        if (res.status !== 'success') return alert(res.message);
-        questions = res.data.questions;
-        timePerQ = res.data.timePerQ;
-        screen('countdown');
-        startCountdown();
-        initSync();
-      });
-    }
-
-    function screen(id) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-
-    function startCountdown() {
-      let c = 3;
-      document.getElementById('cd-text').textContent = c;
-      const iv = setInterval(() => {
-        c--;
-        if (c <= 0) { clearInterval(iv); loadQuestion(0); }
-        else document.getElementById('cd-text').textContent = c;
-      }, 1000);
-    }
-
-    function loadQuestion(idx) {
-      currentQ = idx;
-      if (currentQ >= questions.length) return screen('leaderboard');
+      sessionId = (codeInput.value || '').trim().toUpperCase();
+      playerName = (nameInput.value || '').trim();
       
-      const q = questions[currentQ];
-      document.getElementById('q-text').textContent = `Q${currentQ+1}: ${q.question}`;
-      const area = document.getElementById('answer-area');
-      area.innerHTML = '';
-
-      if (q.type === 'MCQ') {
-        area.className = 'opts';
-        q.options.forEach((opt, i) => {
-          const btn = document.createElement('button');
-          btn.className = 'opt-btn';
-          btn.textContent = opt;
-          btn.onclick = () => submitAnswer(opt, btn);
-          area.appendChild(btn);
-        });
-      } else if (q.type === 'TF') {
-        area.className = 'opts';
-        ['True', 'False'].forEach(opt => {
-          const btn = document.createElement('button');
-          btn.className = 'opt-btn';
-          btn.textContent = opt;
-          btn.onclick = () => submitAnswer(opt, btn);
-          area.appendChild(btn);
-        });
-      } else { // SHORT
-        area.className = '';
-        area.innerHTML = `<input class="short-ans" id="sInput" placeholder="Type your answer..."><button onclick="submitShort()">Submit</button>`;
+      // Validation
+      if (!sessionId || sessionId.length < 6) {
+        showError(errorEl, 'Enter a valid 8-character Room Code');
+        return;
+      }
+      if (!playerName || playerName.length < 2) {
+        showError(errorEl, 'Enter your name (min 2 characters)');
+        return;
       }
       
-      screen('question');
-      startPerfectTimer();
+      // Disable UI
+      btn.disabled = true;
+      btn.textContent = 'Joining...';
+      errorEl.style.display = 'none';
+      
+      // Generate unique player ID
+      playerId = sessionId + '_' + playerName.replace(/\s+/g, '_').toLowerCase() + '_' + Date.now().toString(36);
+      playerColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+      
+      // Fetch questions from GAS backend
+      fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'createKahootSession', sessionId: sessionId })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(result) {
+        if (result.status !== 'success') {
+          showError(errorEl, result.message || 'Failed to load quiz');
+          btn.disabled = false;
+          btn.textContent = 'Join Quiz';
+          return;
+        }
+        
+        // Success — switch to game view
+        questions = result.data.questions;
+        totalQuestions = result.data.totalQ;
+        timePerQ = result.data.timePerQ;
+        
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('game').style.display = 'block';
+        document.getElementById('gameTitle').textContent = 'Quiz: ' + sessionId;
+        
+        // Register player in Firebase
+        registerPlayer();
+        
+        // Start listening to live updates
+        initRealtimeSync();
+        
+        // Load first question after brief delay
+        setTimeout(loadQuestion, 1000);
+      })
+      .catch(function(err) {
+        console.error('Join error:', err);
+        showError(errorEl, 'Connection error — check your internet');
+        btn.disabled = false;
+        btn.textContent = 'Join Quiz';
+      });
     }
-
-    // ⏱️ PERFECT SYNC TIMER
-    function startPerfectTimer() {
-      timerEnd = Date.now() + (timePerQ * 1000); // Host-synced in real app, simplified here
-      cancelAnimationFrame(rafId);
-      updateTimer();
+    
+    function showError(el, msg) {
+      el.textContent = msg;
+      el.style.display = 'block';
     }
-
-    function updateTimer() {
-      const now = Date.now() + clockOffset;
-      const rem = Math.max(0, timerEnd - now);
-      const sec = Math.ceil(rem / 1000);
+    
+    function registerPlayer() {
+      db.ref('kahoot/' + sessionId + '/players/' + playerId).set({
+        name: playerName,
+        color: playerColor,
+        score: 0,
+        streak: 0,
+        progress: 0,
+        finished: false,
+        joinedAt: firebase.database.ServerValue.TIMESTAMP,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+    
+    function initRealtimeSync() {
+      // Sync clock offset to Firebase server time for perfect timer sync
+      db.ref('.info/serverTimeOffset').on('value', function(snapshot) {
+        clockOffset = snapshot.val() || 0;
+      });
+      
+      // Listen to all players for live leaderboard sync
+      gameUnsub = db.ref('kahoot/' + sessionId + '/players').orderByChild('updatedAt').on('value', function(snapshot) {
+        var players = snapshot.val() || {};
+        renderLeaderboard(players);
+      });
+    }
+    
+    function loadQuestion() {
+      var questionCard = document.getElementById('questionCard');
+      var questionText = document.getElementById('questionText');
+      var answerArea = document.getElementById('answerArea');
+      
+      // Check if quiz is finished
+      if (currentQIndex >= totalQuestions) {
+        questionCard.innerHTML = '<div class="text-center"><h3>✅ Quiz Complete!</h3><p class="mt-2">Check the leaderboard for final results.</p></div>';
+        stopTimer();
+        return;
+      }
+      
+      var q = questions[currentQIndex];
+      questionText.textContent = 'Q' + (currentQIndex + 1) + '/' + totalQuestions + ': ' + q.question;
+      answerArea.innerHTML = '';
+      
+      // Render answer options based on question type
+      if (q.type === 'MCQ' || q.type === 'TF') {
+        answerArea.className = 'options';
+        var opts = q.options || [];
+        opts.forEach(function(opt, i) {
+          var btn = document.createElement('button');
+          btn.className = 'opt-btn';
+          btn.textContent = opt;
+          btn.onclick = (function(index, option) {
+            return function() { submitAnswer(option, btn); };
+          })(i, opt);
+          answerArea.appendChild(btn);
+        });
+      } else if (q.type === 'SHORT') {
+        answerArea.className = '';
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'short-input';
+        input.id = 'shortAnswer';
+        input.placeholder = 'Type your answer...';
+        input.maxLength = 100;
+        
+        var submitBtn = document.createElement('button');
+        submitBtn.className = 'submit-btn';
+        submitBtn.textContent = 'Submit Answer';
+        submitBtn.onclick = function() {
+          var val = input.value.trim();
+          if (!val) { alert('Please enter an answer'); return; }
+          submitAnswer(val, null);
+        };
+        
+        // Allow Enter key to submit
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') submitBtn.click();
+        });
+        
+        answerArea.appendChild(input);
+        answerArea.appendChild(submitBtn);
+        input.focus();
+      }
+      
+      // Start timer for this question
+      startTimer();
+    }
+    
+    function startTimer() {
+      stopTimer(); // Clear any existing timer
+      timerEnd = Date.now() + (timePerQ * 1000) + clockOffset;
+      updateTimerDisplay();
+    }
+    
+    function updateTimerDisplay() {
+      var now = Date.now() + clockOffset;
+      var rem = Math.max(0, timerEnd - now);
+      var sec = Math.ceil(rem / 1000);
       
       document.getElementById('timer').textContent = sec < 10 ? '0' + sec : sec;
       document.getElementById('timer-fill').style.width = (rem / (timePerQ * 1000) * 100) + '%';
       
+      // Color shift: green → yellow → red
+      if (sec > timePerQ * 0.6) {
+        document.getElementById('timer-fill').style.background = '#22c55e';
+      } else if (sec > timePerQ * 0.3) {
+        document.getElementById('timer-fill').style.background = '#f59e0b';
+      } else {
+        document.getElementById('timer-fill').style.background = '#ef4444';
+      }
+      
       if (sec <= 0) {
+        stopTimer();
         disableInputs();
-        showPopup("⏰ Time's Up!", '#e74c3c');
-        setTimeout(() => showLeaderboard(), 1500);
+        showPopup('⏰ Time\'s Up!', '#ef4444');
+        setTimeout(showLeaderboard, 1500);
         return;
       }
-      rafId = requestAnimationFrame(updateTimer);
+      rafId = requestAnimationFrame(updateTimerDisplay);
     }
-
-    function submitAnswer(ans, btn) {
-      if (btn) btn.classList.add('loading');
-      disableInputs();
+    
+    function stopTimer() {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+    
+    function submitAnswer(answer, btnEl) {
+      // Disable inputs
+      var inputs = document.querySelectorAll('#answerArea button, #answerArea input');
+      for (var i = 0; i < inputs.length; i++) inputs[i].disabled = true;
       
-      const timeRem = Math.max(0, timerEnd - Date.now() - clockOffset) / 1000;
+      var statusEl = document.getElementById('gameStatus');
+      statusEl.textContent = 'Validating...';
       
+      // Calculate time remaining for speed bonus
+      var now = Date.now() + clockOffset;
+      var timeRemaining = Math.max(0, (timerEnd - now) / 1000);
+      
+      // Submit to GAS for server-side validation
       fetch(GAS_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'validateKahootAnswer', sessionId, playerId,
-          qIndex: currentQ, answer: ans,
-          timeRemaining: timeRem, currentStreak: streak
+          action: 'validateKahootAnswer',
+          sessionId: sessionId,
+          playerId: playerId,
+          qIndex: currentQIndex,
+          answer: answer,
+          timeRemaining: timeRemaining,
+          currentStreak: streak
         })
-      }).then(r => r.json()).then(res => {
-        if (res.status === 'success') {
-          streak = res.data.newStreak;
-          if (btn) btn.classList.add(res.data.isCorrect ? 'correct' : 'wrong');
-          if (res.data.isCorrect) showPopup(`+${res.data.pointsEarned}`, '#2ecc71');
-          else showPopup(`❌ Streak Reset`, '#e74c3c');
-          updateFirebase(res.data);
-          setTimeout(showLeaderboard, 1500);
-        } else { alert(res.message); enableInputs(); }
-      });
-    }
-
-    function submitShort() {
-      const val = document.getElementById('sInput').value.trim();
-      if (!val) return alert("Type an answer");
-      submitAnswer(val, null);
-    }
-
-    function disableInputs() {
-      document.querySelectorAll('button, input').forEach(el => el.disabled = true);
-    }
-    function enableInputs() {
-      document.querySelectorAll('button, input').forEach(el => el.disabled = false);
-    }
-
-    function showPopup(text, color) {
-      const el = document.getElementById('score-popup');
-      el.textContent = text; el.style.color = color; el.style.display = 'block';
-      setTimeout(() => el.style.display = 'none', 1200);
-    }
-
-    function updateFirebase(data) {
-      db.ref(`kahoot/${sessionId}/players/${playerId}`).update({
-        name: playerName, color: playerColor,
-        score: data.totalScore, streak: data.newStreak,
-        progress: data.progress, lastUpdated: firebase.database.ServerValue.TIMESTAMP
-      });
-    }
-
-    function showLeaderboard() {
-      screen('leaderboard');
-      cancelAnimationFrame(rafId);
-      // Unsubscribe from previous if exists
-      if (unsub) unsub();
-      
-      unsub = db.ref(`kahoot/${sessionId}/players`).orderByChild('score').on('value', snap => {
-        const list = document.getElementById('lb-list');
-        list.innerHTML = '';
-        const players = [];
-        snap.forEach(ch => players.push(ch.val()));
-        players.sort((a,b) => b.score - a.score || b.streak - a.streak);
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(result) {
+        if (result.status !== 'success') {
+          alert(result.message || 'Validation failed');
+          for (var i = 0; i < inputs.length; i++) inputs[i].disabled = false;
+          statusEl.textContent = 'Answer fast for bonus points!';
+          return;
+        }
         
-        players.slice(0, 15).forEach((p, i) => {
-          const row = document.createElement('div');
-          row.className = 'lb-row';
-          row.style.animationDelay = `${i * 0.05}s`;
-          row.innerHTML = `<span>${i+1}. ${p.name} ${p.color ? '🔘' : ''}</span><span>🏆 ${p.score || 0} 🔥 ${p.streak || 0}</span>`;
-          list.appendChild(row);
-        });
+        var data = result.data;
+        
+        // Visual feedback
+        if (btnEl) {
+          btnEl.classList.add(data.isCorrect ? 'correct' : 'wrong');
+        }
+        
+        // Show score popup with animation
+        if (data.isCorrect) {
+          var popupText = '+' + data.pointsEarned;
+          if (data.streakBonus > 0) popupText += ' 🔥';
+          showPopup(popupText, '#22c55e');
+          streak = data.newStreak;
+        } else {
+          showPopup('✗ Streak Reset', '#ef4444');
+          streak = 0;
+        }
+        
+        // Update Firebase with new progress
+        updateFirebaseProgress(data);
+        
+        // Move to next question after delay
+        currentQIndex++;
+        setTimeout(function() {
+          statusEl.textContent = 'Answer fast for bonus points!';
+          loadQuestion();
+        }, 1500);
+      })
+      .catch(function(err) {
+        console.error('Submit error:', err);
+        alert('Submission failed — check connection');
+        for (var i = 0; i < inputs.length; i++) inputs[i].disabled = false;
+        statusEl.textContent = 'Answer fast for bonus points!';
       });
     }
-
-    function initSync() {
-      // Register player
-      db.ref(`kahoot/${sessionId}/players/${playerId}`).set({
-        name: playerName, color: playerColor, score: 0, streak: 0, progress: 0
+    
+    function updateFirebaseProgress(data) {
+      db.ref('kahoot/' + sessionId + '/players/' + playerId).update({
+        score: data.totalScore,
+        streak: data.newStreak,
+        progress: data.progress,
+        finished: data.progress >= 1,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+    
+    function showPopup(text, color) {
+      var popup = document.getElementById('scorePopup');
+      popup.textContent = text;
+      popup.style.color = color;
+      popup.classList.remove('hidden');
+      
+      // Auto-hide after animation completes
+      setTimeout(function() {
+        popup.classList.add('hidden');
+      }, 1200);
+    }
+    
+    function disableInputs() {
+      var inputs = document.querySelectorAll('#answerArea button, #answerArea input');
+      for (var i = 0; i < inputs.length; i++) inputs[i].disabled = true;
+    }
+    
+    function renderLeaderboard(players) {
+      var list = document.getElementById('lbList');
+      list.innerHTML = '';
+      
+      // Sort by score (descending), then by streak, then by finish time
+      var playerList = [];
+      for (var id in players) {
+        if (players.hasOwnProperty(id)) playerList.push(players[id]);
+      }
+      playerList.sort(function(a, b) {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.streak !== a.streak) return b.streak - a.streak;
+        return (a.finished && !b.finished) ? 1 : (!a.finished && b.finished) ? -1 : 0;
       });
       
-      // Sync clock offset to Firebase server time
-      const ref = db.ref('.info/serverTimeOffset');
-      ref.on('value', s => { clockOffset = s.val(); });
+      // Show top 10 players
+      var topPlayers = playerList.slice(0, 10);
+      
+      for (var i = 0; i < topPlayers.length; i++) {
+        var p = topPlayers[i];
+        var row = document.createElement('div');
+        row.className = 'lb-row';
+        row.style.animationDelay = (i * 0.04) + 's';
+        
+        var statusText = p.finished ? '🏁 Done' : (p.streak > 2 ? '🔥 ' + p.streak : '');
+        
+        row.innerHTML = 
+          '<div class="lb-rank">' + (i + 1) + '</div>' +
+          '<div class="lb-name">' + escapeHtml(p.name) + '</div>' +
+          '<div class="lb-stats">' +
+            '<div class="lb-score">' + p.score + '</div>' +
+            (statusText ? '<div class="lb-streak">' + statusText + '</div>' : '') +
+          '</div>';
+        
+        list.appendChild(row);
+      }
     }
-
-    window.addEventListener('beforeunload', () => { if(unsub) unsub(); });
+    
+    function showLeaderboard() {
+      stopTimer();
+      document.getElementById('questionCard').style.display = 'none';
+      document.getElementById('lbList').scrollTo(0, 0);
+      
+      // Auto-advance to next question after delay (simulated — in real app, host controls)
+      setTimeout(function() {
+        document.getElementById('questionCard').style.display = 'block';
+        loadQuestion();
+      }, 5000);
+    }
+    
+    // Simple HTML escape to prevent XSS
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+      if (gameUnsub) gameUnsub();
+      stopTimer();
+    });
+    
+    // Allow Enter key on room code input
+    document.addEventListener('DOMContentLoaded', function() {
+      var codeInput = document.getElementById('sessionId');
+      if (codeInput) {
+        codeInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') joinGame();
+        });
+      }
+    });
   </script>
 </body>
 </html>
