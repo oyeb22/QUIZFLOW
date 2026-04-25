@@ -11,13 +11,11 @@
     .wrap{max-width:820px;width:100%}
     .screen{display:none}.screen.on{display:block}
 
-    /* fatal */
     #s-fatal{text-align:center;padding:60px 20px}
     #s-fatal h2{color:var(--no);font-size:22px;margin-bottom:12px}
     #s-fatal p{color:#94a3b8;font-size:14px;line-height:1.7;max-width:420px;margin:0 auto}
     #s-fatal code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:13px}
 
-    /* join */
     #s-join{text-align:center;padding:40px 20px}
     #s-join h1{font-size:28px;margin-bottom:6px;color:var(--acc)}
     .sub{color:#94a3b8;font-size:14px;margin-bottom:28px}
@@ -29,7 +27,6 @@
     .hint{font-size:12px;color:#64748b;margin-top:10px}
     .join-err{color:var(--no);font-size:14px;margin-top:12px;min-height:18px}
 
-    /* lobby */
     #s-lobby{text-align:center;padding:40px 20px}
     #s-lobby h2{font-size:22px;margin-bottom:6px}
     .lobby-code{font-family:monospace;font-size:clamp(42px,10vw,64px);font-weight:700;letter-spacing:8px;color:var(--acc);margin:12px 0}
@@ -40,13 +37,11 @@
     @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
     .lobby-wait{font-size:14px;color:#94a3b8}
 
-    /* game */
     #s-game{}
     .g-hdr{text-align:center;margin-bottom:14px}
     .g-hdr h2{font-size:20px;margin-bottom:2px}
     .g-status{color:#94a3b8;font-size:13px;text-align:center;margin-bottom:14px}
 
-    /* track */
     .race-track{background:var(--panel);border-radius:12px;padding:16px;margin-bottom:18px;position:relative;overflow:hidden;border:1px solid var(--track);min-height:60px}
     .finish-line{position:absolute;right:28px;top:0;bottom:0;width:4px;background:repeating-linear-gradient(45deg,var(--gold),var(--gold) 6px,transparent 6px,transparent 12px)}
     .lane{display:flex;align-items:center;height:44px;border-bottom:1px dashed var(--track);position:relative}
@@ -59,7 +54,6 @@
     .stickman.run .lg{animation:walk .5s infinite alternate}
     @keyframes walk{0%{transform:scaleX(1)}100%{transform:scaleX(.75)}}
 
-    /* lb */
     .lb{background:var(--panel);border-radius:12px;padding:16px;border:1px solid var(--track);margin-bottom:18px}
     .lb-ttl{font-size:16px;font-weight:700;margin-bottom:12px;text-align:center}
     .lb-rows{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
@@ -72,7 +66,6 @@
     .lb-sc{font-weight:700;color:var(--ok)}
     .lb-pg{color:#94a3b8;font-size:11px;margin-left:6px}
 
-    /* question */
     .q-card{background:var(--panel);border-radius:12px;padding:22px;border:1px solid var(--track);margin-bottom:18px}
     .q-txt{font-size:18px;font-weight:600;margin-bottom:16px;line-height:1.4}
     .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -146,253 +139,337 @@
 (function(){
 'use strict';
 
-/* 1 — URL params */
+/* ── URL params ── */
 var P       = new URLSearchParams(window.location.search);
-var GAS_URL = (P.get('script')||'').trim();
-var preCode = (P.get('room')||'').trim().toUpperCase();
+var GAS_URL = (P.get('script') || '').trim();
+var preCode = (P.get('room')   || '').trim().toUpperCase();
 
-/* helpers */
-function show(id){ document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('on')}); document.getElementById(id).classList.add('on'); }
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function gasPost(body, cb) {
-  fetch(GAS_URL, {
-    method: 'POST',
-    body: JSON.stringify(body)
-  })
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
-    .then(function(d){cb(null,d)}).catch(function(e){console.error('[gas]',e);cb(e,null)});
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('on'); });
+  document.getElementById(id).classList.add('on');
+}
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* 2 — Need GAS URL */
-if(!GAS_URL){
-  document.addEventListener('DOMContentLoaded',function(){
-    document.getElementById('fatal-msg').textContent=
-      'Missing backend URL. Open this page using the link from QuizFlow Pro — '+
+/* GAS fetch — no Content-Type header to avoid CORS preflight */
+function gasPost(body, cb) {
+  fetch(GAS_URL, { method:'POST', body: JSON.stringify(body) })
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d){ cb(null, d); })
+    .catch(function(e){ console.error('[race] gasPost error:', e); cb(e, null); });
+}
+
+/* ── Require GAS URL ── */
+if (!GAS_URL) {
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('fatal-msg').textContent =
+      'Missing backend URL. Open this page using the link from QuizFlow Pro — ' +
       'it should look like: race.html?script=https://script.google.com/...';
   });
   return;
 }
 
-/* 3 — Firebase */
+/* ── Firebase init ── */
 var db;
-try{
-  var cfg={apiKey:'AIzaSyDpKPol5g5iZQpi6zw5aODpNH4MzejOBfw',authDomain:'examrace-31854.firebaseapp.com',databaseURL:'https://examrace-31854-default-rtdb.firebaseio.com',projectId:'examrace-31854',storageBucket:'examrace-31854.firebasestorage.app',messagingSenderId:'698483423316',appId:'1:698483423316:web:d5dd780bb186d8253115c1'};
-  var fbApp=firebase.apps.find(function(a){return a.name==='race'})||firebase.initializeApp(cfg,'race');
-  db=firebase.database(fbApp);
-}catch(e){
-  document.addEventListener('DOMContentLoaded',function(){ document.getElementById('fatal-msg').textContent='Firebase error: '+e.message; });
+try {
+  var cfg = {
+    apiKey:            'AIzaSyDpKPol5g5iZQpi6zw5aODpNH4MzejOBfw',
+    authDomain:        'examrace-31854.firebaseapp.com',
+    databaseURL:       'https://examrace-31854-default-rtdb.firebaseio.com',
+    projectId:         'examrace-31854',
+    storageBucket:     'examrace-31854.firebasestorage.app',
+    messagingSenderId: '698483423316',
+    appId:             '1:698483423316:web:d5dd780bb186d8253115c1'
+  };
+  var existingRace = null;
+  firebase.apps.forEach(function(a){ if (a.name === 'race') existingRace = a; });
+  var fbApp = existingRace || firebase.initializeApp(cfg, 'race');
+  db = firebase.database(fbApp);
+} catch(e) {
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('fatal-msg').textContent = 'Firebase error: ' + e.message;
+  });
   return;
 }
 
-/* 4 — State */
-var raceId='',playerId='',playerName='',playerColor='';
-var questions=[],currentQ=0,totalQ=0;
-var gameUnsub=null,lobbyUnsub=null,phaseUnsub=null;
+/* ── State ── */
+var raceId      = '';
+var playerId    = '';
+var playerName  = '';
+var playerColor = '';
+var questions   = [];
+var currentQ    = 0;
+var totalQ      = 0;
 
-/* 5 — DOM ready */
-document.addEventListener('DOMContentLoaded',function(){
+/* Listener paths — stored as strings so we can call .off() cleanly */
+var lobbyPlayersPath = null;
+var phasePath        = null;
+var gamePlayersPath  = null;
+
+function detachLobbyListeners() {
+  if (lobbyPlayersPath) { try { db.ref(lobbyPlayersPath).off('value'); } catch(_){} lobbyPlayersPath = null; }
+  if (phasePath)        { try { db.ref(phasePath).off('value');        } catch(_){} phasePath        = null; }
+}
+function detachGameListeners() {
+  if (gamePlayersPath)  { try { db.ref(gamePlayersPath).off('value');  } catch(_){} gamePlayersPath  = null; }
+}
+
+/* ── DOM ready ── */
+document.addEventListener('DOMContentLoaded', function(){
   show('s-join');
-  if(preCode) document.getElementById('inp-code').value=preCode;
-  document.getElementById('inp-code').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('inp-name').focus()});
-  document.getElementById('inp-name').addEventListener('keydown',function(e){if(e.key==='Enter')doJoin()});
-  document.getElementById('joinBtn').addEventListener('click',doJoin);
+  if (preCode) document.getElementById('inp-code').value = preCode;
+
+  document.getElementById('inp-code').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') document.getElementById('inp-name').focus();
+  });
+  document.getElementById('inp-name').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') doJoin();
+  });
+  document.getElementById('joinBtn').addEventListener('click', doJoin);
 });
 
-/* 6 — Join */
-function doJoin(){
-  var cEl=document.getElementById('inp-code');
-  var nEl=document.getElementById('inp-name');
-  var eEl=document.getElementById('joinErr');
-  var btn=document.getElementById('joinBtn');
+/* ── Join ── */
+function doJoin() {
+  var cEl  = document.getElementById('inp-code');
+  var nEl  = document.getElementById('inp-name');
+  var eEl  = document.getElementById('joinErr');
+  var btn  = document.getElementById('joinBtn');
 
-  raceId=(cEl.value||'').trim().toUpperCase();
-  playerName=(nEl.value||'').trim();
-  eEl.textContent='';
+  raceId     = (cEl.value || '').trim().toUpperCase();
+  playerName = (nEl.value || '').trim();
+  eEl.textContent = '';
 
-  if(raceId.length<6){eEl.textContent='Enter a valid race code (6–8 characters)';return}
-  if(playerName.length<2){eEl.textContent='Enter your name (at least 2 characters)';return}
+  if (raceId.length < 6)     { eEl.textContent = 'Enter a valid race code (6–8 characters)'; return; }
+  if (playerName.length < 2) { eEl.textContent = 'Enter your name (at least 2 characters)'; return; }
 
-  btn.disabled=true; btn.textContent='Joining…';
-  playerId='p_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-  playerColor='#'+(Math.floor(Math.random()*0x999999)+0x444444).toString(16).slice(-6);
+  btn.disabled    = true;
+  btn.textContent = 'Joining…';
 
-  /* Validate race exists */
-  gasPost({action: 'validateRaceJoin', raceId: raceId}, function(err, res) {
-  if (err || !res || res.status !== 'success') {
-    eEl.textContent = (res && res.message) || 'Race not found. Check your code.';
-    btn.disabled = false; btn.textContent = 'Join Race 🏁';
-    return;
-  }
-gasPost({action: 'getRaceQuestions', raceId: raceId}, function(err2, res2) {
-    if (err2 || !res2 || res2.status !== 'success') {
-      eEl.textContent = (res2 && res2.message) || 'Could not load questions.';
-      btn.disabled = false; btn.textContent = 'Join Race 🏁';
+  playerId    = 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  playerColor = '#' + (Math.floor(Math.random() * 0x999999) + 0x444444).toString(16).slice(-6);
+
+  /* Validate race exists and load questions from GAS */
+  gasPost({ action:'getRaceQuestions', raceId: raceId }, function(err, res){
+    if (err || !res || res.status !== 'success') {
+      eEl.textContent = (res && res.message) || 'Race not found. Check your code.';
+      btn.disabled    = false;
+      btn.textContent = 'Join Race 🏁';
       return;
     }
-    questions = res2.data || [];
-    totalQ = questions.length;
-    // ... rest of join logic
-  });
-}); 
+
+    questions = res.data || [];
+    totalQ    = questions.length;
 
     /* Register in Firebase so teacher sees us in lobby */
-    db.ref('race/'+raceId+'/players/'+playerId).set({
-      name:playerName,color:playerColor,progress:0,correct:0,
-      finished:false,finishTime:null,
-      joinedAt:firebase.database.ServerValue.TIMESTAMP,
-      updatedAt:firebase.database.ServerValue.TIMESTAMP
+    db.ref('race/' + raceId + '/players/' + playerId).set({
+      name:       playerName,
+      color:      playerColor,
+      progress:   0,
+      correct:    0,
+      finished:   false,
+      finishTime: null,
+      joinedAt:   firebase.database.ServerValue.TIMESTAMP,
+      updatedAt:  firebase.database.ServerValue.TIMESTAMP
     });
 
-    document.getElementById('lby-code').textContent=raceId;
-    document.getElementById('g-title').textContent='Race: '+raceId;
+    document.getElementById('lby-code').textContent = raceId;
+    document.getElementById('g-title').textContent  = 'Race: ' + raceId;
     show('s-lobby');
     watchLobby();
+    btn.disabled    = false;
+    btn.textContent = 'Join Race 🏁';
   });
 }
 
-/* 7 — Lobby: show players + wait for start signal */
-function watchLobby(){
-  lobbyUnsub=db.ref('race/'+raceId+'/players').on('value',function(snap){
-    var players=snap.val()||{};
-    var names=Object.values(players).map(function(p){return p.name||'?'});
-    document.getElementById('lby-count').textContent=names.length;
-    document.getElementById('lby-chips').innerHTML=names.map(function(n){
-      return '<div class="chip">'+esc(n)+'</div>';
+/* ── Lobby: watch player list + wait for teacher start signal ── */
+function watchLobby() {
+  /* 1 — Watch player count so the lobby chip list stays live */
+  lobbyPlayersPath = 'race/' + raceId + '/players';
+  db.ref(lobbyPlayersPath).on('value', function(snap){
+    if (!snap) return;
+    var players = snap.val() || {};
+    var names   = Object.values(players).map(function(p){ return p.name || '?'; });
+    document.getElementById('lby-count').textContent = names.length;
+    document.getElementById('lby-chips').innerHTML   = names.map(function(n){
+      return '<div class="chip">' + esc(n) + '</div>';
     }).join('');
-  });
+  }, function(err){ console.error('[race] lobby players error:', err.message); });
 
-  /* Teacher writes 'started' to this path when they press Start */
-  phaseUnsub=db.ref('race/'+raceId+'/state/phase').on('value',function(snap){
-    if(snap.val()==='started'){
-      if(lobbyUnsub){lobbyUnsub();lobbyUnsub=null}
-      if(phaseUnsub){phaseUnsub();phaseUnsub=null}
+  /* 2 — Watch phase node; fire startRace() when teacher writes "started" */
+  phasePath = 'race/' + raceId + '/state/phase';
+  db.ref(phasePath).on('value', function(snap){
+    if (!snap) return;
+    if (snap.val() === 'started') {
+      /* Detach both lobby listeners cleanly before transitioning */
+      detachLobbyListeners();
       startRace();
     }
-  });
+  }, function(err){ console.error('[race] phase listener error:', err.message); });
 }
 
-/* 8 — Race started */
-function startRace(){
-  gameUnsub=db.ref('race/'+raceId+'/players').on('value',function(snap){
-    var players=snap.val()||{};
+/* ── Race started ── */
+function startRace() {
+  /* Watch players for live track + standings updates */
+  gamePlayersPath = 'race/' + raceId + '/players';
+  db.ref(gamePlayersPath).on('value', function(snap){
+    if (!snap) return;
+    var players = snap.val() || {};
     renderTrack(players);
     renderLb(players);
-  });
+  }, function(err){ console.error('[race] game players error:', err.message); });
+
   show('s-game');
   loadQ();
 }
 
-/* 9 — Question */
-function loadQ(){
-  var qEl=document.getElementById('q-txt');
-  var aEl=document.getElementById('q-area');
-  document.getElementById('g-status').textContent='Answer questions to move forward!';
+/* ── Question ── */
+function loadQ() {
+  var qEl = document.getElementById('q-txt');
+  var aEl = document.getElementById('q-area');
+  document.getElementById('g-status').textContent = 'Answer questions to move forward!';
 
-  if(currentQ>=totalQ){
-    qEl.textContent='✅ Race Complete!';
-    aEl.innerHTML='<p style="text-align:center;color:#94a3b8;margin-top:8px">Check the standings above.</p>';
-    db.ref('race/'+raceId+'/players/'+playerId).update({finished:true,finishTime:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  if (currentQ >= totalQ) {
+    qEl.textContent = '✅ Race Complete!';
+    aEl.innerHTML   = '<p style="text-align:center;color:#94a3b8;margin-top:8px">Check the standings above.</p>';
+    db.ref('race/' + raceId + '/players/' + playerId).update({
+      finished:   true,
+      finishTime: firebase.database.ServerValue.TIMESTAMP,
+      updatedAt:  firebase.database.ServerValue.TIMESTAMP
+    });
     return;
   }
 
-  var q=questions[currentQ];
-  qEl.textContent='Q'+(currentQ+1)+'/'+totalQ+': '+q.question;
-  aEl.innerHTML='';
+  var q = questions[currentQ];
+  qEl.textContent = 'Q' + (currentQ + 1) + '/' + totalQ + ': ' + q.question;
+  aEl.innerHTML   = '';
 
-  if(q.type==='MCQ'||q.type==='TF'){
-    aEl.className='opts';
-    (q.options||[]).forEach(function(opt){
-      var b=document.createElement('button');
-      b.className='opt'; b.textContent=opt;
-      b.addEventListener('click',(function(o,el){return function(){submitAns(o,el)}})(opt,b));
+  if (q.type === 'MCQ' || q.type === 'TF') {
+    aEl.className = 'opts';
+    (q.options || []).forEach(function(opt){
+      var b = document.createElement('button');
+      b.className   = 'opt';
+      b.textContent = opt;
+      b.addEventListener('click', (function(o, el){ return function(){ submitAns(o, el); }; })(opt, b));
       aEl.appendChild(b);
     });
-  }else{
-    aEl.className='';
-    var inp=document.createElement('input');
-    inp.className='short-inp';inp.type='text';inp.placeholder='Type your answer…';inp.maxLength=120;
-    var sb=document.createElement('button');
-    sb.className='sub-btn';sb.textContent='Submit Answer';
-    sb.addEventListener('click',function(){if(inp.value.trim())submitAns(inp.value.trim(),null)});
-    inp.addEventListener('keydown',function(e){if(e.key==='Enter')sb.click()});
-    aEl.appendChild(inp);aEl.appendChild(sb);
-    setTimeout(function(){inp.focus()},80);
+  } else {
+    aEl.className = '';
+    var inp = document.createElement('input');
+    inp.className   = 'short-inp';
+    inp.type        = 'text';
+    inp.placeholder = 'Type your answer…';
+    inp.maxLength   = 120;
+    var sb = document.createElement('button');
+    sb.className   = 'sub-btn';
+    sb.textContent = 'Submit Answer';
+    sb.addEventListener('click', function(){ if (inp.value.trim()) submitAns(inp.value.trim(), null); });
+    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') sb.click(); });
+    aEl.appendChild(inp);
+    aEl.appendChild(sb);
+    setTimeout(function(){ inp.focus(); }, 80);
   }
 }
 
-/* 10 — Submit */
-function submitAns(answer,btnEl){
-  var els=document.querySelectorAll('#q-area button,#q-area input');
-  for(var i=0;i<els.length;i++) els[i].disabled=true;
-  document.getElementById('g-status').textContent='Checking…';
+/* ── Submit ── */
+function submitAns(answer, btnEl) {
+  /* Disable all options immediately to prevent double-submit */
+  var els = document.querySelectorAll('#q-area button,#q-area input');
+  for (var i = 0; i < els.length; i++) els[i].disabled = true;
+  document.getElementById('g-status').textContent = 'Checking…';
 
-  gasPost({action:'validateRaceAnswer',raceId:raceId,playerId:playerId,questionId:questions[currentQ].id,answer:answer},
-  function(err,res){
-    if(err||!res||res.status!=='success'){
-      showPopup('⚠️','#f59e0b');
-      for(var i=0;i<els.length;i++) els[i].disabled=false;
-      document.getElementById('g-status').textContent='Answer questions to move forward!';
+  gasPost({
+    action:     'validateRaceAnswer',
+    raceId:     raceId,
+    playerId:   playerId,
+    questionId: questions[currentQ].id,
+    answer:     answer
+  }, function(err, res){
+    if (err || !res || res.status !== 'success') {
+      showPopup('⚠️', '#f59e0b');
+      /* Re-enable on error so student can retry */
+      for (var i = 0; i < els.length; i++) els[i].disabled = false;
+      document.getElementById('g-status').textContent = 'Answer questions to move forward!';
       return;
     }
-    var d=res.data;
-    if(btnEl) btnEl.classList.add(d.isCorrect?'correct':'wrong');
-    showPopup(d.isCorrect?'+'+(d.correctCount)+' ✓':'✗',d.isCorrect?'#22c55e':'#ef4444');
 
-    db.ref('race/'+raceId+'/players/'+playerId).update({
-      progress:d.progress||0,correct:d.correctCount||0,
-      finished:d.finished||false,
-      finishTime:d.finished?firebase.database.ServerValue.TIMESTAMP:null,
-      updatedAt:firebase.database.ServerValue.TIMESTAMP
+    var d = res.data;
+    if (btnEl) btnEl.classList.add(d.isCorrect ? 'correct' : 'wrong');
+    showPopup(d.isCorrect ? '+' + d.correctCount + ' ✓' : '✗', d.isCorrect ? '#22c55e' : '#ef4444');
+
+    db.ref('race/' + raceId + '/players/' + playerId).update({
+      progress:   d.progress     || 0,
+      correct:    d.correctCount || 0,
+      finished:   d.finished     || false,
+      finishTime: d.finished ? firebase.database.ServerValue.TIMESTAMP : null,
+      updatedAt:  firebase.database.ServerValue.TIMESTAMP
     });
 
     currentQ++;
     setTimeout(function(){
-      document.getElementById('g-status').textContent='Answer questions to move forward!';
+      document.getElementById('g-status').textContent = 'Answer questions to move forward!';
       loadQ();
-    },900);
+    }, 900);
   });
 }
 
-/* 11 — Track render */
-function renderTrack(players){
-  var track=document.getElementById('race-track');
-  track.innerHTML='<div class="finish-line"></div>';
-  var arr=Object.values(players).sort(function(a,b){return(b.progress||0)-(a.progress||0)});
+/* ── Track render ── */
+function renderTrack(players) {
+  var track = document.getElementById('race-track');
+  track.innerHTML = '<div class="finish-line"></div>';
+  var arr = Object.values(players).sort(function(a, b){ return (b.progress || 0) - (a.progress || 0); });
   arr.forEach(function(p){
-    var pct=Math.min((p.progress||0)*84,84);
-    var lane=document.createElement('div');lane.className='lane';
-    lane.innerHTML='<span class="p-name" style="color:'+p.color+'">'+esc(p.name)+'</span>'+
-      '<div class="stickman '+(p.finished?'':'run')+'" style="left:calc(8px + '+pct+'%);color:'+p.color+'">'+
-      '<div class="hd"></div><div class="bd"></div><div class="lg"></div></div>';
+    var pct  = Math.min((p.progress || 0) * 84, 84);
+    var lane = document.createElement('div');
+    lane.className = 'lane';
+    lane.innerHTML =
+      '<span class="p-name" style="color:' + p.color + '">' + esc(p.name) + '</span>' +
+      '<div class="stickman ' + (p.finished ? '' : 'run') + '" ' +
+           'style="left:calc(8px + ' + pct + '%);color:' + p.color + '">' +
+        '<div class="hd"></div><div class="bd"></div><div class="lg"></div>' +
+      '</div>';
     track.appendChild(lane);
   });
 }
 
-/* 12 — Leaderboard render */
-function renderLb(players){
-  var arr=Object.values(players).sort(function(a,b){
-    if((b.correct||0)!==(a.correct||0))return(b.correct||0)-(a.correct||0);
-    return(b.progress||0)-(a.progress||0);
+/* ── Leaderboard render ── */
+function renderLb(players) {
+  var arr    = Object.values(players).sort(function(a, b){
+    if ((b.correct || 0) !== (a.correct || 0)) return (b.correct || 0) - (a.correct || 0);
+    return (b.progress || 0) - (a.progress || 0);
   });
-  var medals=['🥇','🥈','🥉'];
-  document.getElementById('lb-rows').innerHTML=arr.length?arr.slice(0,10).map(function(p,i){
-    var pct=Math.round((p.progress||0)*100);
-    var status=p.finished?'🏁 Done':(pct>0?'🏃 '+pct+'%':'⏳');
-    return '<div class="lb-row"><div class="lb-rk">'+(medals[i]||(i+1))+'</div>'+
-      '<div class="lb-nm">'+esc(p.name)+'</div>'+
-      '<div class="lb-sc">'+(p.correct||0)+'/'+totalQ+'</div>'+
-      '<div class="lb-pg">'+status+'</div></div>';
-  }).join(''):'<div style="text-align:center;color:#64748b;padding:8px;font-size:13px">Waiting…</div>';
+  var medals = ['🥇','🥈','🥉'];
+  document.getElementById('lb-rows').innerHTML = arr.length
+    ? arr.slice(0, 10).map(function(p, i){
+        var pct    = Math.round((p.progress || 0) * 100);
+        var status = p.finished ? '🏁 Done' : (pct > 0 ? '🏃 ' + pct + '%' : '⏳');
+        return '<div class="lb-row">' +
+          '<div class="lb-rk">' + (medals[i] || (i + 1)) + '</div>' +
+          '<div class="lb-nm">' + esc(p.name) + '</div>' +
+          '<div class="lb-sc">' + (p.correct || 0) + '/' + totalQ + '</div>' +
+          '<div class="lb-pg">' + status + '</div>' +
+          '</div>';
+      }).join('')
+    : '<div style="text-align:center;color:#64748b;padding:8px;font-size:13px">Waiting…</div>';
 }
 
-function showPopup(txt,color){
-  var old=document.getElementById('_pop');if(old)old.parentNode.removeChild(old);
-  var el=document.createElement('div');el.id='_pop';el.className='popup';
-  el.style.color=color;el.textContent=txt;document.body.appendChild(el);
-  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el)},1100);
+function showPopup(txt, color) {
+  var old = document.getElementById('_pop');
+  if (old) old.parentNode.removeChild(old);
+  var el = document.createElement('div');
+  el.id          = '_pop';
+  el.className   = 'popup';
+  el.style.color = color;
+  el.textContent = txt;
+  document.body.appendChild(el);
+  setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 1100);
 }
 
-window.addEventListener('beforeunload',function(){if(gameUnsub)gameUnsub()});
+window.addEventListener('beforeunload', function(){
+  detachLobbyListeners();
+  detachGameListeners();
+});
+
 }());
 </script>
 </body>
