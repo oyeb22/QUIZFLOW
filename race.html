@@ -159,6 +159,9 @@ function gasPost(body, cb) {
     method: 'POST',
     body: JSON.stringify(body)
   })
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+    .then(function(d){cb(null,d)}).catch(function(e){console.error('[gas]',e);cb(e,null)});
+}
 
 /* 2 — Need GAS URL */
 if(!GAS_URL){
