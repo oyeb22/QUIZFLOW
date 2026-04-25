@@ -217,13 +217,23 @@ function doJoin(){
   playerColor='#'+(Math.floor(Math.random()*0x999999)+0x444444).toString(16).slice(-6);
 
   /* Validate race exists */
-  gasPost({action:'getRaceQuestions',raceId:raceId},function(err,res){
-    if(err||!res||res.status!=='success'){
-      eEl.textContent=(res&&res.message)||'Race not found. Check your code.';
-      btn.disabled=false; btn.textContent='Join Race 🏁'; return;
+  gasPost({action: 'validateRaceJoin', raceId: raceId}, function(err, res) {
+  if (err || !res || res.status !== 'success') {
+    eEl.textContent = (res && res.message) || 'Race not found. Check your code.';
+    btn.disabled = false; btn.textContent = 'Join Race 🏁';
+    return;
+  }
+gasPost({action: 'getRaceQuestions', raceId: raceId}, function(err2, res2) {
+    if (err2 || !res2 || res2.status !== 'success') {
+      eEl.textContent = (res2 && res2.message) || 'Could not load questions.';
+      btn.disabled = false; btn.textContent = 'Join Race 🏁';
+      return;
     }
-    questions=res.data||[];
-    totalQ=questions.length;
+    questions = res2.data || [];
+    totalQ = questions.length;
+    // ... rest of join logic
+  });
+}); 
 
     /* Register in Firebase so teacher sees us in lobby */
     db.ref('race/'+raceId+'/players/'+playerId).set({
