@@ -144,8 +144,11 @@ var preCode = (P.get('room')||'').trim().toUpperCase();
 
 function show(id){ document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('on')}); document.getElementById(id).classList.add('on'); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function gasPost(body,cb){
-  fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+function gasPost(body, cb) {
+  fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  })
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
     .then(function(d){cb(null,d)}).catch(function(e){console.error('[gas]',e);cb(e,null)});
 }
