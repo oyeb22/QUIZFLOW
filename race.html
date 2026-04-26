@@ -42,10 +42,19 @@
     .g-hdr h2{font-size:20px;margin-bottom:2px}
     .g-status{color:#94a3b8;font-size:13px;text-align:center;margin-bottom:14px}
 
-    .race-track{background:var(--panel);border-radius:12px;padding:16px;margin-bottom:18px;position:relative;overflow:hidden;border:1px solid var(--track);min-height:60px}
-    .finish-line{position:absolute;right:28px;top:0;bottom:0;width:4px;background:repeating-linear-gradient(45deg,var(--gold),var(--gold) 6px,transparent 6px,transparent 12px)}
-    .lane{display:flex;align-items:center;height:44px;border-bottom:1px dashed var(--track);position:relative}
-    .lane:last-child{border-bottom:none}
+    /* replace existing .race-track and related styles */
+.race-track {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 12px;
+  border: 1px solid var(--track);
+  margin-bottom: 18px;
+  overflow: hidden;
+  position: relative;
+}
+.race-canvas {
+  width: 100%;
+  display: block;
+}
     .p-name{position:absolute;left:0;font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:82px}
     .stickman{position:absolute;transition:left .7s cubic-bezier(.34,1.56,.64,1);display:flex;flex-direction:column;align-items:center;pointer-events:none}
     .stickman .hd{width:10px;height:10px;border-radius:50%;background:currentColor}
@@ -310,17 +319,43 @@ function watchLobby() {
 
 /* ── Race started ── */
 function startRace() {
-  /* Watch players for live track + standings updates */
   gamePlayersPath = 'race/' + raceId + '/players';
+  var lastPlayers = {};
   db.ref(gamePlayersPath).on('value', function(snap){
     if (!snap) return;
-    var players = snap.val() || {};
-    renderTrack(players);
-    renderLb(players);
+    lastPlayers = snap.val() || {};
+    renderLb(lastPlayers);
   }, function(err){ console.error('[race] game players error:', err.message); });
+
+  // Separate animation loop so stickman runs smoothly even between Firebase updates
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  var _last = lastPlayers;
+  // Keep _last in sync with Firebase
+  var _syncPath = 'race/' + raceId + '/players';
+  db.ref(_syncPath).on('value', function(snap){ if(snap) _last = snap.val() || {}; });
+  (function loop() {
+    renderTrack(_last);
+    animFrameId = requestAnimationFrame(loop);
+  })();
 
   show('s-game');
   loadQ();
+}
+// Animation loop for stickman running effect
+var animFrameId = null;
+function startTrackAnimation(players) {
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  var lastPlayers = players;
+  // Update lastPlayers from Firebase listener
+  window._racePlayersRef = db.ref('race/' + raceId + '/players');
+  window._racePlayersRef.on('value', function(snap){
+    if (snap) lastPlayers = snap.val() || {};
+  });
+  function loop() {
+    renderTrack(lastPlayers);
+    animFrameId = requestAnimationFrame(loop);
+  }
+  loop();
 }
 
 /* ── Question ── */
@@ -416,20 +451,126 @@ function submitAns(answer, btnEl) {
 /* ── Track render ── */
 function renderTrack(players) {
   var track = document.getElementById('race-track');
-  track.innerHTML = '<div class="finish-line"></div>';
-  var arr = Object.values(players).sort(function(a, b){ return (b.progress || 0) - (a.progress || 0); });
-  arr.forEach(function(p){
-    var pct  = Math.min((p.progress || 0) * 84, 84);
-    var lane = document.createElement('div');
-    lane.className = 'lane';
-    lane.innerHTML =
-      '<span class="p-name" style="color:' + p.color + '">' + esc(p.name) + '</span>' +
-      '<div class="stickman ' + (p.finished ? '' : 'run') + '" ' +
-           'style="left:calc(8px + ' + pct + '%);color:' + p.color + '">' +
-        '<div class="hd"></div><div class="bd"></div><div class="lg"></div>' +
-      '</div>';
-    track.appendChild(lane);
+
+  // Create canvas once
+  var canvas = track.querySelector('canvas');
+  if (!canvas) {
+    track.innerHTML = '';
+    canvas = document.createElement('canvas');
+    canvas.className = 'race-canvas';
+    track.appendChild(canvas);
+  }
+
+  var arr       = Object.values(players).sort(function(a, b){ return (b.progress||0)-(a.progress||0); });
+  var laneH     = 56;
+  var padding   = 12;
+  var nameW     = 90;
+  var finishX   = canvas.offsetWidth - 40;
+  var totalH    = Math.max(arr.length * laneH + padding * 2, 80);
+
+  canvas.width  = canvas.offsetWidth  || 760;
+  canvas.height = totalH;
+
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Ground / sky gradient
+  var sky = ctx.createLinearGradient(0, 0, 0, totalH);
+  sky.addColorStop(0, '#0f172a');
+  sky.addColorStop(1, '#1e3a5f');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, canvas.width, totalH);
+
+  // Lane separators
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth   = 1;
+  arr.forEach(function(_, i) {
+    var y = padding + i * laneH + laneH;
+    ctx.beginPath(); ctx.moveTo(nameW, y); ctx.lineTo(finishX + 20, y); ctx.stroke();
   });
+
+  // Track ground line
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(nameW, padding);
+  ctx.lineTo(nameW, totalH - padding);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Finish line (chequered)
+  var sqSize = 8;
+  for (var fy = 0; fy < totalH; fy += sqSize) {
+    for (var fx = 0; fx < 16; fx += sqSize) {
+      ctx.fillStyle = ((Math.floor(fy / sqSize) + Math.floor(fx / sqSize)) % 2 === 0)
+        ? '#f8fafc' : '#1e293b';
+      ctx.fillRect(finishX + fx, fy, sqSize, sqSize);
+    }
+  }
+
+  // Draw each player
+  arr.forEach(function(p, i) {
+    var y      = padding + i * laneH + laneH / 2;
+    var trackW = finishX - nameW - 20;
+    var x      = nameW + 10 + Math.min((p.progress || 0), 1) * trackW;
+
+    // Name label
+    ctx.font      = '600 11px system-ui';
+    ctx.fillStyle = p.color || '#94a3b8';
+    ctx.fillText(p.name ? p.name.slice(0, 10) : '?', 4, y + 4);
+
+    if (p.finished) {
+      // Trophy for finisher
+      ctx.font      = '20px system-ui';
+      ctx.fillText('🏆', x - 10, y + 7);
+    } else {
+      // Draw stickman
+      drawStickman(ctx, x, y, p.color || '#60a5fa', p.progress > 0);
+    }
+  });
+}
+
+function drawStickman(ctx, x, y, color, running) {
+  ctx.strokeStyle = color;
+  ctx.fillStyle   = color;
+  ctx.lineWidth   = 2.5;
+  ctx.lineCap     = 'round';
+
+  var t = running ? Date.now() / 200 : 0;
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(x, y - 14, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Body
+  ctx.beginPath();
+  ctx.moveTo(x, y - 9);
+  ctx.lineTo(x, y + 2);
+  ctx.stroke();
+
+  // Arms
+  var armSwing = running ? Math.sin(t) * 6 : 4;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 6);
+  ctx.lineTo(x - armSwing, y + 1);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y - 6);
+  ctx.lineTo(x + armSwing, y + 1);
+  ctx.stroke();
+
+  // Legs
+  var legSwing = running ? Math.sin(t) * 7 : 5;
+  ctx.beginPath();
+  ctx.moveTo(x, y + 2);
+  ctx.lineTo(x - legSwing, y + 11);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y + 2);
+  ctx.lineTo(x + legSwing, y + 11);
+  ctx.stroke();
 }
 
 /* ── Leaderboard render ── */
