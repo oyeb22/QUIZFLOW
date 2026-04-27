@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuizFlow — Stickman Race</title>
+  <title>QuizFlow — Stickman Race 3D</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
-    :root{--bg:#0f172a;--panel:#1e293b;--track:#334155;--txt:#f8fafc;--acc:#3b82f6;--ok:#22c55e;--no:#ef4444;--gold:#f59e0b;--f:system-ui,sans-serif}
+    :root{--bg:#0b0f19;--panel:#111827;--track:#1f2937;--txt:#f8fafc;--acc:#3b82f6;--ok:#22c55e;--no:#ef4444;--gold:#f59e0b;--f:system-ui,-apple-system,sans-serif}
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:var(--f);background:var(--bg);color:var(--txt);min-height:100vh;padding:20px;display:flex;align-items:center;justify-content:center}
-    .wrap{max-width:820px;width:100%}
+    .wrap{max-width:900px;width:100%}
     .screen{display:none}.screen.on{display:block}
 
     #s-fatal{text-align:center;padding:60px 20px}
@@ -42,26 +43,65 @@
     .g-hdr h2{font-size:20px;margin-bottom:2px}
     .g-status{color:#94a3b8;font-size:13px;text-align:center;margin-bottom:14px}
 
-    /* replace existing .race-track and related styles */
-.race-track {
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 12px;
-  border: 1px solid var(--track);
-  margin-bottom: 18px;
-  overflow: hidden;
-  position: relative;
-}
-.race-canvas {
-  width: 100%;
-  display: block;
-}
-    .p-name{position:absolute;left:0;font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:82px}
-    .stickman{position:absolute;transition:left .7s cubic-bezier(.34,1.56,.64,1);display:flex;flex-direction:column;align-items:center;pointer-events:none}
-    .stickman .hd{width:10px;height:10px;border-radius:50%;background:currentColor}
-    .stickman .bd{width:3px;height:14px;background:currentColor;margin:2px 0}
-    .stickman .lg{width:14px;height:8px;border-top:3px solid currentColor;border-radius:0 0 7px 7px;margin-top:1px}
-    .stickman.run .lg{animation:walk .5s infinite alternate}
-    @keyframes walk{0%{transform:scaleX(1)}100%{transform:scaleX(.75)}}
+    .race-track {
+      background: #0f172a;
+      border-radius: 12px;
+      border: 1px solid var(--track);
+      margin-bottom: 18px;
+      overflow: hidden;
+      position: relative;
+      height: 420px;
+    }
+    .race-track canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .broadcast-ui {
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .live-badge {
+      background: #dc2626;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+    .cam-label {
+      background: rgba(0,0,0,0.55);
+      color: #e2e8f0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .race-code-overlay {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      background: rgba(0,0,0,0.55);
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 4px;
+      pointer-events: none;
+      z-index: 2;
+      font-family: monospace;
+    }
 
     .lb{background:var(--panel);border-radius:12px;padding:16px;border:1px solid var(--track);margin-bottom:18px}
     .lb-ttl{font-size:16px;font-weight:700;margin-bottom:12px;text-align:center}
@@ -92,7 +132,7 @@
     .popup{position:fixed;top:36%;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;pointer-events:none;z-index:999;text-shadow:0 2px 8px rgba(0,0,0,.5);animation:popUp 1s forwards}
     @keyframes popUp{0%{opacity:0;transform:translateX(-50%) scale(.5)}20%{opacity:1;transform:translateX(-50%) scale(1.1)}100%{opacity:0;transform:translateX(-50%) translateY(-40px)}}
 
-    @media(max-width:560px){.opts{grid-template-columns:1fr}.inp{width:100%;max-width:300px}.p-name{max-width:66px}}
+    @media(max-width:560px){.opts{grid-template-columns:1fr}.inp{width:100%;max-width:300px}.race-track{height:320px}}
   </style>
 </head>
 <body>
@@ -104,7 +144,7 @@
   </div>
 
   <div class="screen" id="s-join">
-    <h1>&#x1F3C1; Stickman Race</h1>
+    <h1>&#x1F3C1; Stickman Race 3D</h1>
     <p class="sub">Enter the race code and your name to join</p>
     <input class="inp" id="inp-code" type="text" placeholder="Race Code" maxlength="8"
            autocomplete="off" spellcheck="false"
@@ -129,7 +169,13 @@
   <div class="screen" id="s-game">
     <div class="g-hdr"><h2 id="g-title">Race</h2></div>
     <div class="g-status" id="g-status">Answer questions to move forward!</div>
-    <div class="race-track" id="race-track"><div class="finish-line"></div></div>
+    <div class="race-track" id="race-track">
+      <div class="broadcast-ui">
+        <div class="live-badge">LIVE</div>
+        <div class="cam-label" id="cam-label">Broadcast</div>
+      </div>
+      <div class="race-code-overlay" id="race-code-overlay">RACE: ---</div>
+    </div>
     <div class="lb">
       <div class="lb-ttl">&#x1F3C6; Live Standings</div>
       <div class="lb-rows" id="lb-rows"></div>
@@ -148,7 +194,10 @@
 (function(){
 'use strict';
 
-/* ── URL params ── */
+/* ═══════════════════════════════════════════════════════════════
+   EXISTING LOGIC — PRESERVED EXACTLY (Firebase, GAS, Questions)
+   ═══════════════════════════════════════════════════════════════ */
+
 var P       = new URLSearchParams(window.location.search);
 var GAS_URL = (P.get('script') || '').trim();
 var preCode = (P.get('room')   || '').trim().toUpperCase();
@@ -161,7 +210,6 @@ function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* GAS fetch — no Content-Type header to avoid CORS preflight */
 function gasPost(body, cb) {
   fetch(GAS_URL, { method:'POST', body: JSON.stringify(body) })
     .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -169,7 +217,6 @@ function gasPost(body, cb) {
     .catch(function(e){ console.error('[race] gasPost error:', e); cb(e, null); });
 }
 
-/* ── Require GAS URL ── */
 if (!GAS_URL) {
   document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('fatal-msg').textContent =
@@ -179,7 +226,6 @@ if (!GAS_URL) {
   return;
 }
 
-/* ── Firebase init ── */
 var db;
 try {
   var cfg = {
@@ -202,7 +248,6 @@ try {
   return;
 }
 
-/* ── State ── */
 var raceId      = '';
 var playerId    = '';
 var playerName  = '';
@@ -211,7 +256,6 @@ var questions   = [];
 var currentQ    = 0;
 var totalQ      = 0;
 
-/* Listener paths — stored as strings so we can call .off() cleanly */
 var lobbyPlayersPath = null;
 var phasePath        = null;
 var gamePlayersPath  = null;
@@ -224,7 +268,6 @@ function detachGameListeners() {
   if (gamePlayersPath)  { try { db.ref(gamePlayersPath).off('value');  } catch(_){} gamePlayersPath  = null; }
 }
 
-/* ── DOM ready ── */
 document.addEventListener('DOMContentLoaded', function(){
   show('s-join');
   if (preCode) document.getElementById('inp-code').value = preCode;
@@ -238,7 +281,6 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('joinBtn').addEventListener('click', doJoin);
 });
 
-/* ── Join ── */
 function doJoin() {
   var cEl  = document.getElementById('inp-code');
   var nEl  = document.getElementById('inp-name');
@@ -258,7 +300,6 @@ function doJoin() {
   playerId    = 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   playerColor = '#' + (Math.floor(Math.random() * 0x999999) + 0x444444).toString(16).slice(-6);
 
-  /* Validate race exists and load questions from GAS */
   gasPost({ action:'getRaceQuestions', raceId: raceId }, function(err, res){
     if (err || !res || res.status !== 'success') {
       eEl.textContent = (res && res.message) || 'Race not found. Check your code.';
@@ -270,7 +311,6 @@ function doJoin() {
     questions = res.data || [];
     totalQ    = questions.length;
 
-    /* Register in Firebase so teacher sees us in lobby */
     db.ref('race/' + raceId + '/players/' + playerId).set({
       name:       playerName,
       color:      playerColor,
@@ -284,6 +324,7 @@ function doJoin() {
 
     document.getElementById('lby-code').textContent = raceId;
     document.getElementById('g-title').textContent  = 'Race: ' + raceId;
+    document.getElementById('race-code-overlay').textContent = 'RACE: ' + raceId;
     show('s-lobby');
     watchLobby();
     btn.disabled    = false;
@@ -291,9 +332,7 @@ function doJoin() {
   });
 }
 
-/* ── Lobby: watch player list + wait for teacher start signal ── */
 function watchLobby() {
-  /* 1 — Watch player count so the lobby chip list stays live */
   lobbyPlayersPath = 'race/' + raceId + '/players';
   db.ref(lobbyPlayersPath).on('value', function(snap){
     if (!snap) return;
@@ -305,60 +344,33 @@ function watchLobby() {
     }).join('');
   }, function(err){ console.error('[race] lobby players error:', err.message); });
 
-  /* 2 — Watch phase node; fire startRace() when teacher writes "started" */
   phasePath = 'race/' + raceId + '/state/phase';
   db.ref(phasePath).on('value', function(snap){
     if (!snap) return;
     if (snap.val() === 'started') {
-      /* Detach both lobby listeners cleanly before transitioning */
       detachLobbyListeners();
       startRace();
     }
   }, function(err){ console.error('[race] phase listener error:', err.message); });
 }
 
-/* ── Race started ── */
 function startRace() {
   gamePlayersPath = 'race/' + raceId + '/players';
   var lastPlayers = {};
   db.ref(gamePlayersPath).on('value', function(snap){
     if (!snap) return;
     lastPlayers = snap.val() || {};
+    window._lastRacePlayers = lastPlayers;
     renderLb(lastPlayers);
   }, function(err){ console.error('[race] game players error:', err.message); });
 
-  // Separate animation loop so stickman runs smoothly even between Firebase updates
-  if (animFrameId) cancelAnimationFrame(animFrameId);
-  var _last = lastPlayers;
-  // Keep _last in sync with Firebase
-  var _syncPath = 'race/' + raceId + '/players';
-  db.ref(_syncPath).on('value', function(snap){ if(snap) _last = snap.val() || {}; });
-  (function loop() {
-    renderTrack(_last);
-    animFrameId = requestAnimationFrame(loop);
-  })();
+  init3D();
+  animate3D();
 
   show('s-game');
   loadQ();
 }
-// Animation loop for stickman running effect
-var animFrameId = null;
-function startTrackAnimation(players) {
-  if (animFrameId) cancelAnimationFrame(animFrameId);
-  var lastPlayers = players;
-  // Update lastPlayers from Firebase listener
-  window._racePlayersRef = db.ref('race/' + raceId + '/players');
-  window._racePlayersRef.on('value', function(snap){
-    if (snap) lastPlayers = snap.val() || {};
-  });
-  function loop() {
-    renderTrack(lastPlayers);
-    animFrameId = requestAnimationFrame(loop);
-  }
-  loop();
-}
 
-/* ── Question ── */
 function loadQ() {
   var qEl = document.getElementById('q-txt');
   var aEl = document.getElementById('q-area');
@@ -406,9 +418,7 @@ function loadQ() {
   }
 }
 
-/* ── Submit ── */
 function submitAns(answer, btnEl) {
-  /* Disable all options immediately to prevent double-submit */
   var els = document.querySelectorAll('#q-area button,#q-area input');
   for (var i = 0; i < els.length; i++) els[i].disabled = true;
   document.getElementById('g-status').textContent = 'Checking…';
@@ -422,7 +432,6 @@ function submitAns(answer, btnEl) {
   }, function(err, res){
     if (err || !res || res.status !== 'success') {
       showPopup('⚠️', '#f59e0b');
-      /* Re-enable on error so student can retry */
       for (var i = 0; i < els.length; i++) els[i].disabled = false;
       document.getElementById('g-status').textContent = 'Answer questions to move forward!';
       return;
@@ -448,132 +457,6 @@ function submitAns(answer, btnEl) {
   });
 }
 
-/* ── Track render ── */
-function renderTrack(players) {
-  var track = document.getElementById('race-track');
-
-  // Create canvas once
-  var canvas = track.querySelector('canvas');
-  if (!canvas) {
-    track.innerHTML = '';
-    canvas = document.createElement('canvas');
-    canvas.className = 'race-canvas';
-    track.appendChild(canvas);
-  }
-
-  var arr       = Object.values(players).sort(function(a, b){ return (b.progress||0)-(a.progress||0); });
-  var laneH     = 56;
-  var padding   = 12;
-  var nameW     = 90;
-  var finishX   = canvas.offsetWidth - 40;
-  var totalH    = Math.max(arr.length * laneH + padding * 2, 80);
-
-  canvas.width  = canvas.offsetWidth  || 760;
-  canvas.height = totalH;
-
-  var ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Ground / sky gradient
-  var sky = ctx.createLinearGradient(0, 0, 0, totalH);
-  sky.addColorStop(0, '#0f172a');
-  sky.addColorStop(1, '#1e3a5f');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, canvas.width, totalH);
-
-  // Lane separators
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth   = 1;
-  arr.forEach(function(_, i) {
-    var y = padding + i * laneH + laneH;
-    ctx.beginPath(); ctx.moveTo(nameW, y); ctx.lineTo(finishX + 20, y); ctx.stroke();
-  });
-
-  // Track ground line
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-  ctx.lineWidth   = 1;
-  ctx.setLineDash([6, 4]);
-  ctx.beginPath();
-  ctx.moveTo(nameW, padding);
-  ctx.lineTo(nameW, totalH - padding);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Finish line (chequered)
-  var sqSize = 8;
-  for (var fy = 0; fy < totalH; fy += sqSize) {
-    for (var fx = 0; fx < 16; fx += sqSize) {
-      ctx.fillStyle = ((Math.floor(fy / sqSize) + Math.floor(fx / sqSize)) % 2 === 0)
-        ? '#f8fafc' : '#1e293b';
-      ctx.fillRect(finishX + fx, fy, sqSize, sqSize);
-    }
-  }
-
-  // Draw each player
-  arr.forEach(function(p, i) {
-    var y      = padding + i * laneH + laneH / 2;
-    var trackW = finishX - nameW - 20;
-    var x      = nameW + 10 + Math.min((p.progress || 0), 1) * trackW;
-
-    // Name label
-    ctx.font      = '600 11px system-ui';
-    ctx.fillStyle = p.color || '#94a3b8';
-    ctx.fillText(p.name ? p.name.slice(0, 10) : '?', 4, y + 4);
-
-    if (p.finished) {
-      // Trophy for finisher
-      ctx.font      = '20px system-ui';
-      ctx.fillText('🏆', x - 10, y + 7);
-    } else {
-      // Draw stickman
-      drawStickman(ctx, x, y, p.color || '#60a5fa', p.progress > 0);
-    }
-  });
-}
-
-function drawStickman(ctx, x, y, color, running) {
-  ctx.strokeStyle = color;
-  ctx.fillStyle   = color;
-  ctx.lineWidth   = 2.5;
-  ctx.lineCap     = 'round';
-
-  var t = running ? Date.now() / 200 : 0;
-
-  // Head
-  ctx.beginPath();
-  ctx.arc(x, y - 14, 5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Body
-  ctx.beginPath();
-  ctx.moveTo(x, y - 9);
-  ctx.lineTo(x, y + 2);
-  ctx.stroke();
-
-  // Arms
-  var armSwing = running ? Math.sin(t) * 6 : 4;
-  ctx.beginPath();
-  ctx.moveTo(x, y - 6);
-  ctx.lineTo(x - armSwing, y + 1);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x, y - 6);
-  ctx.lineTo(x + armSwing, y + 1);
-  ctx.stroke();
-
-  // Legs
-  var legSwing = running ? Math.sin(t) * 7 : 5;
-  ctx.beginPath();
-  ctx.moveTo(x, y + 2);
-  ctx.lineTo(x - legSwing, y + 11);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x, y + 2);
-  ctx.lineTo(x + legSwing, y + 11);
-  ctx.stroke();
-}
-
-/* ── Leaderboard render ── */
 function renderLb(players) {
   var arr    = Object.values(players).sort(function(a, b){
     if ((b.correct || 0) !== (a.correct || 0)) return (b.correct || 0) - (a.correct || 0);
@@ -610,6 +493,471 @@ window.addEventListener('beforeunload', function(){
   detachLobbyListeners();
   detachGameListeners();
 });
+
+
+/* ═══════════════════════════════════════════════════════════════
+   NEW 3D ENGINE — Three.js Stadium Track Event
+   ═══════════════════════════════════════════════════════════════ */
+
+var scene3D, camera3D, renderer3D, runners3D = {}, clock3D, stadiumGroup;
+var cameraModeIndex = 0;
+var lastCameraSwitch3D = 0;
+var trackLength3D = 32;
+var trackStartX3D = -16;
+var laneWidth3D   = 1.35;
+var animFrameId3D = null;
+
+var CAMERA_MODES_3D = [
+  { name: 'Broadcast',      setup: function(){ camera3D.position.set(0, 16, 26); camera3D.lookAt(0, 0, 0); } },
+  { name: 'Follow Leader',  setup: function(leader){
+      if (!leader) return CAMERA_MODES_3D[0].setup();
+      var lx = trackStartX3D + (leader.progress || 0) * trackLength3D;
+      camera3D.position.set(lx - 6, 3.5, 10);
+      camera3D.lookAt(lx, 1.2, 0);
+    }},
+  { name: 'Finish Line',    setup: function(){
+      camera3D.position.set(trackStartX3D + trackLength3D + 1.5, 2.8, 7);
+      camera3D.lookAt(trackStartX3D + trackLength3D, 1.0, 0);
+    }},
+  { name: 'Drone Cam',      setup: function(){
+      var t = Date.now() / 3500;
+      camera3D.position.set(Math.sin(t) * 22, 20, Math.cos(t) * 22);
+      camera3D.lookAt(0, 0, 0);
+    }},
+  { name: 'Track Side',     setup: function(){
+      camera3D.position.set(-5, 2.5, 18);
+      camera3D.lookAt(5, 1, 0);
+    }},
+  { name: 'Starting Blocks',setup: function(){
+      camera3D.position.set(trackStartX3D - 2, 1.2, 5);
+      camera3D.lookAt(trackStartX3D + 5, 1, 0);
+    }}
+];
+
+function init3D() {
+  var container = document.getElementById('race-track');
+  // keep the UI overlays
+  var ui = container.querySelector('.broadcast-ui');
+  var rc = container.querySelector('.race-code-overlay');
+  container.innerHTML = '';
+  if (ui) container.appendChild(ui);
+  if (rc) container.appendChild(rc);
+
+  scene3D = new THREE.Scene();
+  scene3D.background = new THREE.Color(0x87CEEB);
+  scene3D.fog = new THREE.Fog(0x87CEEB, 35, 95);
+
+  var w = container.clientWidth || 860;
+  var h = container.clientHeight || 420;
+
+  camera3D = new THREE.PerspectiveCamera(50, w / h, 0.1, 200);
+
+  renderer3D = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer3D.setSize(w, h);
+  renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer3D.shadowMap.enabled = true;
+  renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer3D.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer3D.toneMappingExposure = 1.05;
+  container.appendChild(renderer3D.domElement);
+
+  // Lights
+  var hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.55);
+  scene3D.add(hemi);
+
+  var sun = new THREE.DirectionalLight(0xfff5e6, 1.0);
+  sun.position.set(18, 28, 12);
+  sun.castShadow = true;
+  sun.shadow.camera.top = 25;
+  sun.shadow.camera.bottom = -25;
+  sun.shadow.camera.left = -30;
+  sun.shadow.camera.right = 30;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.bias = -0.0005;
+  scene3D.add(sun);
+
+  // Fill light
+  var fill = new THREE.DirectionalLight(0xcceeff, 0.3);
+  fill.position.set(-10, 10, -10);
+  scene3D.add(fill);
+
+  createStadium3D();
+  clock3D = new THREE.Clock();
+  lastCameraSwitch3D = Date.now();
+
+  window.addEventListener('resize', onWindowResize3D);
+}
+
+function createStadium3D() {
+  stadiumGroup = new THREE.Group();
+
+  // Grass infield
+  var grassGeo = new THREE.PlaneGeometry(70, 45);
+  var grassMat = new THREE.MeshStandardMaterial({ color: 0x3a9d23, roughness: 0.95 });
+  var grass = new THREE.Mesh(grassGeo, grassMat);
+  grass.rotation.x = -Math.PI / 2;
+  grass.position.y = -0.06;
+  grass.receiveShadow = true;
+  stadiumGroup.add(grass);
+
+  // Track surface
+  var trackW = 12;
+  var trackL = 38;
+  var trackGeo = new THREE.PlaneGeometry(trackL, trackW);
+  var trackMat = new THREE.MeshStandardMaterial({ color: 0xc25e2e, roughness: 0.85 });
+  var track = new THREE.Mesh(trackGeo, trackMat);
+  track.rotation.x = -Math.PI / 2;
+  track.position.y = 0.0;
+  track.receiveShadow = true;
+  stadiumGroup.add(track);
+
+  // Lane lines
+  for (var i = -4; i <= 4; i++) {
+    var lineGeo = new THREE.PlaneGeometry(trackL, 0.04);
+    var lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.9, transparent: true });
+    var line = new THREE.Mesh(lineGeo, lineMat);
+    line.rotation.x = -Math.PI / 2;
+    line.position.set(0, 0.015, i * laneWidth3D);
+    stadiumGroup.add(line);
+  }
+
+  // Start line thick
+  var sGeo = new THREE.PlaneGeometry(0.2, trackW);
+  var sMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  var sLine = new THREE.Mesh(sGeo, sMat);
+  sLine.rotation.x = -Math.PI / 2;
+  sLine.position.set(trackStartX3D, 0.025, 0);
+  stadiumGroup.add(sLine);
+
+  // Finish line checkered texture
+  var fCan = document.createElement('canvas');
+  fCan.width = 64; fCan.height = 512;
+  var fctx = fCan.getContext('2d');
+  var sq = 32;
+  for (var fy = 0; fy < 512; fy += sq) {
+    for (var fx = 0; fx < 64; fx += sq) {
+      fctx.fillStyle = ((Math.floor(fy/sq) + Math.floor(fx/sq)) % 2 === 0) ? '#ffffff' : '#111111';
+      fctx.fillRect(fx, fy, sq, sq);
+    }
+  }
+  var fTex = new THREE.CanvasTexture(fCan);
+  var fGeo = new THREE.PlaneGeometry(0.35, trackW);
+  var fMat = new THREE.MeshBasicMaterial({ map: fTex });
+  var fLine = new THREE.Mesh(fGeo, fMat);
+  fLine.rotation.x = -Math.PI / 2;
+  fLine.position.set(trackStartX3D + trackLength3D, 0.025, 0);
+  stadiumGroup.add(fLine);
+
+  // Lane numbers
+  for (var li = 0; li < 8; li++) {
+    var nCan = document.createElement('canvas');
+    nCan.width = 64; nCan.height = 64;
+    var nctx = nCan.getContext('2d');
+    nctx.fillStyle = '#ffffff';
+    nctx.font = 'bold 44px Arial';
+    nctx.textAlign = 'center';
+    nctx.textBaseline = 'middle';
+    nctx.fillText(String(li+1), 32, 32);
+    var nTex = new THREE.CanvasTexture(nCan);
+    var nGeo = new THREE.PlaneGeometry(0.5, 0.5);
+    var nMat = new THREE.MeshBasicMaterial({ map: nTex, transparent: true });
+    var nMesh = new THREE.Mesh(nGeo, nMat);
+    nMesh.rotation.x = -Math.PI / 2;
+    nMesh.position.set(trackStartX3D - 0.7, 0.03, (li - 3.5) * laneWidth3D);
+    stadiumGroup.add(nMesh);
+  }
+
+  // Stands
+  var standMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 });
+  for (var side = -1; side <= 1; side += 2) {
+    for (var tier = 0; tier < 6; tier++) {
+      var stGeo = new THREE.BoxGeometry(trackL + 6, 0.7, 2.2);
+      var st = new THREE.Mesh(stGeo, standMat);
+      st.position.set(0, tier * 0.7 + 0.35, side * (8.5 + tier * 1.6));
+      st.castShadow = true;
+      st.receiveShadow = true;
+      stadiumGroup.add(st);
+
+      // Crowd
+      for (var c = 0; c < 30; c++) {
+        var cGeo = new THREE.SphereGeometry(0.14, 6, 6);
+        var cMat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(Math.random(), 0.65, 0.45 + Math.random()*0.25) });
+        var cMesh = new THREE.Mesh(cGeo, cMat);
+        cMesh.position.set(
+          (Math.random()-0.5)*(trackL+4),
+          tier*0.7 + 0.9 + Math.random()*0.2,
+          side*(8.5 + tier*1.6) + (Math.random()-0.5)*1.8
+        );
+        stadiumGroup.add(cMesh);
+      }
+    }
+  }
+
+  // Light poles
+  var poleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6, roughness: 0.3 });
+  var poleGeo = new THREE.CylinderGeometry(0.12, 0.15, 14, 8);
+  for (var ps = -1; ps <= 1; ps += 2) {
+    var p1 = new THREE.Mesh(poleGeo, poleMat);
+    p1.position.set(-14, 7, ps * 20);
+    p1.castShadow = true;
+    stadiumGroup.add(p1);
+    var p2 = new THREE.Mesh(poleGeo, poleMat);
+    p2.position.set(14, 7, ps * 20);
+    p2.castShadow = true;
+    stadiumGroup.add(p2);
+
+    // Light arrays on top
+    var lightBarGeo = new THREE.BoxGeometry(3, 0.15, 0.8);
+    var lightBarMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
+    for (var px = -1; px <= 1; px += 2) {
+      var bar = new THREE.Mesh(lightBarGeo, lightBarMat);
+      bar.position.set(px * 14, 14.2, ps * 20);
+      stadiumGroup.add(bar);
+    }
+  }
+
+  // Scoreboard
+  var sbGeo = new THREE.BoxGeometry(6, 3, 0.3);
+  var sbMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4 });
+  var sb = new THREE.Mesh(sbGeo, sbMat);
+  sb.position.set(0, 10, -18);
+  sb.castShadow = true;
+  stadiumGroup.add(sb);
+
+  var sbFaceGeo = new THREE.PlaneGeometry(5.6, 2.6);
+  var sbFaceCan = document.createElement('canvas');
+  sbFaceCan.width = 512; sbFaceCan.height = 240;
+  var sbctx = sbFaceCan.getContext('2d');
+  sbctx.fillStyle = '#0f172a';
+  sbctx.fillRect(0,0,512,240);
+  sbctx.strokeStyle = '#334155';
+  sbctx.lineWidth = 4;
+  sbctx.strokeRect(4,4,504,232);
+  sbctx.fillStyle = '#f59e0b';
+  sbctx.font = 'bold 48px monospace';
+  sbctx.textAlign = 'center';
+  sbctx.fillText('QUIZFLOW RACE', 256, 80);
+  sbctx.fillStyle = '#22c55e';
+  sbctx.font = 'bold 36px monospace';
+  sbctx.fillText('LIVE TRACK EVENT', 256, 160);
+  var sbFaceTex = new THREE.CanvasTexture(sbFaceCan);
+  var sbFaceMat = new THREE.MeshBasicMaterial({ map: sbFaceTex });
+  var sbFace = new THREE.Mesh(sbFaceGeo, sbFaceMat);
+  sbFace.position.set(0, 10, -17.84);
+  stadiumGroup.add(sbFace);
+
+  scene3D.add(stadiumGroup);
+}
+
+function createRunner3D(pid, color, laneIndex) {
+  var group = new THREE.Group();
+  var mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.35, metalness: 0.05 });
+  var skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.5 });
+
+  // Head
+  var headGeo = new THREE.SphereGeometry(0.16, 16, 16);
+  var head = new THREE.Mesh(headGeo, skinMat);
+  head.position.y = 1.78;
+  head.castShadow = true;
+  group.add(head);
+
+  // Torso
+  var torsoGeo = new THREE.CylinderGeometry(0.13, 0.1, 0.55, 10);
+  var torso = new THREE.Mesh(torsoGeo, mat);
+  torso.position.y = 1.38;
+  torso.castShadow = true;
+  group.add(torso);
+
+  // Pivot groups for limbs
+  var armGeo = new THREE.CylinderGeometry(0.038, 0.032, 0.48, 8);
+  armGeo.translate(0, -0.24, 0);
+
+  var lArmG = new THREE.Group();
+  lArmG.position.set(-0.2, 1.58, 0);
+  var lArm = new THREE.Mesh(armGeo, skinMat);
+  lArm.castShadow = true;
+  lArmG.add(lArm);
+  group.add(lArmG);
+
+  var rArmG = new THREE.Group();
+  rArmG.position.set(0.2, 1.58, 0);
+  var rArm = new THREE.Mesh(armGeo, skinMat);
+  rArm.castShadow = true;
+  rArmG.add(rArm);
+  group.add(rArmG);
+
+  var legGeo = new THREE.CylinderGeometry(0.055, 0.04, 0.68, 8);
+  legGeo.translate(0, -0.34, 0);
+
+  var lLegG = new THREE.Group();
+  lLegG.position.set(-0.1, 1.08, 0);
+  var lLeg = new THREE.Mesh(legGeo, skinMat);
+  lLeg.castShadow = true;
+  lLegG.add(lLeg);
+  group.add(lLegG);
+
+  var rLegG = new THREE.Group();
+  rLegG.position.set(0.1, 1.08, 0);
+  var rLeg = new THREE.Mesh(legGeo, skinMat);
+  rLeg.castShadow = true;
+  rLegG.add(rLeg);
+  group.add(rLegG);
+
+  // Name label sprite
+  var nCan = document.createElement('canvas');
+  nCan.width = 256; nCan.height = 64;
+  var nctx = nCan.getContext('2d');
+  nctx.fillStyle = 'rgba(0,0,0,0.65)';
+  roundRect(nctx, 0, 0, 256, 64, 12);
+  nctx.fillStyle = '#ffffff';
+  nctx.font = 'bold 26px system-ui';
+  nctx.textAlign = 'center';
+  nctx.textBaseline = 'middle';
+  nctx.fillText('Racer', 128, 32);
+  var nTex = new THREE.CanvasTexture(nCan);
+  var nMat = new THREE.SpriteMaterial({ map: nTex });
+  var nameSprite = new THREE.Sprite(nMat);
+  nameSprite.position.set(0, 2.4, 0);
+  nameSprite.scale.set(2.2, 0.55, 1);
+  group.add(nameSprite);
+
+  // Position
+  var z = (laneIndex - 3.5) * laneWidth3D;
+  group.position.set(trackStartX3D, 0, z);
+
+  scene3D.add(group);
+
+  return {
+    group: group, head: head, torso: torso,
+    leftArm: lArmG, rightArm: rArmG,
+    leftLeg: lLegG, rightLeg: rLegG,
+    nameSprite: nameSprite, laneIndex: laneIndex,
+    lastProgress: 0, runTime: 0, finished: false
+  };
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function updateRunner3D(id, player, dt) {
+  var runner = runners3D[id];
+  if (!runner) {
+    var lane = Object.keys(runners3D).length;
+    runner = createRunner3D(id, player.color || '#60a5fa', lane);
+    runners3D[id] = runner;
+
+    // Update name texture
+    var nCan = document.createElement('canvas');
+    nCan.width = 256; nCan.height = 64;
+    var nctx = nCan.getContext('2d');
+    nctx.fillStyle = 'rgba(0,0,0,0.65)';
+    roundRect(nctx, 0, 0, 256, 64, 12);
+    nctx.fillStyle = '#ffffff';
+    nctx.font = 'bold 26px system-ui';
+    nctx.textAlign = 'center';
+    nctx.textBaseline = 'middle';
+    nctx.fillText((player.name || '?').slice(0, 12), 128, 32);
+    runner.nameSprite.material.map = new THREE.CanvasTexture(nCan);
+    runner.nameSprite.material.needsUpdate = true;
+  }
+
+  var progress = Math.min(player.progress || 0, 1);
+  var targetX = trackStartX3D + progress * trackLength3D;
+
+  // Smooth position lerp
+  runner.group.position.x += (targetX - runner.group.position.x) * 0.12;
+
+  var isMoving = Math.abs(progress - runner.lastProgress) > 0.0005;
+  var isFinished = player.finished;
+
+  if (isFinished && !runner.finished) {
+    runner.finished = true;
+    // Celebration pose
+    runner.leftArm.rotation.z = Math.PI * 0.85;
+    runner.rightArm.rotation.z = -Math.PI * 0.85;
+    runner.leftLeg.rotation.x = 0;
+    runner.rightLeg.rotation.x = 0;
+    runner.group.position.y = 0;
+  } else if (!isFinished) {
+    if (isMoving || progress < 1) {
+      runner.runTime += dt * 9;
+      var swing = Math.sin(runner.runTime) * 0.75;
+      runner.leftArm.rotation.x = swing;
+      runner.rightArm.rotation.x = -swing;
+      runner.leftArm.rotation.z = swing * 0.15;
+      runner.rightArm.rotation.z = -swing * 0.15;
+      runner.leftLeg.rotation.x = -swing * 0.9;
+      runner.rightLeg.rotation.x = swing * 0.9;
+      runner.group.position.y = Math.abs(Math.sin(runner.runTime * 2)) * 0.06;
+    } else {
+      // Idle breathing
+      var breath = Math.sin(Date.now()/800) * 0.03;
+      runner.leftArm.rotation.x += (breath - runner.leftArm.rotation.x) * 0.1;
+      runner.rightArm.rotation.x += (-breath - runner.rightArm.rotation.x) * 0.1;
+      runner.leftLeg.rotation.x *= 0.95;
+      runner.rightLeg.rotation.x *= 0.95;
+      runner.group.position.y *= 0.95;
+    }
+  }
+
+  runner.lastProgress = progress;
+}
+
+function updateCamera3D(players) {
+  var now = Date.now();
+  if (now - lastCameraSwitch3D > 7000) {
+    cameraModeIndex = (cameraModeIndex + 1) % CAMERA_MODES_3D.length;
+    lastCameraSwitch3D = now;
+    var label = document.getElementById('cam-label');
+    if (label) label.textContent = CAMERA_MODES_3D[cameraModeIndex].name;
+  }
+
+  var arr = Object.values(players).sort(function(a,b){ return (b.progress||0)-(a.progress||0); });
+  var leader = arr[0];
+  CAMERA_MODES_3D[cameraModeIndex].setup(leader);
+}
+
+function animate3D() {
+  if (!renderer3D) return;
+  animFrameId3D = requestAnimationFrame(animate3D);
+
+  var dt = clock3D.getDelta();
+
+  if (window._lastRacePlayers) {
+    Object.entries(window._lastRacePlayers).forEach(function(entry){
+      updateRunner3D(entry[0], entry[1], dt);
+    });
+    updateCamera3D(window._lastRacePlayers);
+  }
+
+  renderer3D.render(scene3D, camera3D);
+}
+
+function onWindowResize3D() {
+  var container = document.getElementById('race-track');
+  if (!container || !camera3D || !renderer3D) return;
+  var w = container.clientWidth;
+  var h = container.clientHeight || 420;
+  camera3D.aspect = w / h;
+  camera3D.updateProjectionMatrix();
+  renderer3D.setSize(w, h);
+}
+
+/* Keep old function signatures so nothing breaks if called elsewhere */
+function renderTrack() { /* 3D loop handles this now */ }
+function drawStickman() { /* replaced by 3D */ }
 
 }());
 </script>
