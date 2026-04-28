@@ -421,7 +421,7 @@ var answered      = false;
 var correctAnswer = null;   /* set after GAS validates */
 var roundTimeout  = null;
 var timerRaf      = null;
-var timerEnd      = 0;
+var qStartAt_ms   = 0;      /* absolute ms — THE single source of truth for timing */
 var streak        = 0;
 var totalScore    = 0;
 
@@ -591,6 +591,9 @@ function startQuestion(qi, qStartAt) {
   correctAnswer = null;
   currentQIdx   = qi;
 
+  /* Store the absolute server start time — every calc derives from this */
+  qStartAt_ms = qStartAt;
+
   var q = questions[qi];
   if (!q) return;
 
@@ -598,18 +601,17 @@ function startQuestion(qi, qStartAt) {
   el('q-txt').textContent = q.question;
   renderAnswerArea(q);
 
-  /* Sync timer to server start time */
-  var elapsed = (Date.now() - qStartAt) / 1000;
-  var remain  = Math.max(0, timePerQ - elapsed);
-  timerEnd = Date.now() + remain * 1000;
-
   show('s-question');
-  runTimer(remain, timePerQ);
 
-  /* Auto-timeout locally in case Firebase is slow */
+  /* Calculate how much time is genuinely left right now */
+  var msLeft = (qStartAt_ms + timePerQ * 1000) - Date.now();
+  if (msLeft <= 0) { timeOut(); return; }
+
+  runTimer();   /* no args — reads qStartAt_ms and timePerQ directly */
+
   roundTimeout = setTimeout(function () {
     if (!answered) timeOut();
-  }, remain * 1000);
+  }, msLeft);
 }
 
 function renderAnswerArea(q) {
@@ -650,20 +652,23 @@ function renderAnswerArea(q) {
 
 /* ─────────────────────────────────────────────
    TIMER (arc SVG)
+   KEY: every frame recalculates from the shared qStartAt_ms absolute timestamp.
+   A student who receives Firebase 2 seconds late gets a 2-second-depleted arc
+   immediately — identical to every other student at that moment.
 ───────────────────────────────────────────── */
 var ARC_TOTAL = 113; /* 2π × 18 ≈ 113 */
 
-function runTimer(remain, total) {
+function runTimer() {
   stopTimer();
-  var arc   = el('timer-arc');
-  var lbl   = el('timer-label');
-  var start = Date.now();
+  var arc = el('timer-arc');
+  var lbl = el('timer-label');
 
   function tick() {
-    var elapsed = (Date.now() - start) / 1000;
-    var left    = Math.max(0, remain - elapsed);
-    var ratio   = left / total;
-    var offset  = ARC_TOTAL * (1 - ratio);
+    /* Left = how many ms remain until qStartAt_ms + full duration */
+    var deadline = qStartAt_ms + timePerQ * 1000;
+    var left     = Math.max(0, (deadline - Date.now()) / 1000);
+    var ratio    = left / timePerQ;                       /* 1→0 over the full duration */
+    var offset   = ARC_TOTAL * (1 - ratio);               /* arc drains as ratio falls  */
     arc.setAttribute('stroke-dashoffset', offset);
     arc.setAttribute('stroke', ratio > .5 ? '#4ade80' : ratio > .25 ? '#f59e0b' : '#ef4444');
     lbl.textContent = Math.ceil(left);
@@ -688,7 +693,9 @@ function submitAnswer(answer, btnEl) {
 
   if (btnEl) btnEl.classList.add('selected');
 
-  var timeRemaining = Math.max(0, (timerEnd - Date.now()) / 1000);
+  /* Time remaining = absolute deadline minus now — same formula as the timer */
+  var deadline      = qStartAt_ms + timePerQ * 1000;
+  var timeRemaining = Math.max(0, (deadline - Date.now()) / 1000);
 
   /* Show "answer received" state immediately */
   el('q-body').innerHTML =
