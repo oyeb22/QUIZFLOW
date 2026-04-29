@@ -546,6 +546,8 @@ function watchGameState() {
       startCountdown(st.countdownValue || 3);
     } else if (phase === 'question') {
       var qi = parseInt(st.qIndex) || 0;
+      // FIX: read timePerQ from Firebase state, update local variable
+      if (st.timePerQ) timePerQ = st.timePerQ;
       if (qi !== currentQIdx) startQuestion(qi, st.qStartAt || Date.now());
     } else if (phase === 'reveal') {
       showReveal(st.qIndex, st.correctAnswer);
@@ -556,7 +558,6 @@ function watchGameState() {
     }
   });
 
-  /* Also watch players for live leaderboard updates */
   playersRef = db.ref('kahoot/' + sessionId + '/players');
 }
 
@@ -590,9 +591,7 @@ function startQuestion(qi, qStartAt) {
   answered      = false;
   correctAnswer = null;
   currentQIdx   = qi;
-
-  /* Store the absolute server start time — every calc derives from this */
-  qStartAt_ms = qStartAt;
+  qStartAt_ms   = qStartAt;
 
   var q = questions[qi];
   if (!q) return;
@@ -600,14 +599,24 @@ function startQuestion(qi, qStartAt) {
   setDot(qi);
   el('q-txt').textContent = q.question;
   renderAnswerArea(q);
-
   show('s-question');
 
-  /* Calculate how much time is genuinely left right now */
   var msLeft = (qStartAt_ms + timePerQ * 1000) - Date.now();
-  if (msLeft <= 0) { timeOut(); return; }
+  
+  // FIX: if more than the full duration has passed, give at least 3 seconds
+  // This handles very late Firebase delivery
+  if (msLeft <= 0) {
+    if (msLeft < -(timePerQ * 1000)) {
+      // Question is way too old, skip it
+      timeOut();
+      return;
+    }
+    // Give a grace period so student can at least see the question
+    msLeft = 3000;
+    qStartAt_ms = Date.now() - (timePerQ * 1000) + 3000;
+  }
 
-  runTimer();   /* no args — reads qStartAt_ms and timePerQ directly */
+  runTimer();
 
   roundTimeout = setTimeout(function () {
     if (!answered) timeOut();
