@@ -1189,21 +1189,17 @@ function renderQuestion(){
     if(q.type==='TF'&&opts.length===0)opts=['True','False'];
     var imgs=q.option_images||[];
     html+='<div class="options">';
-    opts.forEach(function(opt,i){
-      var letter=String.fromCharCode(65+i);
-      var sel=answers[q.id]===letter?' selected':'';
-      var imgSrc=imgs[i]||'';
-      var readBtn=TTS.enabled
-        ? '<button class="opt-read-btn" onclick="event.stopPropagation();ttsReadOpt(\''+letter+': '+(opt||'').replace(/'/g,"\\'")+'\')" title="Read this option">🔊</button>'
-        : '';
-      html+='<div class="option'+sel+'" onclick="selectAns(\''+q.id+'\',\''+letter+'\',this)">'
-        +'<div class="opt-letter">'+letter+'</div>'
-        +'<div class="opt-content">'
-        +(opt?'<div class="opt-text">'+opt+'</div>':'')
-        +(imgSrc?'<img class="opt-img" src="'+imgSrc+'" alt="Option '+letter+'" onerror="this.remove()" loading="lazy">':'')
-        +readBtn
-        +'</div></div>';
-    });
+    opts.forEach(function(opt, i) {
+  var letter = String.fromCharCode(65 + i);
+  var img = (q.option_images && q.option_images[i]) ? q.option_images[i] : '';
+  var sel = answers[q.id] === letter ? ' selected' : '';
+  var imgHtml = img
+    ? '<img src="' + img + '" style="max-width:100%;max-height:120px;border-radius:6px;margin-top:6px;display:block;object-fit:contain" onerror="this.remove()">'
+    : '';
+  html += '<div class="option' + sel + '" onclick="selectAns(\'' + q.id + '\',\'' + letter + '\',this)">'
+    + '<div class="opt-letter">' + letter + '</div>'
+    + '<div class="opt-text">' + (opt || '') + imgHtml + '</div></div>';
+});
     html+='</div>';
   }else{
     var val=answers[q.id]||'';
