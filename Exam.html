@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,19 +22,13 @@
     }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
     body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overscroll-behavior:none;}
-
-    /* ── LOADING ── */
     #loadingScreen{display:none;position:fixed;inset:0;background:rgba(8,11,20,.92);z-index:99999;align-items:center;justify-content:center;flex-direction:column;backdrop-filter:blur(6px);}
     #loadingScreen.on{display:flex;}
     .ld-ring{width:52px;height:52px;border:3px solid var(--surface3);border-top-color:var(--accent);border-right-color:var(--accent2);border-radius:50%;animation:spin .9s linear infinite;margin-bottom:20px;}
     #loadingText{color:var(--text2);font-size:13px;letter-spacing:.3px;}
     @keyframes spin{to{transform:rotate(360deg);}}
-
-    /* ── SCREEN SYSTEM ── */
     .screen{display:none;}
     .screen.active{display:block;}
-
-    /* ══════════════════ PRE-EXAM ══════════════════ */
     #preExam{min-height:100vh;min-height:100dvh;background:radial-gradient(ellipse 60% 50% at 15% 30%,rgba(91,110,245,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 85% 70%,rgba(45,212,160,.05) 0%,transparent 70%),var(--bg);}
     .candidate-banner{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;gap:14px;}
     .cb-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
@@ -67,12 +62,11 @@
     .start-btn{display:inline-flex;align-items:center;gap:10px;padding:15px 40px;background:linear-gradient(135deg,var(--accent),#7c6ff7);border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;box-shadow:0 4px 24px var(--accent-glow);width:100%;max-width:380px;justify-content:center;}
     .start-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 32px var(--accent-glow);}
     .start-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;}
-    /* FIX: locked profile notice on pre-exam screen */
     .locked-notice{display:none;max-width:860px;margin:0 auto 12px;padding:0 16px;}
     .locked-notice.on{display:block;}
     .locked-inner{background:rgba(41,201,138,.06);border:1px solid rgba(41,201,138,.25);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--green);display:flex;align-items:center;gap:8px;}
 
-    /* ══════════════════ EXAM SCREEN ══════════════════ */
+    /* ══ EXAM SCREEN ══ */
     #examScreen{background:var(--bg);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;}
     .exam-header{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
     .exam-header-top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:10px;}
@@ -107,25 +101,57 @@
     .log-entry{padding:3px 0;border-bottom:1px solid rgba(37,42,66,.5);color:var(--muted);}
     .log-entry.vio{color:var(--red);}
     .log-entry.warn{color:var(--yellow);}
-    .question-wrap{flex:1;max-width:700px;width:100%;margin:0 auto;padding:16px 14px 120px;}
+    .question-wrap{flex:1;max-width:700px;width:100%;margin:0 auto;padding:16px 14px 130px;}
     .exam-candidate-card{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;}
     .ecc-avatar{width:34px;height:34px;background:linear-gradient(135deg,rgba(91,110,245,.3),rgba(129,140,248,.2));border:1px solid rgba(91,110,245,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
     .ecc-info{flex:1;min-width:0;}
     .ecc-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .ecc-meta{font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
     .ecc-vio{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--yellow);flex-shrink:0;text-align:right;}
-    .q-count{font-size:12px;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
-    .q-count-right{font-family:var(--mono);font-size:11px;color:var(--muted);}
-    /* FIX: flag button in question count row */
+    .q-count{font-size:12px;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+    .q-count-right{display:flex;align-items:center;gap:6px;}
     .flag-btn{padding:3px 9px;font-size:10px;font-weight:700;background:transparent;border:1px solid var(--border2);border-radius:20px;color:var(--muted);cursor:pointer;font-family:var(--font);transition:all .15s;}
     .flag-btn.flagged{background:var(--yellow-glow);border-color:rgba(245,200,66,.4);color:var(--yellow);}
+
+    /* ══ TTS BAR ══ */
+    .tts-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(91,110,245,.06);border:1px solid rgba(91,110,245,.18);border-radius:var(--radius-sm);margin-bottom:12px;flex-wrap:wrap;}
+    .tts-bar.hidden{display:none;}
+    .tts-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid rgba(91,110,245,.3);border-radius:20px;background:rgba(91,110,245,.1);color:var(--accent2);font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .tts-btn:hover{background:rgba(91,110,245,.2);}
+    .tts-btn.speaking{background:rgba(45,212,160,.12);border-color:rgba(45,212,160,.35);color:var(--green);animation:ttsGlow 1.2s ease-in-out infinite;}
+    .tts-btn.speaking::before{content:'▶ ';}
+    @keyframes ttsGlow{0%,100%{box-shadow:none}50%{box-shadow:0 0 10px rgba(45,212,160,.25)}}
+    .tts-stop-btn{padding:5px 10px;border:1px solid rgba(240,107,107,.3);border-radius:20px;background:rgba(240,107,107,.08);color:var(--red);font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;display:none;}
+    .tts-stop-btn.visible{display:inline-flex;align-items:center;gap:4px;}
+    .tts-speed{background:transparent;border:1px solid var(--border2);border-radius:20px;color:var(--text2);font-size:11px;font-family:var(--font);padding:4px 8px;outline:none;cursor:pointer;}
+    .tts-speed option{background:var(--surface);}
+    .tts-voice-badge{font-size:10px;color:var(--muted);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+
+    /* ══ AUDIO Q (phonics/diction mode) ══ */
+    .audio-q-box{background:rgba(91,110,245,.06);border:1px solid rgba(91,110,245,.2);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;}
+    .audio-q-play-btn{display:inline-flex;align-items:center;gap:10px;padding:14px 28px;background:linear-gradient(135deg,var(--accent),#7c6ff7);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .18s;box-shadow:0 4px 20px var(--accent-glow);}
+    .audio-q-play-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--accent-glow);}
+    .audio-q-play-btn.playing{background:linear-gradient(135deg,var(--green),#1da870);box-shadow:0 4px 20px rgba(45,212,160,.3);}
+    .audio-q-play-btn.playing::before{content:'🔊 ';}
+    .audio-q-count{font-size:11px;color:var(--muted);margin-top:8px;}
+    .audio-q-hint{font-size:12px;color:var(--text2);margin-top:10px;line-height:1.5;}
+    .audio-q-wave{display:flex;align-items:center;justify-content:center;gap:3px;height:32px;margin:10px 0;}
+    .wave-bar{width:4px;border-radius:2px;background:var(--accent2);animation:waveAnim 1s ease-in-out infinite;}
+    .wave-bar:nth-child(2){animation-delay:.1s;height:14px;}
+    .wave-bar:nth-child(3){animation-delay:.2s;height:22px;}
+    .wave-bar:nth-child(4){animation-delay:.3s;height:30px;}
+    .wave-bar:nth-child(5){animation-delay:.4s;height:22px;}
+    .wave-bar:nth-child(6){animation-delay:.5s;height:14px;}
+    .wave-bar:nth-child(7){animation-delay:.6s;height:8px;}
+    @keyframes waveAnim{0%,100%{transform:scaleY(0.5);opacity:.5}50%{transform:scaleY(1);opacity:1}}
+    .audio-q-wave.hidden{display:none;}
+
     .q-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:clamp(16px,4vw,24px);}
     .instruction-header{background:rgba(91,110,245,.08);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:12px 16px;margin:0 0 16px;font-size:13px;line-height:1.5;color:var(--text);}
     .instruction-header .label{font-size:10px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;display:block;}
     .question-image{max-width:100%;margin:0 0 16px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border2);background:var(--surface2);}
     .question-image img{width:100%;height:auto;display:block;object-fit:contain;max-height:300px;}
     .question-image .img-error{padding:12px;font-size:11px;color:var(--muted);text-align:center;}
-    /* FIX: passage panel shown on mobile as stacked (was display:none on mobile before) */
     .passage-panel{border:1px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface2);margin:0 0 16px;}
     .passage-header{padding:8px 14px;background:rgba(91,110,245,.08);border-bottom:1px solid var(--border2);font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
     .passage-toggle-icon{font-size:12px;transition:transform .2s;}
@@ -133,7 +159,7 @@
     .passage-content{padding:14px;font-size:13px;line-height:1.7;color:var(--text);max-height:220px;overflow-y:auto;}
     @media(min-width:768px){
       .passage-panel{display:grid;grid-template-columns:1fr 1fr;}
-      .passage-header{display:none;}/* desktop shows both panes always */
+      .passage-header{display:none;}
       .passage-content{max-height:340px;border-right:1px solid var(--border2);}
       .passage-q-pane{display:block!important;}
     }
@@ -151,10 +177,15 @@
     .option.selected{border-color:var(--accent);background:rgba(91,110,245,.1);box-shadow:0 0 0 3px rgba(91,110,245,.1);}
     .opt-letter{width:32px;height:32px;border-radius:8px;background:var(--surface3);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:var(--mono);flex-shrink:0;transition:all .18s;}
     .option.selected .opt-letter{background:var(--accent);color:white;}
+    .opt-content{flex:1;display:flex;flex-direction:column;gap:6px;}
     .opt-text{font-size:clamp(13px,3.5vw,14px);line-height:1.4;}
+    /* Option image support */
+    .opt-img{max-width:100%;max-height:100px;border-radius:6px;object-fit:contain;display:block;}
+    /* Option-level read-aloud button */
+    .opt-read-btn{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border:1px solid rgba(91,110,245,.2);border-radius:12px;background:transparent;color:var(--muted);font-size:10px;font-family:var(--font);cursor:pointer;transition:all .12s;align-self:flex-start;}
+    .opt-read-btn:hover{color:var(--accent2);border-color:rgba(91,110,245,.4);}
     .short-input{width:100%;padding:clamp(11px,3vw,13px) clamp(12px,3vw,14px);background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:var(--font);resize:vertical;min-height:100px;outline:none;transition:border-color .18s;-webkit-appearance:none;}
     .short-input:focus{border-color:var(--accent);}
-    /* Nav dots — FIX: flagged state added */
     .q-dots-wrap{margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
     .q-dot{width:10px;height:10px;border-radius:50%;background:var(--surface3);border:1.5px solid var(--border2);cursor:pointer;transition:all .15s;flex-shrink:0;position:relative;}
     .q-dot.answered{background:var(--accent);border-color:var(--accent);}
@@ -172,8 +203,6 @@
     .nav-submit:hover{opacity:.9;}
     .nav-center{flex:1;display:flex;align-items:center;justify-content:center;}
     @media(max-width:460px){.nav-center{display:none;}}
-
-    /* ══════════════════ VIOLATION MODAL ══════════════════ */
     #vioModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
     #vioModal.on{display:flex;}
     .vio-box{background:var(--surface);border:2px solid var(--red);border-radius:18px;padding:clamp(24px,6vw,36px);text-align:center;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(240,107,107,.2);}
@@ -182,15 +211,11 @@
     .vio-msg{font-size:13px;color:var(--text2);margin-bottom:6px;line-height:1.5;}
     .vio-count{font-size:12px;font-family:var(--mono);color:var(--yellow);margin-bottom:22px;}
     .vio-btn{padding:13px 32px;background:linear-gradient(135deg,var(--accent),#7c6ff7);border:none;border-radius:10px;color:white;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;width:100%;box-shadow:0 4px 16px var(--accent-glow);}
-
-    /* ══════════════════ EXIT BLOCKER ══════════════════ */
     #exitBlocker{display:none;position:fixed;inset:0;background:rgba(8,11,20,.97);z-index:8000;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:30px;}
     #exitBlocker.on{display:flex;}
     #exitBlocker .big-icon{font-size:56px;margin-bottom:16px;}
     #exitBlocker h2{font-size:clamp(18px,5vw,24px);font-weight:800;margin-bottom:10px;}
     #exitBlocker p{color:var(--text2);font-size:14px;}
-
-    /* ══════════════════ RESULTS ══════════════════ */
     #resultsScreen{position:fixed;inset:0;z-index:5000;overflow-y:auto;background:radial-gradient(ellipse 50% 40% at 50% 0%,rgba(91,110,245,.07) 0%,transparent 70%),var(--bg);padding:20px 14px 40px;display:none;align-items:flex-start;justify-content:center;}
     #resultsScreen.active{display:flex;}
     .results-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:clamp(24px,5vw,40px);width:100%;max-width:700px;}
@@ -210,7 +235,6 @@
     .rstat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;}
     .rstat-val{font-size:clamp(16px,4vw,20px);font-weight:700;font-family:var(--mono);color:var(--text);}
     .rstat-label{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
-    /* FIX: flagged question summary in results */
     .flagged-notice{background:var(--yellow-glow);border:1px solid rgba(245,200,66,.3);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--yellow);margin-bottom:16px;display:none;}
     .flagged-notice.on{display:block;}
     .review-section h3{font-size:14px;font-weight:700;margin:24px 0 14px;color:var(--accent2);display:flex;align-items:center;gap:8px;}
@@ -239,10 +263,27 @@
     .explain-spinner{display:inline-block;width:10px;height:10px;border:2px solid rgba(129,140,248,.3);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
     .back-btn{display:block;margin:24px auto 0;padding:12px 28px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .15s;width:100%;}
     .back-btn:hover{border-color:var(--accent);color:var(--accent2);}
-    /* FIX: close-tab warning for direct-navigation case */
     .close-warning{font-size:11px;color:var(--muted);text-align:center;margin-top:10px;}
     .hidden{display:none!important;}
     .divider{height:1px;background:var(--border);margin:20px 0;}
+
+    /* ══ TTS SETUP PANEL (pre-exam) ══ */
+    .tts-setup{max-width:860px;margin:0 auto 16px;padding:0 16px;}
+    .tts-setup-inner{background:rgba(91,110,245,.05);border:1px solid rgba(91,110,245,.18);border-radius:var(--radius);padding:14px 18px;}
+    .tts-setup-inner h4{font-size:12px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+    .tts-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+    .tts-toggle-wrap{display:flex;align-items:center;gap:8px;}
+    .tts-toggle{width:36px;height:20px;background:var(--border);border-radius:10px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+    .tts-toggle.on{background:var(--accent);}
+    .tts-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .18s;}
+    .tts-toggle.on::after{left:18px;}
+    .tts-setup-lbl{font-size:12px;color:var(--text2);}
+    .tts-voice-select{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:12px;font-family:var(--font);padding:7px 10px;outline:none;}
+    .tts-voice-select option{background:var(--surface);}
+    .tts-test-btn{padding:7px 14px;background:rgba(91,110,245,.15);border:1px solid rgba(91,110,245,.3);border-radius:var(--radius-sm);color:var(--accent2);font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;white-space:nowrap;}
+    .tts-test-btn:hover{background:rgba(91,110,245,.25);}
+    .tts-auto-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);}
+    .tts-hint{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;}
   </style>
 </head>
 <body>
@@ -252,7 +293,7 @@
   <div id="loadingText">Loading...</div>
 </div>
 
-<!-- ══════════════════ PRE-EXAM ══════════════════ -->
+<!-- PRE-EXAM -->
 <div id="preExam" class="screen active">
   <div class="candidate-banner">
     <div class="cb-logo">⚡</div>
@@ -268,10 +309,8 @@
     <p>Complete the checks below before starting</p>
   </div>
 
-  <!-- FIX: locked profile notice shown when profile is locked -->
   <div class="locked-notice" id="lockedNotice">
-    <div class="locked-inner">🔒 Using your registered profile — name, class and school are locked to your first registration.
-    </div>
+    <div class="locked-inner">🔒 Using your registered profile — name, class and school are locked to your first registration.</div>
   </div>
 
   <div class="check-grid">
@@ -304,6 +343,32 @@
     </div>
   </div>
 
+  <!-- TTS ACCESSIBILITY SETUP -->
+  <div class="tts-setup">
+    <div class="tts-setup-inner">
+      <h4>🔊 Accessibility — Read-Aloud Settings</h4>
+      <div class="tts-row">
+        <div class="tts-toggle-wrap">
+          <div class="tts-toggle" id="ttsToggle" onclick="toggleTTS()"></div>
+          <span class="tts-setup-lbl">Enable read-aloud</span>
+        </div>
+        <select class="tts-voice-select" id="ttsVoiceSelect" onchange="onVoiceChange()">
+          <option value="">Loading voices…</option>
+        </select>
+        <button class="tts-test-btn" onclick="ttsTest()">▶ Test Voice</button>
+        <div class="tts-auto-wrap">
+          <input type="checkbox" id="ttsAutoPlay" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer">
+          <label for="ttsAutoPlay" style="cursor:pointer">Auto-read each question</label>
+        </div>
+      </div>
+      <p class="tts-hint">
+        🦮 For visually impaired students, enable read-aloud and check <em>Auto-read</em>.
+        For diction/phonics questions, the audio player appears automatically when needed.
+        Speed can be adjusted during the exam.
+      </p>
+    </div>
+  </div>
+
   <div class="rules-box">
     <div class="rules-inner">
       <h4>⚠️ Exam Rules — Read Carefully</h4>
@@ -326,7 +391,7 @@
   </div>
 </div>
 
-<!-- ══════════════════ EXAM SCREEN ══════════════════ -->
+<!-- EXAM SCREEN -->
 <div id="examScreen" class="screen">
   <div class="monitor">
     <div class="monitor-title"><div class="pulse-dot"></div> AI Proctor Live</div>
@@ -373,14 +438,30 @@
       </div>
       <div class="ecc-vio" id="eccVio">0 / 3 strikes</div>
     </div>
+
     <div class="q-count">
       <span id="progressText">Question 0 of 0</span>
-      <div style="display:flex;align-items:center;gap:8px">
-        <!-- FIX: flag for review button -->
+      <div class="q-count-right">
         <button class="flag-btn" id="flagBtn" onclick="toggleFlag()" title="Flag this question for review">🚩 Flag</button>
-        <span class="q-count-right" id="answeredCount">0 answered</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted)" id="answeredCount">0 answered</span>
       </div>
     </div>
+
+    <!-- TTS control bar — shown during exam when TTS is enabled -->
+    <div class="tts-bar hidden" id="ttsBar">
+      <button class="tts-btn" id="ttsReadBtn" onclick="ttsReadQuestion()">🔊 Read Question</button>
+      <button class="tts-btn" id="ttsReadOptsBtn" onclick="ttsReadOptions()">🔊 Read Options</button>
+      <button class="tts-stop-btn" id="ttsStopBtn" onclick="ttsStop()">⏹ Stop</button>
+      <select class="tts-speed" id="ttsSpeedSelect" onchange="onSpeedChange()" title="Reading speed">
+        <option value="0.7">0.7×</option>
+        <option value="0.85">0.85×</option>
+        <option value="1" selected>1×</option>
+        <option value="1.2">1.2×</option>
+        <option value="1.5">1.5×</option>
+      </select>
+      <span class="tts-voice-badge" id="ttsVoiceBadge">—</span>
+    </div>
+
     <div id="questionArea"></div>
     <div class="q-dots-wrap" id="navDots"></div>
   </div>
@@ -388,7 +469,7 @@
   <div class="exam-nav">
     <button class="nav-btn nav-prev" id="prevBtn" onclick="prevQ()" disabled>← Prev</button>
     <button class="nav-btn nav-submit hidden" id="submitBtn" onclick="confirmSubmit()">Submit Exam ✓</button>
-    <button class="nav-btn nav-next"   id="nextBtn" onclick="nextQ()">Next →</button>
+    <button class="nav-btn nav-next" id="nextBtn" onclick="nextQ()">Next →</button>
   </div>
 </div>
 
@@ -410,41 +491,33 @@
   <p>The exam is still in progress. Please return immediately.</p>
 </div>
 
-<!-- ══════════════════ RESULTS ══════════════════ -->
+<!-- RESULTS -->
 <div id="resultsScreen" class="screen">
   <div class="results-card">
     <div class="results-header">
-      <div class="result-school"        id="resSchool">—</div>
-      <div class="result-icon"          id="resIcon">🎉</div>
-      <div class="result-exam-name"     id="resExamName">—</div>
+      <div class="result-school"         id="resSchool">—</div>
+      <div class="result-icon"           id="resIcon">🎉</div>
+      <div class="result-exam-name"      id="resExamName">—</div>
       <div class="result-candidate-name" id="resCandidateName">—</div>
-      <div class="result-score"         id="resScore">-</div>
-      <div class="result-pct"           id="resPct">0%</div>
+      <div class="result-score"          id="resScore">-</div>
+      <div class="result-pct"            id="resPct">0%</div>
       <div class="result-status-wrap">
         <span class="result-status pass" id="resStatus">PASS</span>
       </div>
       <p class="result-msg" id="resMsg"></p>
     </div>
-
     <div class="result-stats">
       <div class="rstat"><div class="rstat-val" id="resCorrect">—</div><div class="rstat-label">Correct</div></div>
       <div class="rstat"><div class="rstat-val" id="resWrong">—</div><div class="rstat-label">Wrong</div></div>
       <div class="rstat"><div class="rstat-val" id="resViolations">0</div><div class="rstat-label">Violations</div></div>
     </div>
-
-    <!-- FIX: flagged questions warning before review -->
-    <div class="flagged-notice" id="flaggedNotice">
-      🚩 You had flagged questions — they are marked below for your reference.
-    </div>
-
+    <div class="flagged-notice" id="flaggedNotice">🚩 You had flagged questions — they are marked below for your reference.</div>
     <div class="divider"></div>
     <div id="reviewSection">
       <div class="review-section"><h3>📋 Question Review</h3></div>
       <div id="reviewList"></div>
     </div>
-
     <button class="back-btn" id="closeBtn" onclick="tryClose()">✕ Close Exam Window</button>
-    <!-- FIX: fallback message when window.close() fails -->
     <div class="close-warning" id="closeWarning" style="display:none">
       If the button above does not close this tab, you may close it manually.
     </div>
@@ -466,28 +539,266 @@ var PARAMS = (function(){
 var SCRIPT_URL = PARAMS.script || '';
 var student    = { email: PARAMS.email || '', examCode: (PARAMS.code || '').toUpperCase() };
 
-var quizMeta     = null;
-var questions    = [];
-var answers      = {};
-var flagged      = {};   // FIX: flag-for-review state
-var qIndex       = 0;
-var violations   = 0;
-var timeLeft     = 0;
-var timerHandle  = null;
-var mediaStream  = null;
-var audioCtx     = null;
-var photos       = [];
-var examStart    = null;
-var noFace       = 0;
-var multiFace    = 0;
-var faceEnabled  = true;
-var faceDetector = null;
-var examSubmitted = false;   // FIX: guard initialised up top
-var studentInfo  = { name:'', class:'', school:'', locked:false };
+var quizMeta      = null;
+var questions     = [];
+var answers       = {};
+var flagged       = {};
+var qIndex        = 0;
+var violations    = 0;
+var timeLeft      = 0;
+var timerHandle   = null;
+var mediaStream   = null;
+var audioCtxMic   = null;
+var photos        = [];
+var examStart     = null;
+var noFace        = 0;
+var multiFace     = 0;
+var faceEnabled   = true;
+var faceDetector  = null;
+var examSubmitted = false;
+var studentInfo   = { name:'', class:'', school:'', locked:false };
 var _explainCache = {};
-
-// FIX: passage content cache — prevents stale callback overwriting wrong question
 var _passageCache = {};
+
+// ================================================================
+// TTS ENGINE
+// ================================================================
+var TTS = {
+  enabled:   false,
+  autoPlay:  false,
+  rate:      1.0,
+  voice:     null,       /* SpeechSynthesisVoice object */
+  voiceName: '',
+  speaking:  false,
+  supported: ('speechSynthesis' in window),
+  voices:    [],
+  /* Phonics: how many times the audio prompt has been played */
+  phonicsPlays: 0
+};
+
+/* Populate voice list — async because voices load after page */
+function ttsLoadVoices() {
+  if (!TTS.supported) return;
+  function doLoad() {
+    TTS.voices = window.speechSynthesis.getVoices();
+    var sel = document.getElementById('ttsVoiceSelect');
+    if (!sel) return;
+    sel.innerHTML = '';
+    /* Group: English voices first */
+    var en = TTS.voices.filter(function(v){ return v.lang.startsWith('en'); });
+    var others = TTS.voices.filter(function(v){ return !v.lang.startsWith('en'); });
+    function addOpt(v) {
+      var o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = v.name + ' (' + v.lang + ')' + (v.localService ? ' ★' : '');
+      sel.appendChild(o);
+    }
+    if (en.length) {
+      var g1 = document.createElement('optgroup'); g1.label = 'English voices (★ = on-device)';
+      en.forEach(addOpt); sel.appendChild(g1);
+      en.forEach(function(v){ g1.appendChild(sel.querySelector('[value="'+v.name.replace(/"/g,'\\"')+'"]') || document.createElement('option')); });
+      /* Rebuild properly */
+      sel.innerHTML = '';
+      var g = document.createElement('optgroup'); g.label = 'English (★ = on-device)';
+      en.forEach(function(v){
+        var o=document.createElement('option'); o.value=v.name;
+        o.textContent=v.name+' ('+v.lang+')'+(v.localService?' ★':''); g.appendChild(o);
+      });
+      sel.appendChild(g);
+      if (others.length) {
+        var g2=document.createElement('optgroup'); g2.label='Other languages';
+        others.forEach(function(v){
+          var o=document.createElement('option'); o.value=v.name;
+          o.textContent=v.name+' ('+v.lang+')'; g2.appendChild(o);
+        });
+        sel.appendChild(g2);
+      }
+    } else {
+      TTS.voices.forEach(function(v){
+        var o=document.createElement('option'); o.value=v.name;
+        o.textContent=v.name+' ('+v.lang+')'; sel.appendChild(o);
+      });
+    }
+    /* Auto-select a good English voice */
+    if (TTS.voices.length && !TTS.voiceName) {
+      /* Prefer local natural-sounding voices */
+      var preferred = en.find(function(v){ return v.localService && /natural|enhanced|premium|siri|neural/i.test(v.name); })
+                   || en.find(function(v){ return v.localService; })
+                   || en[0]
+                   || TTS.voices[0];
+      if (preferred) { sel.value = preferred.name; onVoiceChange(); }
+    }
+  }
+  if (window.speechSynthesis.getVoices().length) { doLoad(); }
+  else { window.speechSynthesis.onvoiceschanged = doLoad; }
+}
+
+function onVoiceChange() {
+  var sel = document.getElementById('ttsVoiceSelect');
+  if (!sel) return;
+  TTS.voiceName = sel.value;
+  TTS.voice = TTS.voices.find(function(v){ return v.name === TTS.voiceName; }) || null;
+  var badge = document.getElementById('ttsVoiceBadge');
+  if (badge) badge.textContent = TTS.voiceName ? TTS.voiceName.split(' ')[0] : '—';
+}
+
+function onSpeedChange() {
+  var sel = document.getElementById('ttsSpeedSelect');
+  if (sel) TTS.rate = parseFloat(sel.value) || 1.0;
+}
+
+function toggleTTS() {
+  TTS.enabled = !TTS.enabled;
+  var tog = document.getElementById('ttsToggle');
+  if (tog) tog.classList.toggle('on', TTS.enabled);
+  var bar = document.getElementById('ttsBar');
+  if (bar) bar.classList.toggle('hidden', !TTS.enabled);
+}
+
+function ttsTest() {
+  ttsSpeak('Hello! Read-aloud is working. This is how your questions will sound during the exam.');
+}
+
+/* Core speak function */
+function ttsSpeak(text, onEnd) {
+  if (!TTS.supported || !text) return;
+  window.speechSynthesis.cancel();
+  var utt = new SpeechSynthesisUtterance(text);
+  if (TTS.voice) utt.voice = TTS.voice;
+  utt.rate  = TTS.rate || 1.0;
+  utt.pitch = 1.0;
+  utt.lang  = (TTS.voice && TTS.voice.lang) || 'en-US';
+  utt.onstart = function() {
+    TTS.speaking = true;
+    updateTTSButtons(true);
+  };
+  utt.onend = utt.onerror = function() {
+    TTS.speaking = false;
+    updateTTSButtons(false);
+    if (onEnd) onEnd();
+  };
+  window.speechSynthesis.speak(utt);
+}
+
+function ttsStop() {
+  if (TTS.supported) window.speechSynthesis.cancel();
+  TTS.speaking = false;
+  updateTTSButtons(false);
+}
+
+function updateTTSButtons(speaking) {
+  var readBtn  = document.getElementById('ttsReadBtn');
+  var optsBtn  = document.getElementById('ttsReadOptsBtn');
+  var stopBtn  = document.getElementById('ttsStopBtn');
+  if (readBtn) readBtn.classList.toggle('speaking', speaking);
+  if (optsBtn) optsBtn.classList.toggle('speaking', speaking);
+  if (stopBtn) stopBtn.classList.toggle('visible', speaking);
+}
+
+/* Read the current question text */
+function ttsReadQuestion() {
+  var q = questions[qIndex]; if (!q) return;
+  var text = q.question || '';
+  if (q.instruction_text) text = q.instruction_text + '. ' + text;
+  ttsSpeak(text);
+}
+
+/* Read all options */
+function ttsReadOptions() {
+  var q = questions[qIndex]; if (!q) return;
+  if (q.type === 'SHORT') { ttsSpeak('This is a short answer question. Please type your answer in the box.'); return; }
+  var opts = q.options || (q.type === 'TF' ? ['True','False'] : []);
+  var labels = ['A','B','C','D'];
+  var text = opts.map(function(o, i){ return labels[i] + ': ' + o; }).join('. ');
+  ttsSpeak(text);
+}
+
+/* Read question + options together (for auto-play) */
+function ttsReadAll() {
+  var q = questions[qIndex]; if (!q) return;
+  var text = '';
+  if (q.instruction_text) text += q.instruction_text + '. ';
+  text += q.question;
+  if (q.type === 'MCQ' || q.type === 'TF') {
+    var opts = q.options || ['True','False'];
+    var labels = ['A','B','C','D'];
+    text += '. Options: ' + opts.map(function(o,i){ return labels[i]+': '+o; }).join('. ');
+  } else {
+    text += '. This is a short answer question.';
+  }
+  ttsSpeak(text);
+}
+
+/* Read a single option on demand */
+function ttsReadOpt(text) {
+  ttsSpeak(text);
+}
+
+/* ── PHONICS / DICTION MODE ──
+   A question is treated as a "phonics question" when:
+   - the question text starts with [AUDIO] or
+   - the question field is blank but there is an audio_url (future), or
+   - the question type is marked 'AUDIO' (future field)
+   
+   For now we detect [AUDIO] prefix OR if question contains the marker.
+   The audio is read aloud via TTS automatically — teacher writes
+   the word/sentence to be heard, student picks the phonetic match.
+   
+   Format in question bank:
+     Question: [AUDIO] The cat sat on the mat.
+     Options:  /æ/ sound  |  /ɒ/ sound  |  /eɪ/ sound  |  /iː/ sound
+     Correct: /æ/ sound
+*/
+var AUDIO_PREFIX = '[AUDIO]';
+
+function isPhonicsQuestion(q) {
+  return q && q.question && q.question.indexOf(AUDIO_PREFIX) !== -1;
+}
+
+function getPhonicsText(q) {
+  return q.question.replace(AUDIO_PREFIX, '').trim();
+}
+
+/* Render the phonics/diction audio player box */
+function renderPhonicsBox(q) {
+  TTS.phonicsPlays = 0;
+  var text = getPhonicsText(q);
+  var html = '<div class="audio-q-box">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">🔊 Listen &amp; Answer</div>'
+    + '<div class="audio-q-wave hidden" id="phonicsWave">'
+    + '<div class="wave-bar" style="height:8px"></div><div class="wave-bar"></div><div class="wave-bar"></div>'
+    + '<div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>'
+    + '</div>'
+    + '<button class="audio-q-play-btn" id="phonicsPlayBtn" onclick="phonicsPlay()">'
+    + '▶ Play Audio'
+    + '</button>'
+    + '<div class="audio-q-count" id="phonicsCount">Tap to hear the audio</div>'
+    + '<div class="audio-q-hint">Listen carefully, then choose the correct answer below. You can replay as many times as needed.</div>'
+    + '</div>';
+  /* Auto-play first time after short delay */
+  setTimeout(function() { phonicsPlay(); }, 600);
+  return html;
+}
+
+function phonicsPlay() {
+  var q = questions[qIndex]; if (!q || !isPhonicsQuestion(q)) return;
+  var text = getPhonicsText(q);
+  var btn  = document.getElementById('phonicsPlayBtn');
+  var wave = document.getElementById('phonicsWave');
+  var count = document.getElementById('phonicsCount');
+  TTS.phonicsPlays++;
+  if (btn) btn.classList.add('playing');
+  if (wave) wave.classList.remove('hidden');
+  if (count) count.textContent = 'Played ' + TTS.phonicsPlays + ' time' + (TTS.phonicsPlays !== 1 ? 's' : '');
+  /* Use slower rate for phonics clarity */
+  var origRate = TTS.rate;
+  TTS.rate = Math.min(TTS.rate, 0.85);
+  ttsSpeak(text, function() {
+    TTS.rate = origRate;
+    if (btn) btn.classList.remove('playing');
+    if (wave) wave.classList.add('hidden');
+  });
+}
 
 // ================================================================
 // UTILITIES
@@ -497,19 +808,13 @@ function hideLoading(){ document.getElementById('loadingScreen').classList.remov
 
 function showScreen(id){
   ['preExam','examScreen','resultsScreen'].forEach(function(s){
-    var el=document.getElementById(s);
-    if(!el)return;
-    el.classList.remove('active');
-    el.style.display='none';
+    var el=document.getElementById(s); if(!el)return;
+    el.classList.remove('active'); el.style.display='none';
   });
   var el=document.getElementById(id);
-  if(el){
-    el.style.display='';
-    el.classList.add('active');
-    window.scrollTo({top:0,behavior:'instant'});
-    el.scrollTop=0;
-    var card=el.querySelector('.results-card');
-    if(card)card.scrollTop=0;
+  if(el){ el.style.display=''; el.classList.add('active');
+    window.scrollTo({top:0,behavior:'instant'}); el.scrollTop=0;
+    var card=el.querySelector('.results-card'); if(card)card.scrollTop=0;
   }
 }
 
@@ -517,48 +822,41 @@ function safeText(id,val){ var el=document.getElementById(id); if(el)el.textCont
 
 function post(action,data,cb){
   fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(Object.assign({action:action},data||{}))})
-    .then(function(r){return r.json();})
-    .then(function(r){if(cb)cb(null,r);})
-    .catch(function(e){if(cb)cb(e,null);});
+    .then(function(r){return r.json();}).then(function(r){if(cb)cb(null,r);}).catch(function(e){if(cb)cb(e,null);});
 }
 
 function setMobileBadge(id,okClass,text){
   var el=document.getElementById(id); if(!el)return;
   el.className='sbadge'+(okClass?' '+okClass:'');
-  var dot=document.createElement('span');dot.className='sbadge-dot';
-  el.innerHTML='';el.appendChild(dot);
-  el.appendChild(document.createTextNode(' '+text));
+  var dot=document.createElement('span'); dot.className='sbadge-dot';
+  el.innerHTML=''; el.appendChild(dot); el.appendChild(document.createTextNode(' '+text));
 }
 function setBadge(id,warn,text){
   var el=document.getElementById(id); if(!el)return;
-  el.className='mbadge'+(warn?' warn':'');
-  el.textContent=text;
+  el.className='mbadge'+(warn?' warn':''); el.textContent=text;
 }
 
 // ================================================================
 // STARTUP
 // ================================================================
 window.addEventListener('load',function(){
+  ttsLoadVoices();
   if(!student.email||!student.examCode){
-    safeText('preTitle','Invalid exam link');
-    safeText('camText','Missing credentials — please go back and try again.');
-    return;
+    safeText('preTitle','Invalid exam link'); safeText('camText','Missing credentials.'); return;
   }
   if(!SCRIPT_URL){
-    safeText('preTitle','Configuration error');
-    safeText('camText','Server URL missing — please go back and try again.');
-    return;
+    safeText('preTitle','Configuration error'); safeText('camText','Server URL missing.'); return;
   }
   showLoading('Verifying exam access...');
   post('validateExamCode',{studentEmail:student.email,examCode:student.examCode},function(e,r){
     hideLoading();
     if(e||!r||r.status!=='success'){
       safeText('preTitle','Access Denied');
-      safeText('camText',(r&&r.message)||'Validation failed. Please go back.');
+      safeText('camText',(r&&r.message)||'Validation failed.');
       return;
     }
-    quizMeta   =r.data.quizData;
-    faceEnabled=quizMeta.faceDetection!==false;
+    quizMeta   = r.data.quizData;
+    faceEnabled= quizMeta.faceDetection!==false;
     safeText('preTitle',quizMeta.title);
     safeText('bannerCode',student.examCode);
     fetchStudentInfo();
@@ -568,9 +866,8 @@ window.addEventListener('load',function(){
 
 function fetchStudentInfo(){
   var email=student.email;
-  var displayName=email.split('@')[0]||email;
-  studentInfo.name=displayName;
-  safeText('bannerName',displayName);
+  studentInfo.name=email.split('@')[0]||email;
+  safeText('bannerName',studentInfo.name);
   safeText('bannerMeta',student.examCode+' · '+(quizMeta?quizMeta.title:''));
   buildExamDetails();
 }
@@ -578,8 +875,7 @@ function fetchStudentInfo(){
 function buildExamDetails(){
   var el=document.getElementById('examDetailsList');
   if(!el||!quizMeta)return;
-  el.innerHTML=
-    '<div>📝 <strong style="color:var(--text)">'+quizMeta.title+'</strong></div>'
+  el.innerHTML='<div>📝 <strong style="color:var(--text)">'+quizMeta.title+'</strong></div>'
     +'<div>👤 <strong style="color:var(--text)">'+studentInfo.name+'</strong></div>'
     +(studentInfo.class?'<div>🏫 '+studentInfo.class+(studentInfo.school?' · '+studentInfo.school:'')+'</div>':'')
     +'<div>⏱ <strong style="color:var(--text)">'+(quizMeta.duration||30)+' minutes</strong></div>'
@@ -588,75 +884,63 @@ function buildExamDetails(){
 }
 
 function updateCandidateDisplays(sInfo){
-  var name   =(sInfo&&sInfo.Name)  ||studentInfo.name||student.email;
-  var cls    =(sInfo&&sInfo.Class) ||'';
-  var school =(sInfo&&sInfo.School)||'';
-  var locked =(sInfo&&sInfo.locked)||false;
+  var name=(sInfo&&sInfo.Name)||studentInfo.name||student.email;
+  var cls=(sInfo&&sInfo.Class)||'';
+  var school=(sInfo&&sInfo.School)||'';
+  var locked=(sInfo&&sInfo.locked)||false;
   studentInfo.name=name; studentInfo.class=cls; studentInfo.school=school; studentInfo.locked=locked;
   var metaStr=[cls,school].filter(Boolean).join(' · ');
-  safeText('bannerName',name);
-  safeText('bannerMeta',(quizMeta?quizMeta.title:'')+(metaStr?' · '+metaStr:''));
-  safeText('eccName',name);
-  safeText('eccMeta',metaStr||student.email);
+  safeText('bannerName',name); safeText('bannerMeta',(quizMeta?quizMeta.title:'')+(metaStr?' · '+metaStr:''));
+  safeText('eccName',name); safeText('eccMeta',metaStr||student.email);
   safeText('examSubBar',[name,metaStr].filter(Boolean).join(' · '));
   buildExamDetails();
-  // FIX: show locked profile notice so student knows their info is fixed
-  if(locked){
-    var notice=document.getElementById('lockedNotice');
-    if(notice)notice.classList.add('on');
-  }
+  if(locked){ var n=document.getElementById('lockedNotice'); if(n)n.classList.add('on'); }
 }
 
 // ================================================================
 // MEDIA
 // ================================================================
 function initMedia(){
-  navigator.mediaDevices.getUserMedia({
-    video:{width:640,height:480,facingMode:'user'},
-    audio:{echoCancellation:true,noiseSuppression:true}
-  }).then(function(stream){
-    mediaStream=stream;
-    var video=document.getElementById('checkVideo');
-    video.srcObject=stream;
-    video.play().catch(function(){});
-    function onReady(){
-      var canvas=document.getElementById('checkCanvas');
-      canvas.width =video.videoWidth ||640;
-      canvas.height=video.videoHeight||480;
-      document.getElementById('camDot').classList.add('ok');
-      safeText('camText','Camera active');
-      setMobileBadge('sb-cam','ok','📷 Cam OK');
-      setBadge('b-cam',false,'📷 Cam');
-      setupAudio(stream);
-      if(faceEnabled){initFaceDetection('check');}
-      else{safeText('camText','Camera active (face detection off)');document.getElementById('startBtn').disabled=false;}
-    }
-    if(video.readyState>=1){onReady();}
-    else{
-      var done=false;
-      var t=setTimeout(function(){done=true;onReady();},3000);
-      video.addEventListener('loadedmetadata',function(){if(!done){clearTimeout(t);onReady();}},{once:true});
-    }
-  }).catch(function(e){
-    safeText('camText','Camera/mic error: '+e.message);
-    document.getElementById('camDot').style.background='var(--red)';
-    if(!faceEnabled)document.getElementById('startBtn').disabled=false;
-  });
+  navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'},audio:{echoCancellation:true,noiseSuppression:true}})
+    .then(function(stream){
+      mediaStream=stream;
+      var video=document.getElementById('checkVideo');
+      video.srcObject=stream; video.play().catch(function(){});
+      function onReady(){
+        var canvas=document.getElementById('checkCanvas');
+        canvas.width=video.videoWidth||640; canvas.height=video.videoHeight||480;
+        document.getElementById('camDot').classList.add('ok');
+        safeText('camText','Camera active');
+        setMobileBadge('sb-cam','ok','📷 Cam OK'); setBadge('b-cam',false,'📷 Cam');
+        setupAudio(stream);
+        if(faceEnabled){initFaceDetection('check');}
+        else{safeText('camText','Camera active (face detection off)');document.getElementById('startBtn').disabled=false;}
+      }
+      if(video.readyState>=1){onReady();}
+      else{
+        var done=false;
+        var t=setTimeout(function(){done=true;onReady();},3000);
+        video.addEventListener('loadedmetadata',function(){if(!done){clearTimeout(t);onReady();}},{once:true});
+      }
+    }).catch(function(e){
+      safeText('camText','Camera/mic error: '+e.message);
+      document.getElementById('camDot').style.background='var(--red)';
+      if(!faceEnabled)document.getElementById('startBtn').disabled=false;
+    });
 }
 
 function setupAudio(stream){
   try{
-    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    var an=audioCtx.createAnalyser();
-    audioCtx.createMediaStreamSource(stream).connect(an);
+    audioCtxMic=new(window.AudioContext||window.webkitAudioContext)();
+    var an=audioCtxMic.createAnalyser();
+    audioCtxMic.createMediaStreamSource(stream).connect(an);
     an.fftSize=256;
     var d=new Uint8Array(an.frequencyBinCount);
     function tick(){
       an.getByteFrequencyData(d);
       var avg=d.reduce(function(a,b){return a+b;},0)/d.length;
       var pct=Math.min((avg/128)*100,100);
-      var fill=document.getElementById('audioFill');
-      if(fill)fill.style.width=pct+'%';
+      var fill=document.getElementById('audioFill'); if(fill)fill.style.width=pct+'%';
       if(pct>8){document.getElementById('audioDot').classList.add('ok');safeText('audioText','Microphone active');}
       requestAnimationFrame(tick);
     }
@@ -670,8 +954,7 @@ function setupAudio(stream){
 function initFaceDetection(mode){
   if(typeof FaceDetection==='undefined'){
     safeText('camText','Face detection unavailable — you may still proceed');
-    document.getElementById('startBtn').disabled=false;
-    return;
+    document.getElementById('startBtn').disabled=false; return;
   }
   try{
     faceDetector=new FaceDetection({locateFile:function(f){return 'https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/'+f;}});
@@ -683,7 +966,7 @@ function initFaceDetection(mode){
       var active=true;
       function loop(){
         if(!active)return;
-        var inPre =document.getElementById('preExam').classList.contains('active');
+        var inPre=document.getElementById('preExam').classList.contains('active');
         var inExam=document.getElementById('examScreen').classList.contains('active');
         if(!inPre&&!inExam){active=false;return;}
         if(vid.readyState>=2)faceDetector.send({image:vid}).catch(function(){});
@@ -707,8 +990,7 @@ function handleFaceResults(results,mode){
   var count=(results.detections||[]).length;
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(mode==='check'){
-    var stats=document.getElementById('faceStats');
-    if(stats)stats.style.display='block';
+    var stats=document.getElementById('faceStats'); if(stats)stats.style.display='block';
     safeText('faceCount',count);
     if(count>0){
       safeText('faceConf',Math.round((results.detections[0].score||0)*100)+'%');
@@ -721,25 +1003,17 @@ function handleFaceResults(results,mode){
       document.getElementById('startBtn').disabled=true;
     }
   }else{
-    if(count===1){
-      noFace=0;multiFace=0;
-      setBadge('b-face',false,'👤 Face OK');
-      setMobileBadge('sb-face','ok','👤 Face OK');
-    }else if(count===0){
-      noFace++;
-      setBadge('b-face',true,'👤 No Face');
-      setMobileBadge('sb-face','warn','👤 No Face');
+    if(count===1){noFace=0;multiFace=0;setBadge('b-face',false,'👤 Face OK');setMobileBadge('sb-face','ok','👤 Face OK');}
+    else if(count===0){
+      noFace++;setBadge('b-face',true,'👤 No Face');setMobileBadge('sb-face','warn','👤 No Face');
       if(noFace>=CFG.NO_FACE_THRESHOLD){triggerViolation('Face not detected','face');noFace=0;}
     }else{
-      multiFace++;
-      setBadge('b-face',true,'👤 Multi');
-      setMobileBadge('sb-face','warn','👤 Multiple');
+      multiFace++;setBadge('b-face',true,'👤 Multi');setMobileBadge('sb-face','warn','👤 Multiple');
       if(multiFace>=CFG.MULTI_FACE_THRESHOLD){triggerViolation('Multiple people detected','face');multiFace=0;}
     }
     (results.detections||[]).forEach(function(det,i){
       var b=det.boundingBox;
-      ctx.strokeStyle=i===0?'#2dd4a0':'#f06b6b';
-      ctx.lineWidth=2;
+      ctx.strokeStyle=i===0?'#2dd4a0':'#f06b6b'; ctx.lineWidth=2;
       ctx.strokeRect(b.xMin,b.yMin,b.width,b.height);
     });
   }
@@ -749,6 +1023,9 @@ function handleFaceResults(results,mode){
 // START EXAM
 // ================================================================
 function enterFullscreen(){
+  /* Read TTS auto-play preference */
+  var autoEl=document.getElementById('ttsAutoPlay');
+  TTS.autoPlay = autoEl && autoEl.checked;
   var el=document.documentElement;
   try{if(el.requestFullscreen)el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();}catch(e){}
   showScreen('examScreen');
@@ -758,12 +1035,10 @@ function enterFullscreen(){
 function startExam(){
   var ev=document.getElementById('examVideo');
   if(ev&&mediaStream){ev.srcObject=mediaStream;ev.play().catch(function(){});}
-  var ec=document.getElementById('examCanvas');
-  if(ec){ec.width=320;ec.height=240;}
+  var ec=document.getElementById('examCanvas'); if(ec){ec.width=320;ec.height=240;}
   if(faceEnabled&&faceDetector){
     faceDetector.onResults(function(r){handleFaceResults(r,'exam');});
-    var vid=document.getElementById('examVideo');
-    var running=true;
+    var vid=document.getElementById('examVideo'); var running=true;
     function examLoop(){
       if(!running)return;
       if(!document.getElementById('examScreen').classList.contains('active')){running=false;return;}
@@ -772,6 +1047,10 @@ function startExam(){
     }
     setTimeout(examLoop,600);
   }
+  /* Show TTS bar if enabled */
+  var bar=document.getElementById('ttsBar');
+  if(bar)bar.classList.toggle('hidden',!TTS.enabled);
+
   setupSecurity();
   showLoading('Loading questions...');
   post('getQuizData',{examCode:student.examCode},function(e,r){
@@ -785,18 +1064,11 @@ function startExam(){
     renderDots();
     renderQuestion();
     startTimer();
-    // Register student and update display with locked status
     post('registerStudent',{email:student.email,name:studentInfo.name,className:studentInfo.class||'',school:studentInfo.school||''},function(err,res){
       if(!err&&res&&res.status==='success'&&res.data){
-        updateCandidateDisplays({
-          Name:   res.data.name      ||studentInfo.name,
-          Class:  res.data.className ||'',
-          School: res.data.school    ||'',
-          locked: res.data.locked    ||false
-        });
+        updateCandidateDisplays({Name:res.data.name||studentInfo.name,Class:res.data.className||'',School:res.data.school||'',locked:res.data.locked||false});
       }
     });
-    // Capture start photo after 2 seconds
     setTimeout(function(){capturePhoto('start');},2000);
   });
 }
@@ -807,8 +1079,7 @@ function startExam(){
 function startTimer(){
   updateTimer();
   timerHandle=setInterval(function(){
-    timeLeft--;
-    updateTimer();
+    timeLeft--; updateTimer();
     if(timeLeft<=0){clearInterval(timerHandle);doSubmit(true);}
   },1000);
 }
@@ -820,115 +1091,118 @@ function updateTimer(){
 function pad(n){return String(n).padStart(2,'0');}
 
 // ================================================================
-// FLAG FOR REVIEW (NEW)
+// FLAG
 // ================================================================
 function toggleFlag(){
   var q=questions[qIndex]; if(!q)return;
   flagged[q.id]=!flagged[q.id];
-  updateFlagBtn();
-  updateDots();
+  updateFlagBtn(); updateDots();
 }
 function updateFlagBtn(){
   var q=questions[qIndex]; if(!q)return;
-  var btn=document.getElementById('flagBtn');
-  if(!btn)return;
+  var btn=document.getElementById('flagBtn'); if(!btn)return;
   var isFlagged=!!flagged[q.id];
   btn.textContent=isFlagged?'🚩 Flagged':'🚩 Flag';
   btn.classList.toggle('flagged',isFlagged);
 }
 
 // ================================================================
-// PASSAGE CONTENT — async fetch with stale-callback guard (FIX)
+// PASSAGE FETCH
 // ================================================================
-function fetchPassageContent(passageId,containerIdSnapshot){
-  // If already cached, inject immediately
+function fetchPassageContent(passageId,containerId){
   if(_passageCache[passageId]){
-    var el=document.getElementById(containerIdSnapshot);
-    if(el)el.innerHTML=_passageCache[passageId];
-    return;
+    var el=document.getElementById(containerId); if(el)el.innerHTML=_passageCache[passageId]; return;
   }
   post('getPassage',{passage_id:passageId},function(e,r){
-    // FIX: check the container still refers to the same passage before injecting
-    var el=document.getElementById(containerIdSnapshot);
-    if(!el)return; // Question was navigated away
+    var el=document.getElementById(containerId); if(!el)return;
     if(e||!r||r.status!=='success'){
-      el.innerHTML='<div class="passage-placeholder" style="color:var(--red)">⚠️ Passage unavailable</div>';
-      return;
+      el.innerHTML='<div class="passage-placeholder" style="color:var(--red)">⚠️ Passage unavailable</div>'; return;
     }
     var p=r.data;
     var html=(p.title?'<div style="font-weight:700;font-size:14px;margin-bottom:8px;color:var(--text)">'+p.title+'</div>':'')
       +'<div style="line-height:1.7;font-size:13px;color:var(--text)">'+p.body+'</div>';
-    _passageCache[passageId]=html;
-    el.innerHTML=html;
+    _passageCache[passageId]=html; el.innerHTML=html;
   });
 }
 
 // ================================================================
-// QUESTIONS
+// RENDER QUESTION
 // ================================================================
 function renderQuestion(){
   if(!questions.length)return;
+  ttsStop();
   var q=questions[qIndex];
   var pct=((qIndex+1)/questions.length)*100;
   safeText('progressText','Question '+(qIndex+1)+' of '+questions.length);
   var answered=Object.keys(answers).filter(function(k){return answers[k]!==undefined&&answers[k]!=='';}).length;
   safeText('answeredCount',answered+' answered');
-  var pb=document.getElementById('progressBar');
-  if(pb)pb.style.width=pct+'%';
+  var pb=document.getElementById('progressBar'); if(pb)pb.style.width=pct+'%';
   updateFlagBtn();
 
-  var typeLabel=q.type==='MCQ'?'Multiple Choice':q.type==='TF'?'True / False':'Short Answer';
+  /* Show/hide TTS bar */
+  var bar=document.getElementById('ttsBar');
+  if(bar)bar.classList.toggle('hidden',!TTS.enabled);
+
+  var isPhonics = isPhonicsQuestion(q);
+  var typeLabel = isPhonics ? 'Diction / Phonics' : (q.type==='MCQ'?'Multiple Choice':q.type==='TF'?'True / False':'Short Answer');
+
   var html='<div class="q-card">';
 
-  // Instruction header
   if(q.instruction_text&&q.instruction_text.trim()){
     html+='<div class="instruction-header"><span class="label">📋 Instructions</span>'+q.instruction_text+'</div>';
   }
 
-  // Image
-  if(q.image_url&&q.image_url.trim()){
-    html+='<div class="question-image"><img src="'+q.image_url+'" alt="Question diagram" '
-      +'onerror="this.parentElement.innerHTML=\'<div class=\\\'img-error\\\'>🖼️ Image unavailable</div>\';" loading="lazy"></div>';
+  /* Phonics/diction audio player — replaces question text display */
+  if(isPhonics){
+    html+=renderPhonicsBox(q);
+  } else {
+    if(q.image_url&&q.image_url.trim()){
+      html+='<div class="question-image"><img src="'+q.image_url+'" alt="Question diagram" '
+        +'onerror="this.parentElement.innerHTML=\'<div class=\\\'img-error\\\'>🖼️ Image unavailable</div>\';" loading="lazy"></div>';
+    }
+    if(q.passage_id&&q.passage_id.trim()){
+      var cId='pb_'+q.passage_id+'_'+qIndex;
+      html+='<div class="passage-panel">'
+        +'<div class="passage-header" onclick="togglePassagePanel(this)">'
+          +'<span>📖 Reading Passage</span><span class="passage-toggle-icon open">▲</span>'
+        +'</div>'
+        +'<div class="passage-content" id="'+cId+'"><div class="passage-placeholder">📖 Loading passage...</div></div>'
+        +'<div class="passage-q-pane" style="display:none">Questions based on the passage on the left</div>'
+      +'</div>';
+      fetchPassageContent(q.passage_id,cId);
+    }
   }
 
-  // FIX: passage panel — visible on BOTH mobile and desktop (was display:none on mobile)
-  // Uses a unique container ID tied to this render to prevent stale-fetch injection
-  if(q.passage_id&&q.passage_id.trim()){
-    var containerId='pb_'+q.passage_id+'_'+qIndex;
-    var isOpen=true; // default open on desktop
-    html+='<div class="passage-panel">'
-      // Mobile-only collapsible header
-      +'<div class="passage-header" onclick="togglePassagePanel(this)">'
-        +'<span>📖 Reading Passage</span>'
-        +'<span class="passage-toggle-icon open">▲</span>'
-      +'</div>'
-      +'<div class="passage-content" id="'+containerId+'">'
-        +'<div class="passage-placeholder">📖 Loading passage...</div>'
-      +'</div>'
-      // Desktop right-pane label
-      +'<div class="passage-q-pane" style="display:none">Questions based on the passage on the left</div>'
-    +'</div>';
-    // Async fetch — pass the snapshot ID so stale callbacks are ignored
-    fetchPassageContent(q.passage_id,containerId);
-  }
-
-  // Question text
   html+='<div class="q-meta">'
     +'<span><span class="q-type-badge">'+typeLabel+'</span>'
     +'<span class="q-num">Q'+(qIndex+1)+' of '+questions.length+'</span></span>'
-    +'<span class="q-pts">'+q.points+' pt'+(q.points!==1?'s':'')+'</span></div>'
-    +'<div class="q-text">'+q.question+'</div>';
+    +'<span class="q-pts">'+q.points+' pt'+(q.points!==1?'s':'')+'</span></div>';
 
+  /* Question text — hidden for phonics (played as audio instead) */
+  if(!isPhonics){
+    html+='<div class="q-text">'+q.question+'</div>';
+  }
+
+  /* Options / short answer */
   if(q.type==='MCQ'||q.type==='TF'){
     var opts=q.options||[];
     if(q.type==='TF'&&opts.length===0)opts=['True','False'];
+    var imgs=q.option_images||[];
     html+='<div class="options">';
     opts.forEach(function(opt,i){
       var letter=String.fromCharCode(65+i);
       var sel=answers[q.id]===letter?' selected':'';
+      var imgSrc=imgs[i]||'';
+      var readBtn=TTS.enabled
+        ? '<button class="opt-read-btn" onclick="event.stopPropagation();ttsReadOpt(\''+letter+': '+(opt||'').replace(/'/g,"\\'")+'\')" title="Read this option">🔊</button>'
+        : '';
       html+='<div class="option'+sel+'" onclick="selectAns(\''+q.id+'\',\''+letter+'\',this)">'
         +'<div class="opt-letter">'+letter+'</div>'
-        +'<div class="opt-text">'+opt+'</div></div>';
+        +'<div class="opt-content">'
+        +(opt?'<div class="opt-text">'+opt+'</div>':'')
+        +(imgSrc?'<img class="opt-img" src="'+imgSrc+'" alt="Option '+letter+'" onerror="this.remove()" loading="lazy">':'')
+        +readBtn
+        +'</div></div>';
     });
     html+='</div>';
   }else{
@@ -938,8 +1212,7 @@ function renderQuestion(){
   }
   html+='</div>';
 
-  var area=document.getElementById('questionArea');
-  if(area)area.innerHTML=html;
+  var area=document.getElementById('questionArea'); if(area)area.innerHTML=html;
 
   var prev=document.getElementById('prevBtn');
   var next=document.getElementById('nextBtn');
@@ -950,13 +1223,16 @@ function renderQuestion(){
   if(submit){if(isLast)submit.classList.remove('hidden');else submit.classList.add('hidden');}
   updateDots();
   updateVioDisplay();
+
+  /* Auto-play TTS for non-phonics questions (phonics plays itself) */
+  if(TTS.enabled&&TTS.autoPlay&&!isPhonics){
+    setTimeout(function(){ ttsReadAll(); }, 400);
+  }
 }
 
-// Toggle passage panel on mobile
 function togglePassagePanel(header){
   var icon=header.querySelector('.passage-toggle-icon');
-  var content=header.nextElementSibling;
-  if(!content)return;
+  var content=header.nextElementSibling; if(!content)return;
   var isOpen=content.style.display!=='none';
   content.style.display=isOpen?'none':'';
   if(icon)icon.classList.toggle('open',!isOpen);
@@ -967,19 +1243,16 @@ function selectAns(qId,letter,el){
   var parent=el.closest('.options');
   if(parent)parent.querySelectorAll('.option').forEach(function(o){o.classList.remove('selected');});
   el.classList.add('selected');
-  updateDots();
-  updateVioDisplay();
+  updateDots(); updateVioDisplay();
 }
 
 function saveShort(){
-  var q=questions[qIndex];
-  if(!q||q.type!=='short')return;
-  var el=document.getElementById('short_'+q.id);
-  if(el)answers[q.id]=el.value.trim();
+  var q=questions[qIndex]; if(!q||q.type!=='SHORT')return;
+  var el=document.getElementById('short_'+q.id); if(el)answers[q.id]=el.value.trim();
 }
-function prevQ(){saveShort();if(qIndex>0){qIndex--;renderQuestion();}}
-function nextQ(){saveShort();if(qIndex<questions.length-1){qIndex++;renderQuestion();}}
-function goToQ(i){saveShort();qIndex=i;renderQuestion();}
+function prevQ(){ttsStop();saveShort();if(qIndex>0){qIndex--;renderQuestion();}}
+function nextQ(){ttsStop();saveShort();if(qIndex<questions.length-1){qIndex++;renderQuestion();}}
+function goToQ(i){ttsStop();saveShort();qIndex=i;renderQuestion();}
 
 function renderDots(){
   var c=document.getElementById('navDots'); if(!c)return;
@@ -989,7 +1262,6 @@ function renderDots(){
   updateDots();
 }
 
-// FIX: flagged state now reflected on navigation dots
 function updateDots(){
   var answered=0;
   questions.forEach(function(q,i){
@@ -1007,8 +1279,8 @@ function updateVioDisplay(){
   var vioEl=document.getElementById('sb-vio');
   if(vioEl){
     vioEl.className='sbadge'+(violations>0?' warn':'');
-    var dot=document.createElement('span');dot.className='sbadge-dot';
-    vioEl.innerHTML='';vioEl.appendChild(dot);
+    var dot=document.createElement('span'); dot.className='sbadge-dot';
+    vioEl.innerHTML=''; vioEl.appendChild(dot);
     vioEl.appendChild(document.createTextNode(' '+violations+' strike'+(violations!==1?'s':'')));
   }
 }
@@ -1047,20 +1319,14 @@ function setupSecurity(){
   document.addEventListener('copy',function(e){e.preventDefault();});
   document.addEventListener('paste',function(e){e.preventDefault();});
   window.addEventListener('beforeunload',function(e){if(examSubmitted)return;e.preventDefault();e.returnValue='';});
-  setMobileBadge('sb-cam','ok','📷 Cam OK');
-  setMobileBadge('sb-face','ok','👤 Face OK');
-  setMobileBadge('sb-tab','ok','🖥 Focus OK');
-  setMobileBadge('sb-fs','ok','⛶ Fullscreen');
-  setBadge('b-cam',false,'📷 Cam');
-  setBadge('b-tab',false,'🖥 Focus');
-  setBadge('b-fs',false,'⛶ Full');
+  setMobileBadge('sb-cam','ok','📷 Cam OK');setMobileBadge('sb-face','ok','👤 Face OK');
+  setMobileBadge('sb-tab','ok','🖥 Focus OK');setMobileBadge('sb-fs','ok','⛶ Fullscreen');
+  setBadge('b-cam',false,'📷 Cam');setBadge('b-tab',false,'🖥 Focus');setBadge('b-fs',false,'⛶ Full');
 }
 
 function triggerViolation(msg,type){
   if(examSubmitted)return;
-  violations++;
-  logSec(msg,'vio');
-  updateVioDisplay();
+  violations++; logSec(msg,'vio'); updateVioDisplay();
   safeText('vioTitle',type==='face'?'Proctoring Alert':'Security Violation');
   safeText('vioMsg',msg);
   safeText('vioCount','Strike '+violations+' of '+CFG.MAX_VIOLATIONS);
@@ -1081,104 +1347,80 @@ function ackViolation(){
 
 function logSec(msg,cls){
   var log=document.getElementById('secLog'); if(!log)return;
-  var el=document.createElement('div');
-  el.className='log-entry '+(cls||'');
+  var el=document.createElement('div'); el.className='log-entry '+(cls||'');
   el.textContent='['+new Date().toLocaleTimeString()+'] '+msg;
   log.insertBefore(el,log.firstChild);
   while(log.children.length>20)log.removeChild(log.lastChild);
 }
 
 // ================================================================
-// PHOTO — FIX: compressed to 320×240 @ quality 0.4 (~20KB vs ~200KB)
+// PHOTO
 // ================================================================
 function capturePhoto(reason){
   try{
     var video=document.getElementById('examVideo');
     if(!video||!video.srcObject)return;
-    var c=document.createElement('canvas');
-    // FIX: smaller canvas = ~10× smaller file, still enough for proctoring
-    c.width=320;c.height=240;
-    var ctx=c.getContext('2d');
-    ctx.translate(c.width,0);ctx.scale(-1,1);
+    var c=document.createElement('canvas'); c.width=320; c.height=240;
+    var ctx=c.getContext('2d'); ctx.translate(c.width,0); ctx.scale(-1,1);
     ctx.drawImage(video,0,0,c.width,c.height);
-    post('savePhoto',{
-      studentEmail:student.email,
-      examCode:student.examCode,
-      reason:reason||'unknown',
-      // FIX: quality 0.4 instead of 0.7
-      imageBase64:c.toDataURL('image/jpeg',0.4)
-    },function(e,r){
-      if(r&&r.status==='success'&&r.data&&r.data.fileUrl)photos.push(r.data.fileUrl);
-    });
+    post('savePhoto',{studentEmail:student.email,examCode:student.examCode,reason:reason||'unknown',imageBase64:c.toDataURL('image/jpeg',0.4)},
+      function(e,r){if(r&&r.status==='success'&&r.data&&r.data.fileUrl)photos.push(r.data.fileUrl);});
   }catch(e){}
 }
 
 // ================================================================
-// SUBMIT — FIX: double-submission fully guarded
+// SUBMIT
 // ================================================================
 function confirmSubmit(){
+  ttsStop();
   saveShort();
   var answered=Object.keys(answers).filter(function(k){return answers[k]!==undefined&&answers[k]!=='';}).length;
   var flaggedCount=Object.values(flagged).filter(Boolean).length;
-  var msg='';
-  if(answered<questions.length)msg='You have answered '+answered+' of '+questions.length+' questions.';
-  else msg='You have answered all '+questions.length+' questions.';
+  var msg=answered<questions.length
+    ?'You have answered '+answered+' of '+questions.length+' questions.'
+    :'You have answered all '+questions.length+' questions.';
   if(flaggedCount>0)msg+='\n\n⚠️ You have '+flaggedCount+' flagged question(s) still marked for review.';
   msg+='\n\nSubmit now?';
   if(confirm(msg))doSubmit(false);
 }
 
 function doSubmit(forced){
-  // FIX: hard guard — subsequent calls are silently ignored
   if(examSubmitted)return;
   examSubmitted=true;
+  ttsStop();
   clearInterval(timerHandle);
   saveShort();
   var spent=examStart?Math.floor((Date.now()-examStart)/1000):0;
   showLoading('Submitting exam — please wait...');
-  // FIX: showCorrectAnswers NOT sent from client (server reads it from DB)
-  post('submitExam',{
-    studentEmail:student.email,
-    examCode:student.examCode,
-    answers:answers,
-    timeSpent:spent,
-    violations:violations,
-    photos:photos
-    // showCorrectAnswers deliberately omitted — server decides
-  },function(e,r){
-    hideLoading();
-    if(mediaStream)mediaStream.getTracks().forEach(function(t){t.stop();});
-    if(e||!r||r.status!=='success'){
-      // FIX: don't reset examSubmitted — still submitted, just reporting failed
-      alert('Submission failed: '+((r&&r.message)||'Unknown error')+'\n\nPlease contact your teacher immediately and do NOT close this window.');
-      return;
-    }
-    showResults(r.data);
-  });
+  post('submitExam',{studentEmail:student.email,examCode:student.examCode,answers:answers,timeSpent:spent,violations:violations,photos:photos},
+    function(e,r){
+      hideLoading();
+      if(mediaStream)mediaStream.getTracks().forEach(function(t){t.stop();});
+      if(e||!r||r.status!=='success'){
+        alert('Submission failed: '+((r&&r.message)||'Unknown error')+'\n\nPlease contact your teacher immediately and do NOT close this window.');
+        return;
+      }
+      showResults(r.data);
+    });
 }
 
 // ================================================================
-// RESULTS — FIX: window.close() fallback + flagged summary
+// RESULTS
 // ================================================================
 function tryClose(){
-  // FIX: try window.close() and if it doesn't work, show a message
   window.close();
   setTimeout(function(){
-    // If we're still here, close() was blocked
-    var btn=document.getElementById('closeBtn');
-    var warn=document.getElementById('closeWarning');
-    if(btn)btn.textContent='✕ Window Could Not Be Closed';
-    if(warn)warn.style.display='block';
+    var btn=document.getElementById('closeBtn'); var warn=document.getElementById('closeWarning');
+    if(btn)btn.textContent='✕ Window Could Not Be Closed'; if(warn)warn.style.display='block';
   },500);
 }
 
 function showResults(data){
   showScreen('resultsScreen');
   try{document.exitFullscreen();}catch(e){}
+  ttsStop();
   _explainCache={};
-
-  var pct=parseFloat(data.percentage);
-  var passed=data.status==='Pass';
+  var pct=parseFloat(data.percentage); var passed=data.status==='Pass';
   safeText('resIcon',passed?'🎉':'📋');
   safeText('resScore',data.score+' / '+data.totalPoints);
   safeText('resPct',pct.toFixed(1)+'%');
@@ -1190,68 +1432,49 @@ function showResults(data){
   safeText('resViolations',violations);
   var statusEl=document.getElementById('resStatus');
   if(statusEl)statusEl.className='result-status '+(passed?'pass':'fail');
-
   var detailedAnswers=data.detailedAnswers||[];
   var correct=detailedAnswers.filter(function(a){return a.isCorrect;}).length;
-  var wrong  =detailedAnswers.filter(function(a){return !a.isCorrect;}).length;
   safeText('resCorrect',correct);
-  safeText('resWrong',wrong);
-
-  // FIX: show flagged notice if student had flagged questions
+  safeText('resWrong',detailedAnswers.length-correct);
   var flaggedCount=Object.values(flagged).filter(Boolean).length;
-  var fn=document.getElementById('flaggedNotice');
-  if(fn)fn.classList.toggle('on',flaggedCount>0);
-
+  var fn=document.getElementById('flaggedNotice'); if(fn)fn.classList.toggle('on',flaggedCount>0);
   window._reviewAnswers=detailedAnswers;
-
-  // FIX: only render review if showCorrectAnswers is true (server-controlled)
   var list=document.getElementById('reviewList');
   var reviewSection=document.getElementById('reviewSection');
   if(!data.showCorrectAnswers){
-    if(reviewSection)reviewSection.style.display='none';
-    list.innerHTML='';
-    return;
+    if(reviewSection)reviewSection.style.display='none'; list.innerHTML=''; return;
   }
-
   if(!detailedAnswers.length){
-    list.innerHTML='<p style="color:var(--text2);font-size:13px">No question data available.</p>';
-    return;
+    list.innerHTML='<p style="color:var(--text2);font-size:13px">No question data available.</p>'; return;
   }
-
   list.innerHTML=detailedAnswers.map(function(a,i){
     var skipped=!a.studentAnswer||a.studentAnswer==='(no answer)';
-    var cls    =skipped?'skipped':(a.isCorrect?'correct':'wrong');
-    var badge  =skipped?'<span class="review-badge skip">Skipped</span>'
+    var cls=skipped?'skipped':(a.isCorrect?'correct':'wrong');
+    var badge=skipped?'<span class="review-badge skip">Skipped</span>'
       :a.isCorrect?'<span class="review-badge ok">✓ Correct</span>'
       :'<span class="review-badge bad">✗ Wrong</span>';
-    // FIX: flag indicator in review
-    var flagIndicator=flagged[questions[i]&&questions[i].id]?'<span style="color:var(--yellow);font-size:10px;margin-left:6px">🚩 Flagged</span>':'';
-
+    var flagInd=flagged[questions[i]&&questions[i].id]?'<span style="color:var(--yellow);font-size:10px;margin-left:6px">🚩 Flagged</span>':'';
     var correctDisplay='';
     if(!a.isCorrect){
-      var letter=a.correctAnswerLetter||'';
-      var text  =a.correctAnswer||'';
+      var letter=a.correctAnswerLetter||''; var text=a.correctAnswer||'';
       correctDisplay=(letter&&text&&text!==letter)?letter+' — '+text:(text||letter||'—');
     }
-    var explainBlock='';
-    if(!a.isCorrect&&a.explanation){
-      explainBlock='<div class="explain-box"><div class="ai-label">💡 Explanation</div>'+a.explanation+'</div>';
-    }
-    var aiBlock='';
-    if(!a.isCorrect){
-      aiBlock='<div id="ai_wrap_'+i+'">'
-        +'<button class="ai-explain-btn" id="ai_btn_'+i+'" onclick="fetchAiExplanation('+i+')">✦ AI Explanation</button>'
-        +'<div id="ai_box_'+i+'"></div></div>';
-    }
+    var explainBlock=(!a.isCorrect&&a.explanation)?'<div class="explain-box"><div class="ai-label">💡 Explanation</div>'+a.explanation+'</div>':'';
+    var aiBlock=!a.isCorrect?'<div id="ai_wrap_'+i+'"><button class="ai-explain-btn" id="ai_btn_'+i+'" onclick="fetchAiExplanation('+i+')">✦ AI Explanation</button><div id="ai_box_'+i+'"></div></div>':'';
     return '<div class="review-item '+cls+'">'
-      +'<div class="review-q"><span class="review-q-text">Q'+(i+1)+'. '+(a.questionText||'Question '+(i+1))+flagIndicator+'</span>'+badge+'</div>'
-      +'<div class="review-row"><span class="review-label">Your Answer</span>'
-        +'<span class="review-val '+(a.isCorrect?'ok':skipped?'':'bad')+'">'+(a.studentAnswer||'(no answer)')+'</span></div>'
+      +'<div class="review-q"><span class="review-q-text">Q'+(i+1)+'. '+(a.questionText||'Question '+(i+1))+flagInd+'</span>'+badge+'</div>'
+      +'<div class="review-row"><span class="review-label">Your Answer</span><span class="review-val '+(a.isCorrect?'ok':skipped?'':'bad')+'">'+(a.studentAnswer||'(no answer)')+'</span></div>'
       +(!a.isCorrect?'<div class="review-row"><span class="review-label">Correct</span><span class="review-val ok">'+correctDisplay+'</span></div>':'')
       +'<div class="review-row"><span class="review-label">Points</span><span class="review-val">'+a.pointsEarned+' / '+a.maxPoints+'</span></div>'
-      +explainBlock+aiBlock
-    +'</div>';
+      +explainBlock+aiBlock+'</div>';
   }).join('');
+
+  /* Read score aloud if TTS was enabled */
+  if(TTS.enabled){
+    setTimeout(function(){
+      ttsSpeak('Your result is '+pct.toFixed(0)+' percent. '+(passed?'Congratulations, you passed!':'Keep studying, you can do better next time.'));
+    },800);
+  }
 }
 
 // ================================================================
@@ -1260,31 +1483,24 @@ function showResults(data){
 function fetchAiExplanation(idx){
   var answers=window._reviewAnswers; if(!answers)return;
   var a=answers[idx];
-  var btn=document.getElementById('ai_btn_'+idx);
-  var box=document.getElementById('ai_box_'+idx);
+  var btn=document.getElementById('ai_btn_'+idx); var box=document.getElementById('ai_box_'+idx);
   if(!btn||!box||!a)return;
   if(_explainCache[idx]){box.innerHTML=_explainCache[idx];btn.style.display='none';return;}
   btn.disabled=true;
   btn.innerHTML='<span class="explain-spinner"></span> Getting explanation...';
-  post('getExplanation',{
-    question:     a.questionText,
-    studentAnswer:a.studentAnswer,
-    correctAnswer:a.correctAnswer,
-    type:         a.type||'MCQ',
-    school:       studentInfo.school||''
-  },function(e,r){
-    btn.disabled=false;
-    if(e||!r||r.status!=='success'){
-      var errMsg=(r&&r.message)||'Could not get explanation.';
-      if(errMsg.indexOf('not enabled')!==-1||errMsg.indexOf('not configured')!==-1){btn.style.display='none';}
-      else{btn.innerHTML='✦ AI Explanation';box.innerHTML='<div style="font-size:12px;color:var(--red);margin-top:8px">'+errMsg+'</div>';}
-      return;
-    }
-    var html='<div class="ai-explain-box"><div class="ai-label">⚡ AI Explanation</div>'+r.data.explanation+'</div>';
-    _explainCache[idx]=html;
-    box.innerHTML=html;
-    btn.style.display='none';
-  });
+  post('getExplanation',{question:a.questionText,studentAnswer:a.studentAnswer,correctAnswer:a.correctAnswer,type:a.type||'MCQ',school:studentInfo.school||''},
+    function(e,r){
+      btn.disabled=false;
+      if(e||!r||r.status!=='success'){
+        var errMsg=(r&&r.message)||'Could not get explanation.';
+        if(errMsg.indexOf('not enabled')!==-1||errMsg.indexOf('not configured')!==-1){btn.style.display='none';}
+        else{btn.innerHTML='✦ AI Explanation';box.innerHTML='<div style="font-size:12px;color:var(--red);margin-top:8px">'+errMsg+'</div>';}
+        return;
+      }
+      var html='<div class="ai-explain-box"><div class="ai-label">⚡ AI Explanation</div>'+r.data.explanation+'</div>';
+      _explainCache[idx]=html; box.innerHTML=html; btn.style.display='none';
+      if(TTS.enabled) ttsSpeak(r.data.explanation);
+    });
 }
 </script>
 </body>
