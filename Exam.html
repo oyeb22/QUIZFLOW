@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -179,9 +178,7 @@
     .option.selected .opt-letter{background:var(--accent);color:white;}
     .opt-content{flex:1;display:flex;flex-direction:column;gap:6px;}
     .opt-text{font-size:clamp(13px,3.5vw,14px);line-height:1.4;}
-    /* Option image support */
     .opt-img{max-width:100%;max-height:100px;border-radius:6px;object-fit:contain;display:block;}
-    /* Option-level read-aloud button */
     .opt-read-btn{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border:1px solid rgba(91,110,245,.2);border-radius:12px;background:transparent;color:var(--muted);font-size:10px;font-family:var(--font);cursor:pointer;transition:all .12s;align-self:flex-start;}
     .opt-read-btn:hover{color:var(--accent2);border-color:rgba(91,110,245,.4);}
     .short-input{width:100%;padding:clamp(11px,3vw,13px) clamp(12px,3vw,14px);background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:var(--font);resize:vertical;min-height:100px;outline:none;transition:border-color .18s;-webkit-appearance:none;}
@@ -526,6 +523,33 @@
 
 <script>
 // ================================================================
+// TASK 5.3 — SECURITY: Validate ?script= URL parameter
+// Prevents attackers from crafting exam links pointing to evil servers.
+// This runs BEFORE any other code. If the check fails, the page halts.
+// ================================================================
+(function() {
+  var ALLOWED_SCRIPT_ORIGIN = 'script.google.com/macros/s/';
+  var params = {};
+  window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m, k, v) {
+    params[k] = decodeURIComponent(v);
+  });
+  var scriptParam = params['script'] || '';
+  if (!scriptParam || scriptParam.indexOf(ALLOWED_SCRIPT_ORIGIN) === -1) {
+    document.body.style.cssText = 'font-family:sans-serif;background:#080b14;color:#e8eaf4;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;';
+    document.body.innerHTML =
+      '<div style="text-align:center;max-width:400px">'
+      + '<div style="font-size:48px;margin-bottom:16px">🚫</div>'
+      + '<h2 style="color:#f06b6b;margin-bottom:10px">Invalid Exam Link</h2>'
+      + '<p style="color:#9ba3c0;font-size:14px;line-height:1.6">'
+      + 'This link is not valid or has been tampered with.<br>'
+      + 'Please get the correct exam link from your teacher and try again.'
+      + '</p>'
+      + '</div>';
+    throw new Error('[QuizFlow] Security: Invalid or missing script URL. Access denied.');
+  }
+})();
+
+// ================================================================
 // CONFIG & STATE
 // ================================================================
 var CFG = { MAX_VIOLATIONS: 3, NO_FACE_THRESHOLD: 10, MULTI_FACE_THRESHOLD: 5 };
@@ -567,16 +591,14 @@ var TTS = {
   enabled:   false,
   autoPlay:  false,
   rate:      1.0,
-  voice:     null,       /* SpeechSynthesisVoice object */
+  voice:     null,
   voiceName: '',
   speaking:  false,
   supported: ('speechSynthesis' in window),
   voices:    [],
-  /* Phonics: how many times the audio prompt has been played */
   phonicsPlays: 0
 };
 
-/* Populate voice list — async because voices load after page */
 function ttsLoadVoices() {
   if (!TTS.supported) return;
   function doLoad() {
@@ -584,7 +606,6 @@ function ttsLoadVoices() {
     var sel = document.getElementById('ttsVoiceSelect');
     if (!sel) return;
     sel.innerHTML = '';
-    /* Group: English voices first */
     var en = TTS.voices.filter(function(v){ return v.lang.startsWith('en'); });
     var others = TTS.voices.filter(function(v){ return !v.lang.startsWith('en'); });
     function addOpt(v) {
@@ -594,10 +615,6 @@ function ttsLoadVoices() {
       sel.appendChild(o);
     }
     if (en.length) {
-      var g1 = document.createElement('optgroup'); g1.label = 'English voices (★ = on-device)';
-      en.forEach(addOpt); sel.appendChild(g1);
-      en.forEach(function(v){ g1.appendChild(sel.querySelector('[value="'+v.name.replace(/"/g,'\\"')+'"]') || document.createElement('option')); });
-      /* Rebuild properly */
       sel.innerHTML = '';
       var g = document.createElement('optgroup'); g.label = 'English (★ = on-device)';
       en.forEach(function(v){
@@ -619,9 +636,7 @@ function ttsLoadVoices() {
         o.textContent=v.name+' ('+v.lang+')'; sel.appendChild(o);
       });
     }
-    /* Auto-select a good English voice */
     if (TTS.voices.length && !TTS.voiceName) {
-      /* Prefer local natural-sounding voices */
       var preferred = en.find(function(v){ return v.localService && /natural|enhanced|premium|siri|neural/i.test(v.name); })
                    || en.find(function(v){ return v.localService; })
                    || en[0]
@@ -659,7 +674,6 @@ function ttsTest() {
   ttsSpeak('Hello! Read-aloud is working. This is how your questions will sound during the exam.');
 }
 
-/* Core speak function */
 function ttsSpeak(text, onEnd) {
   if (!TTS.supported || !text) return;
   window.speechSynthesis.cancel();
@@ -695,7 +709,6 @@ function updateTTSButtons(speaking) {
   if (stopBtn) stopBtn.classList.toggle('visible', speaking);
 }
 
-/* Read the current question text */
 function ttsReadQuestion() {
   var q = questions[qIndex]; if (!q) return;
   var text = q.question || '';
@@ -703,7 +716,6 @@ function ttsReadQuestion() {
   ttsSpeak(text);
 }
 
-/* Read all options */
 function ttsReadOptions() {
   var q = questions[qIndex]; if (!q) return;
   if (q.type === 'SHORT') { ttsSpeak('This is a short answer question. Please type your answer in the box.'); return; }
@@ -713,7 +725,6 @@ function ttsReadOptions() {
   ttsSpeak(text);
 }
 
-/* Read question + options together (for auto-play) */
 function ttsReadAll() {
   var q = questions[qIndex]; if (!q) return;
   var text = '';
@@ -729,26 +740,10 @@ function ttsReadAll() {
   ttsSpeak(text);
 }
 
-/* Read a single option on demand */
 function ttsReadOpt(text) {
   ttsSpeak(text);
 }
 
-/* ── PHONICS / DICTION MODE ──
-   A question is treated as a "phonics question" when:
-   - the question text starts with [AUDIO] or
-   - the question field is blank but there is an audio_url (future), or
-   - the question type is marked 'AUDIO' (future field)
-   
-   For now we detect [AUDIO] prefix OR if question contains the marker.
-   The audio is read aloud via TTS automatically — teacher writes
-   the word/sentence to be heard, student picks the phonetic match.
-   
-   Format in question bank:
-     Question: [AUDIO] The cat sat on the mat.
-     Options:  /æ/ sound  |  /ɒ/ sound  |  /eɪ/ sound  |  /iː/ sound
-     Correct: /æ/ sound
-*/
 var AUDIO_PREFIX = '[AUDIO]';
 
 function isPhonicsQuestion(q) {
@@ -759,7 +754,6 @@ function getPhonicsText(q) {
   return q.question.replace(AUDIO_PREFIX, '').trim();
 }
 
-/* Render the phonics/diction audio player box */
 function renderPhonicsBox(q) {
   TTS.phonicsPlays = 0;
   var text = getPhonicsText(q);
@@ -775,7 +769,6 @@ function renderPhonicsBox(q) {
     + '<div class="audio-q-count" id="phonicsCount">Tap to hear the audio</div>'
     + '<div class="audio-q-hint">Listen carefully, then choose the correct answer below. You can replay as many times as needed.</div>'
     + '</div>';
-  /* Auto-play first time after short delay */
   setTimeout(function() { phonicsPlay(); }, 600);
   return html;
 }
@@ -790,7 +783,6 @@ function phonicsPlay() {
   if (btn) btn.classList.add('playing');
   if (wave) wave.classList.remove('hidden');
   if (count) count.textContent = 'Played ' + TTS.phonicsPlays + ' time' + (TTS.phonicsPlays !== 1 ? 's' : '');
-  /* Use slower rate for phonics clarity */
   var origRate = TTS.rate;
   TTS.rate = Math.min(TTS.rate, 0.85);
   ttsSpeak(text, function() {
@@ -1023,7 +1015,6 @@ function handleFaceResults(results,mode){
 // START EXAM
 // ================================================================
 function enterFullscreen(){
-  /* Read TTS auto-play preference */
   var autoEl=document.getElementById('ttsAutoPlay');
   TTS.autoPlay = autoEl && autoEl.checked;
   var el=document.documentElement;
@@ -1047,7 +1038,6 @@ function startExam(){
     }
     setTimeout(examLoop,600);
   }
-  /* Show TTS bar if enabled */
   var bar=document.getElementById('ttsBar');
   if(bar)bar.classList.toggle('hidden',!TTS.enabled);
 
@@ -1139,7 +1129,6 @@ function renderQuestion(){
   var pb=document.getElementById('progressBar'); if(pb)pb.style.width=pct+'%';
   updateFlagBtn();
 
-  /* Show/hide TTS bar */
   var bar=document.getElementById('ttsBar');
   if(bar)bar.classList.toggle('hidden',!TTS.enabled);
 
@@ -1152,7 +1141,6 @@ function renderQuestion(){
     html+='<div class="instruction-header"><span class="label">📋 Instructions</span>'+q.instruction_text+'</div>';
   }
 
-  /* Phonics/diction audio player — replaces question text display */
   if(isPhonics){
     html+=renderPhonicsBox(q);
   } else {
@@ -1178,28 +1166,25 @@ function renderQuestion(){
     +'<span class="q-num">Q'+(qIndex+1)+' of '+questions.length+'</span></span>'
     +'<span class="q-pts">'+q.points+' pt'+(q.points!==1?'s':'')+'</span></div>';
 
-  /* Question text — hidden for phonics (played as audio instead) */
   if(!isPhonics){
     html+='<div class="q-text">'+q.question+'</div>';
   }
 
-  /* Options / short answer */
   if(q.type==='MCQ'||q.type==='TF'){
     var opts=q.options||[];
     if(q.type==='TF'&&opts.length===0)opts=['True','False'];
-    var imgs=q.option_images||[];
     html+='<div class="options">';
     opts.forEach(function(opt, i) {
-  var letter = String.fromCharCode(65 + i);
-  var img = (q.option_images && q.option_images[i]) ? q.option_images[i] : '';
-  var sel = answers[q.id] === letter ? ' selected' : '';
-  var imgHtml = img
-    ? '<img src="' + img + '" style="max-width:100%;max-height:120px;border-radius:6px;margin-top:6px;display:block;object-fit:contain" onerror="this.remove()">'
-    : '';
-  html += '<div class="option' + sel + '" onclick="selectAns(\'' + q.id + '\',\'' + letter + '\',this)">'
-    + '<div class="opt-letter">' + letter + '</div>'
-    + '<div class="opt-text">' + (opt || '') + imgHtml + '</div></div>';
-});
+      var letter = String.fromCharCode(65 + i);
+      var img = (q.option_images && q.option_images[i]) ? q.option_images[i] : '';
+      var sel = answers[q.id] === letter ? ' selected' : '';
+      var imgHtml = img
+        ? '<img src="' + img + '" style="max-width:100%;max-height:120px;border-radius:6px;margin-top:6px;display:block;object-fit:contain" onerror="this.remove()">'
+        : '';
+      html += '<div class="option' + sel + '" onclick="selectAns(\'' + q.id + '\',\'' + letter + '\',this)">'
+        + '<div class="opt-letter">' + letter + '</div>'
+        + '<div class="opt-text">' + (opt || '') + imgHtml + '</div></div>';
+    });
     html+='</div>';
   }else{
     var val=answers[q.id]||'';
@@ -1220,7 +1205,6 @@ function renderQuestion(){
   updateDots();
   updateVioDisplay();
 
-  /* Auto-play TTS for non-phonics questions (phonics plays itself) */
   if(TTS.enabled&&TTS.autoPlay&&!isPhonics){
     setTimeout(function(){ ttsReadAll(); }, 400);
   }
@@ -1465,7 +1449,6 @@ function showResults(data){
       +explainBlock+aiBlock+'</div>';
   }).join('');
 
-  /* Read score aloud if TTS was enabled */
   if(TTS.enabled){
     setTimeout(function(){
       ttsSpeak('Your result is '+pct.toFixed(0)+' percent. '+(passed?'Congratulations, you passed!':'Keep studying, you can do better next time.'));
