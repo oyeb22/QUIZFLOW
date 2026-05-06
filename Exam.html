@@ -514,6 +514,9 @@
       <div class="review-section"><h3>📋 Question Review</h3></div>
       <div id="reviewList"></div>
     </div>
+   <div id="retakeNotice" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(45,212,160,.07);border:1px solid rgba(45,212,160,.25);border-radius:var(--radius-sm);font-size:12.5px;color:var(--green);text-align:center;line-height:1.6">
+      ↻ Retakes are allowed for this quiz. You may close this window and re-enter the exam code to try again.
+    </div>
     <button class="back-btn" id="closeBtn" onclick="tryClose()">✕ Close Exam Window</button>
     <div class="close-warning" id="closeWarning" style="display:none">
       If the button above does not close this tab, you may close it manually.
@@ -874,6 +877,22 @@ function fetchStudentInfo(){
   safeText('bannerName',studentInfo.name);
   safeText('bannerMeta',student.examCode+' · '+(quizMeta?quizMeta.title:''));
   buildExamDetails();
+  applyTTSVisibility();
+}
+
+function applyTTSVisibility(){
+  // Hide the entire TTS setup panel if teacher did not enable TTS for this quiz
+  var ttsSetup = document.querySelector('.tts-setup');
+  if(ttsSetup){
+    ttsSetup.style.display = (quizMeta && quizMeta.enableTTS) ? 'block' : 'none';
+  }
+  // If TTS not enabled, make sure TTS state is off so nothing fires during exam
+  if(!quizMeta || !quizMeta.enableTTS){
+    TTS.enabled  = false;
+    TTS.autoPlay = false;
+    var tog = document.getElementById('ttsToggle');
+    if(tog) tog.classList.remove('on');
+  }
 }
 
 function buildExamDetails(){
@@ -1051,8 +1070,8 @@ function startExam(){
     setTimeout(examLoop,600);
   }
   var bar=document.getElementById('ttsBar');
-  if(bar)bar.classList.toggle('hidden',!TTS.enabled);
-
+  // Only show TTS bar if teacher enabled TTS for this quiz AND student turned it on
+  if(bar) bar.classList.toggle('hidden', !(quizMeta && quizMeta.enableTTS && TTS.enabled));
   setupSecurity();
   showLoading('Loading questions...');
   post('getQuizData',{examCode:student.examCode},function(e,r){
@@ -1142,7 +1161,7 @@ function renderQuestion(){
   updateFlagBtn();
 
   var bar=document.getElementById('ttsBar');
-  if(bar)bar.classList.toggle('hidden',!TTS.enabled);
+  if(bar) bar.classList.toggle('hidden', !(quizMeta && quizMeta.enableTTS && TTS.enabled));
 
   var isPhonics = isPhonicsQuestion(q);
   var typeLabel = isPhonics ? 'Diction / Phonics' : (q.type==='MCQ'?'Multiple Choice':q.type==='TF'?'True / False':'Short Answer');
@@ -1217,7 +1236,7 @@ function renderQuestion(){
   updateDots();
   updateVioDisplay();
 
-  if(TTS.enabled&&TTS.autoPlay&&!isPhonics){
+if(quizMeta && quizMeta.enableTTS && TTS.enabled && TTS.autoPlay && !isPhonics){
     setTimeout(function(){ ttsReadAll(); }, 400);
   }
 }
@@ -1416,10 +1435,14 @@ function showResults(data){
   safeText('resIcon',passed?'🎉':'📋');
   safeText('resScore',data.score+' / '+data.totalPoints);
   safeText('resPct',pct.toFixed(1)+'%');
-  safeText('resStatus',passed?'PASSED':'NEEDS REVIEW');
-  safeText('resMsg',passed?'Congratulations! You have passed this exam.':'Keep studying — you can do better next time!');
+  var rubricLabel = data.rubricComment || (passed ? 'PASSED' : 'NEEDS REVIEW');
+  safeText('resStatus', rubricLabel);
+  safeText('resMsg', passed
+    ? 'Congratulations! ' + rubricLabel + ' — you have passed this exam.'
+    : rubricLabel + ' — keep studying, you can do better next time!');
   safeText('resExamName',quizMeta?quizMeta.title:'Exam');
-  safeText('resCandidateName',[studentInfo.name,studentInfo.class,studentInfo.school].filter(Boolean).join(' · ')||student.email);
+  var attemptStr = (data.attemptNumber && data.attemptNumber > 1) ? ' · Attempt #'+data.attemptNumber : '';
+  safeText('resCandidateName',[studentInfo.name,studentInfo.class,studentInfo.school].filter(Boolean).join(' · ')+(attemptStr)||student.email+attemptStr);
   safeText('resSchool',studentInfo.school||'QuizFlow Pro');
   safeText('resViolations',violations);
   var statusEl=document.getElementById('resStatus');
@@ -1430,6 +1453,8 @@ function showResults(data){
   safeText('resWrong',detailedAnswers.length-correct);
   var flaggedCount=Object.values(flagged).filter(Boolean).length;
   var fn=document.getElementById('flaggedNotice'); if(fn)fn.classList.toggle('on',flaggedCount>0);
+  var rn=document.getElementById('retakeNotice');
+  if(rn) rn.style.display=(quizMeta&&quizMeta.allowRetakes)?'block':'none';
   window._reviewAnswers=detailedAnswers;
   var list=document.getElementById('reviewList');
   var reviewSection=document.getElementById('reviewSection');
@@ -1478,7 +1503,7 @@ function showResults(data){
       +explainBlock+aiBlock+'</div>';
   }).join('');
 
-  if(TTS.enabled){
+if(quizMeta && quizMeta.enableTTS && TTS.enabled){
     setTimeout(function(){
       ttsSpeak('Your result is '+pct.toFixed(0)+' percent. '+(passed?'Congratulations, you passed!':'Keep studying, you can do better next time.'));
     },800);
