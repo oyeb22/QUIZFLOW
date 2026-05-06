@@ -281,9 +281,6 @@
     .tts-test-btn:hover{background:rgba(91,110,245,.25);}
     .tts-auto-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);}
     .tts-hint{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;}
-    .review-row + .review-row { margin-top: 4px; }
-    .review-val.ok { color: var(--green); font-weight: 600; }
-    .review-val.bad { color: var(--red); }
   </style>
 </head>
 <body>
@@ -586,6 +583,18 @@ var examSubmitted = false;
 var studentInfo   = { name:'', class:'', school:'', locked:false };
 var _explainCache = {};
 var _passageCache = {};
+
+// ================================================================
+// HTML ESCAPE HELPER (for safe rendering)
+// ================================================================
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 // ================================================================
 // TTS ENGINE
@@ -1444,24 +1453,29 @@ function showResults(data){
     }
     var explainBlock=(!a.isCorrect&&a.explanation)?'<div class="explain-box"><div class="ai-label">💡 Explanation</div>'+a.explanation+'</div>':'';
     var aiBlock=!a.isCorrect?'<div id="ai_wrap_'+i+'"><button class="ai-explain-btn" id="ai_btn_'+i+'" onclick="fetchAiExplanation('+i+')">✦ AI Explanation</button><div id="ai_box_'+i+'"></div></div>':'';
-   return '<div class="review-item '+cls+'">'
-  +'<div class="review-q"><span class="review-q-text">Q'+(i+1)+'. '+(a.questionText||'Question '+(i+1))+flagInd+'</span>'+badge+'</div>'
-  +'<div class="review-row"><span class="review-label">Your Answer</span><span class="review-val '+(a.isCorrect?'ok':skipped?'':'bad')+'">'+esc(a.studentAnswer||'(no answer)')+'</span></div>'
-  +(!a.isCorrect?'<div class="review-row"><span class="review-label">Correct</span><span class="review-val ok">'+esc(correctDisplay)+'</span></div>':'')
-  +'<div class="review-row"><span class="review-label">Points</span><span class="review-val">'+a.pointsEarned+' / '+a.maxPoints+'</span></div>'
-  // ── PARTIAL CREDIT DISPLAY (SHORT answer only) ─────────────────
-  + (a.partialMode && a.matchedItems && a.matchedItems.length ?
-    '<div class="review-row">'
-    + '<span class="review-label">Got Right</span>'
-    + '<span class="review-val ok">✓ ' + (a.matchedItems || []).map(function(m){ return esc(m); }).join(', ') + '</span>'
-    + '</div>'
-    + '<div class="review-row">'
-    + '<span class="review-label">Missed</span>'
-    + '<span class="review-val bad">✗ ' + (a.missedItems || []).map(function(m){ return esc(m); }).join(', ') + '</span>'
-    + '</div>'
-    : '')
-  // ──────────────────────────────────────────────────────────────
-  +explainBlock+aiBlock+'</div>';
+    
+    // ── PARTIAL CREDIT DISPLAY (SHORT answer only) ─────────────────
+    var partialCreditBlock = '';
+    if (a.partialMode && a.matchedItems && a.matchedItems.length) {
+      partialCreditBlock =
+        '<div class="review-row">'
+        + '<span class="review-label">Got Right</span>'
+        + '<span class="review-val ok">✓ ' + (a.matchedItems || []).map(function(m){ return esc(m); }).join(', ') + '</span>'
+        + '</div>'
+        + '<div class="review-row">'
+        + '<span class="review-label">Missed</span>'
+        + '<span class="review-val bad">✗ ' + (a.missedItems || []).map(function(m){ return esc(m); }).join(', ') + '</span>'
+        + '</div>';
+    }
+    // ──────────────────────────────────────────────────────────────
+    
+    return '<div class="review-item '+cls+'">'
+      +'<div class="review-q"><span class="review-q-text">Q'+(i+1)+'. '+(a.questionText||'Question '+(i+1))+flagInd+'</span>'+badge+'</div>'
+      +'<div class="review-row"><span class="review-label">Your Answer</span><span class="review-val '+(a.isCorrect?'ok':skipped?'':'bad')+'">'+esc(a.studentAnswer||'(no answer)')+'</span></div>'
+      +(!a.isCorrect?'<div class="review-row"><span class="review-label">Correct</span><span class="review-val ok">'+esc(correctDisplay)+'</span></div>':'')
+      +'<div class="review-row"><span class="review-label">Points</span><span class="review-val">'+a.pointsEarned+' / '+a.maxPoints+'</span></div>'
+      + partialCreditBlock
+      +explainBlock+aiBlock+'</div>';
   }).join('');
 
   if(TTS.enabled){
