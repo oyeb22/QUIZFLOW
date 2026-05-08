@@ -586,6 +586,67 @@ var examSubmitted = false;
 var studentInfo   = { name:'', class:'', school:'', locked:false };
 var _explainCache = {};
 var _passageCache = {};
+// ================================================================
+// WAKE LOCK — prevent device screen from sleeping during exam
+// ================================================================
+var _wakeLock = null;
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) {
+    // Fallback: play a silent audio loop to keep screen awake
+    activateNoSleepFallback();
+    return;
+  }
+  try {
+    _wakeLock = await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release', function() {
+      // Re-acquire if exam is still running
+      if (!examSubmitted) {
+        setTimeout(requestWakeLock, 1000);
+      }
+    });
+    console.log('[WakeLock] Screen wake lock acquired');
+  } catch (err) {
+    console.warn('[WakeLock] Could not acquire:', err.message);
+    activateNoSleepFallback();
+  }
+}
+
+function releaseWakeLock() {
+  if (_wakeLock) {
+    _wakeLock.release().catch(function(){});
+    _wakeLock = null;
+  }
+}
+
+// Fallback for browsers without Wake Lock API (older Android WebView, Firefox)
+var _noSleepVideo = null;
+function activateNoSleepFallback() {
+  try {
+    if (_noSleepVideo) return;
+    // Create a tiny invisible video that loops — keeps screen awake on most browsers
+    _noSleepVideo = document.createElement('video');
+    _noSleepVideo.setAttribute('playsinline', '');
+    _noSleepVideo.setAttribute('muted', '');
+    _noSleepVideo.loop = true;
+    _noSleepVideo.style.cssText = 'position:fixed;top:-1px;left:-1px;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1';
+    // Minimal mp4 data URI (1×1 pixel, 1 frame)
+    _noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAs1tZGF0AAACrgYF//+q3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE1NyByMjk4NCBiZjEzNDhlIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxOSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTEgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAACZWxpYnJhcnkgcGlwZWxpbmU=';
+    document.body.appendChild(_noSleepVideo);
+    _noSleepVideo.play().catch(function(){});
+    console.log('[WakeLock] Fallback no-sleep video activated');
+  } catch(e) {
+    console.warn('[WakeLock] Fallback failed:', e.message);
+  }
+}
+
+function stopNoSleepFallback() {
+  if (_noSleepVideo) {
+    _noSleepVideo.pause();
+    _noSleepVideo.remove();
+    _noSleepVideo = null;
+  }
+}
 
 // ================================================================
 // HTML ESCAPE HELPER (for safe rendering)
@@ -656,11 +717,29 @@ function ttsLoadVoices() {
                    || en.find(function(v){ return v.localService; })
                    || en[0]
                    || TTS.voices[0];
-      if (preferred) { sel.value = preferred.name; onVoiceChange(); }
+     // Inside doLoad(), REPLACE the preferred voice selection block:
+if (TTS.voices.length && !TTS.voiceName) {
+  var teacherProfile = TTS._teacherVoiceProfile;
+  var preferred;
+  if (teacherProfile && teacherProfile.preferredVoiceName) {
+    // Try to find exact match of teacher's profiled voice
+    preferred = TTS.voices.find(function(v){ return v.name === teacherProfile.preferredVoiceName; });
+    if (preferred && sel) {
+      sel.value = preferred.name;
+      // Show teacher profile badge
+      var hint = document.querySelector('.tts-hint');
+      if (hint) hint.innerHTML = '🧑‍🏫 <strong>Teacher voice profile applied:</strong> ' + preferred.name + '<br>' + hint.innerHTML;
     }
   }
-  if (window.speechSynthesis.getVoices().length) { doLoad(); }
-  else { window.speechSynthesis.onvoiceschanged = doLoad; }
+  }}
+  if (!preferred) {
+    preferred = en.find(function(v){ return v.localService && /natural|enhanced|premium|siri|neural/i.test(v.name); })
+             || en.find(function(v){ return v.localService; })
+             || en[0]
+             || TTS.voices[0];
+    if (preferred && sel) sel.value = preferred.name;
+  }
+  if (preferred) { onVoiceChange(); }
 }
 
 function onVoiceChange() {
@@ -868,6 +947,15 @@ window.addEventListener('load',function(){
     safeText('bannerCode',student.examCode);
     fetchStudentInfo();
     initMedia();
+    CFG.MAX_VIOLATIONS = quizMeta.maxViolations || 3;
+    // Fetch teacher's voice profile if TTS is enabled
+    if (quizMeta.enableTTS) {
+    post('getTeacherVoiceProfile', { examCode: student.examCode }, function(e2, r2) {
+    if (!e2 && r2 && r2.status === 'success' && r2.data && r2.data.voiceProfile) {
+      TTS._teacherVoiceProfile = r2.data.voiceProfile;
+    }
+  });
+}
   });
 });
 
@@ -1045,11 +1133,23 @@ function handleFaceResults(results,mode){
 // ================================================================
 // START EXAM
 // ================================================================
-function enterFullscreen(){
-  var autoEl=document.getElementById('ttsAutoPlay');
+function enterFullscreen() {
+  var autoEl = document.getElementById('ttsAutoPlay');
   TTS.autoPlay = autoEl && autoEl.checked;
-  var el=document.documentElement;
-  try{if(el.requestFullscreen)el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();}catch(e){}
+  // Mirror the media stream to examVideo BEFORE going fullscreen
+  if (mediaStream) {
+    var ev = document.getElementById('examVideo');
+    if (ev) {
+      ev.srcObject = mediaStream;
+      ev.play().catch(function(){});
+    }
+  }
+  var el = document.documentElement;
+  try {
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+  } catch(e) {}
   showScreen('examScreen');
   startExam();
 }
@@ -1079,6 +1179,7 @@ function startExam(){
     if(e||!r||r.status!=='success'){alert('Failed to load questions: '+((r&&r.message)||'Unknown error'));return;}
     questions=r.data.questions||[];
     examStart=Date.now();
+    requestWakeLock(); // Prevent screen timeout during exam
     timeLeft=(quizMeta.duration||30)*60;
     safeText('examTitleBar',quizMeta.title);
     safeText('examSubBar',student.email);
@@ -1090,7 +1191,16 @@ function startExam(){
         updateCandidateDisplays({Name:res.data.name||studentInfo.name,Class:res.data.className||'',School:res.data.school||'',locked:res.data.locked||false});
       }
     });
-    setTimeout(function(){capturePhoto('start');},2000);
+    // Wait for video to actually be playing
+function waitForVideoAndSnap() {
+  var v = document.getElementById('examVideo');
+  if (v && v.readyState >= 2 && v.srcObject) {
+    setTimeout(function(){ capturePhoto('start'); }, 500);
+  } else {
+    setTimeout(waitForVideoAndSnap, 500);
+  }
+}
+waitForVideoAndSnap();
   });
 }
 
@@ -1309,6 +1419,8 @@ function setupSecurity(){
     }else{
       document.getElementById('exitBlocker').classList.remove('on');
       setBadge('b-tab',false,'🖥 Focus');setMobileBadge('sb-tab','ok','🖥 Focus OK');
+      // Re-acquire wake lock when student returns to exam tab
+      if (!examSubmitted) requestWakeLock();
     }
   });
   document.addEventListener('fullscreenchange',function(){
@@ -1367,16 +1479,44 @@ function logSec(msg,cls){
 // ================================================================
 // PHOTO
 // ================================================================
-function capturePhoto(reason){
-  try{
-    var video=document.getElementById('examVideo');
-    if(!video||!video.srcObject)return;
-    var c=document.createElement('canvas'); c.width=320; c.height=240;
-    var ctx=c.getContext('2d'); ctx.translate(c.width,0); ctx.scale(-1,1);
-    ctx.drawImage(video,0,0,c.width,c.height);
-    post('savePhoto',{studentEmail:student.email,examCode:student.examCode,reason:reason||'unknown',imageBase64:c.toDataURL('image/jpeg',0.4)},
-      function(e,r){if(r&&r.status==='success'&&r.data&&r.data.fileUrl)photos.push(r.data.fileUrl);});
-  }catch(e){}
+function capturePhoto(reason) {
+  try {
+    // Try examVideo first, fall back to checkVideo
+    var video = document.getElementById('examVideo');
+    var hasStream = video && video.srcObject && video.readyState >= 2;
+    if (!hasStream) {
+      video = document.getElementById('checkVideo');
+      hasStream = video && video.srcObject && video.readyState >= 2;
+    }
+    if (!hasStream || !video) {
+      // Stream not ready — queue a retry in 2s
+      setTimeout(function(){ capturePhoto(reason); }, 2000);
+      return;
+    }
+    var c = document.createElement('canvas');
+    c.width  = Math.min(video.videoWidth  || 320, 640);
+    c.height = Math.min(video.videoHeight || 240, 480);
+    var ctx = c.getContext('2d');
+    // Mirror correction (video is CSS-mirrored, canvas should be natural)
+    ctx.save();
+    ctx.translate(c.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, c.width, c.height);
+    ctx.restore();
+    var dataUrl = c.toDataURL('image/jpeg', 0.55);
+    post('savePhoto', {
+      studentEmail: student.email,
+      examCode:     student.examCode,
+      reason:       reason || 'unknown',
+      imageBase64:  dataUrl
+    }, function(e, r) {
+      if (r && r.status === 'success' && r.data && r.data.fileId) {
+        photos.push('https://drive.google.com/uc?id=' + r.data.fileId);
+      }
+    });
+  } catch(e) {
+    console.warn('[capturePhoto]', e.message);
+  }
 }
 
 // ================================================================
@@ -1400,6 +1540,8 @@ function doSubmit(forced){
   examSubmitted=true;
   ttsStop();
   clearInterval(timerHandle);
+  releaseWakeLock();
+  stopNoSleepFallback();
   saveShort();
   var spent=examStart?Math.floor((Date.now()-examStart)/1000):0;
   showLoading('Submitting exam — please wait...');
