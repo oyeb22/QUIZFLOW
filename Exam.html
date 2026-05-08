@@ -677,14 +677,13 @@ var TTS = {
 
 function ttsLoadVoices() {
   if (!TTS.supported) return;
- function doLoad() {
+  function doLoad() {
     TTS.voices = window.speechSynthesis.getVoices();
     var sel = document.getElementById('ttsVoiceSelect');
     if (!sel) return;
     sel.innerHTML = '';
     var en = TTS.voices.filter(function(v){ return v.lang.startsWith('en'); });
     var others = TTS.voices.filter(function(v){ return !v.lang.startsWith('en'); });
-    
     if (en.length) {
       var g = document.createElement('optgroup'); g.label = 'English (★ = on-device)';
       en.forEach(function(v){
@@ -706,12 +705,9 @@ function ttsLoadVoices() {
         o.textContent=v.name+' ('+v.lang+')'; sel.appendChild(o);
       });
     }
-    
-    // SINGLE block — teacher voice profile + fallback
     if (TTS.voices.length && !TTS.voiceName) {
       var teacherProfile = TTS._teacherVoiceProfile;
       var preferred = null;
-
       if (teacherProfile && teacherProfile.preferredVoiceName) {
         preferred = TTS.voices.find(function(v){ return v.name === teacherProfile.preferredVoiceName; });
         if (preferred && sel) {
@@ -720,7 +716,6 @@ function ttsLoadVoices() {
           if (hint) hint.innerHTML = '🧑‍🏫 <strong>Teacher voice profile applied:</strong> ' + preferred.name + '<br>' + hint.innerHTML;
         }
       }
-
       if (!preferred) {
         preferred = en.find(function(v){ return v.localService && /natural|enhanced|premium|siri|neural/i.test(v.name); })
                  || en.find(function(v){ return v.localService; })
@@ -728,9 +723,14 @@ function ttsLoadVoices() {
                  || TTS.voices[0];
         if (preferred && sel) sel.value = preferred.name;
       }
-
       if (preferred) { onVoiceChange(); }
     }
+  }
+  // Call immediately (Chrome) and also on the voiceschanged event (Firefox/others)
+  doLoad();
+  if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = doLoad;
+  }
 }
 
 function onVoiceChange() {
@@ -1667,7 +1667,7 @@ function fetchAiExplanation(idx){
       _explainCache[idx]=html; box.innerHTML=html; btn.style.display='none';
       if(TTS.enabled) ttsSpeak(r.data.explanation);
     });
-}}
+}
 </script>
 </body>
 </html>
