@@ -564,6 +564,9 @@ var PARAMS = (function(){
 })();
 
 var SCRIPT_URL = PARAMS.script || '';
+console.log('[DEBUG] PARAMS:', JSON.stringify(PARAMS));
+console.log('[DEBUG] SCRIPT_URL:', SCRIPT_URL);
+console.log('[DEBUG] student:', JSON.stringify(student));
 var student    = { email: PARAMS.email || '', examCode: (PARAMS.code || '').toUpperCase() };
 
 var quizMeta      = null;
@@ -924,14 +927,16 @@ window.addEventListener('load',function(){
   if(!SCRIPT_URL){
     safeText('preTitle','Configuration error'); safeText('camText','Server URL missing.'); return;
   }
-  showLoading('Verifying exam access...');
-  post('validateExamCode',{studentEmail:student.email,examCode:student.examCode},function(e,r){
-    hideLoading();
-    if(e||!r||r.status!=='success'){
-      safeText('preTitle','Access Denied');
-      safeText('camText',(r&&r.message)||'Validation failed.');
-      return;
-    }
+ showLoading('Verifying exam access...');
+console.log('[DEBUG] Calling validateExamCode with:', { studentEmail: student.email, examCode: student.examCode });
+post('validateExamCode', { studentEmail: student.email, examCode: student.examCode }, function(e, r) {
+  console.log('[DEBUG] validateExamCode response — error:', e, 'result:', JSON.stringify(r));
+  hideLoading();
+  if (e || !r || r.status !== 'success') {
+    safeText('preTitle', 'Access Denied');
+    safeText('camText', (r && r.message) || 'Validation failed. Error: ' + (e ? e.message : 'null response'));
+    return;
+  }
     quizMeta   = r.data.quizData;
     faceEnabled= quizMeta.faceDetection!==false;
     safeText('preTitle',quizMeta.title);
