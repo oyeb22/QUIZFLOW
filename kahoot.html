@@ -435,7 +435,8 @@ function doJoin(){
     el('lby-code').textContent=sessionId;
     buildDots();
     show('s-lobby');
-    startBGMusic();
+    // Background music plays on HOST screen only — not student devices
+    // startBGMusic();  ← removed for students
     btn.disabled=false; btn.textContent='Join Quiz';
     watchLobbyPlayers();
     watchGameState();
@@ -474,7 +475,11 @@ function watchGameState(){
     else if(phase==='question'){
       if(st.timePerQ) timePerQ=st.timePerQ;
       var qi=parseInt(st.qIndex)||0;
-      if(qi!==currentQIdx) startQuestion(qi,st.qStartAt||Date.now());
+      // SYNC FIX: only render question when host marks it visible
+      // qStartAt is set by host at the moment question goes live
+      if(qi!==currentQIdx && st.qStartAt) {
+        startQuestion(qi, st.qStartAt);
+      }
     }
     else if(phase==='reveal'){ showReveal(st.qIndex,st.correctAnswer); }
     else if(phase==='leaderboard'){ showLeaderboard(st.autoAdvanceAt); }
@@ -488,7 +493,7 @@ function detachLobby(){
 
 /* ═══ COUNTDOWN ═══ */
 function startCountdown(from){
-  stopBGMusic();
+  // stopBGMusic() — no-op on student side
   show('s-countdown');
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;}
   var num=from; el('cd-num').textContent=num;
