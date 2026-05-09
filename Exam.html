@@ -564,6 +564,20 @@ var PARAMS = (function(){
 })();
 
 var SCRIPT_URL = PARAMS.script || '';
+var SUPABASE_URL  = 'https://hrslazwxaciooqowvzcy.supabase.co'; // replace
+var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhyc2xhend4YWNpb29xb3d2emN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MDk3NzksImV4cCI6MjA5MzM4NTc3OX0.UbEko3d0zyHguOq9w5Zy-_89OhAbQaV7Z6uBw_nS_yk';           // replace — safe to expose
+
+async function supabaseGet(table, filters, select) {
+  var url = SUPABASE_URL + '/rest/v1/' + table + '?select=' + (select || '*');
+  Object.keys(filters || {}).forEach(function(k) {
+    url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(filters[k]);
+  });
+  var resp = await fetch(url, {
+    headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+  });
+  if (!resp.ok) throw new Error('Supabase error: ' + resp.status);
+  return resp.json();
+}
 console.log('[DEBUG] PARAMS:', JSON.stringify(PARAMS));
 console.log('[DEBUG] SCRIPT_URL:', SCRIPT_URL);
 console.log('[DEBUG] student:', JSON.stringify(student));
@@ -648,6 +662,107 @@ function stopNoSleepFallback() {
     _noSleepVideo.pause();
     _noSleepVideo.remove();
     _noSleepVideo = null;
+  }
+}
+async function getQuizDataDirect(examCode) {
+  try {
+    // Fetch from GAS (which now caches in CacheService — still fast)
+    // Direct Supabase read of quiz questions isn't done here because
+    // the QuizData sheet holds the shuffled/finalised question set.
+    // GAS caches it so only the first student triggers a sheet read.
+    var result = await new Promise(function(resolve, reject) {
+      post('getQuizData', { examCode: examCode, shuffle: true }, function(e, r) {
+        if (e) return reject(e);
+        if (!r || r.status !== 'success') return reject(new Error((r && r.message) || 'Failed'));
+        resolve(r.data.questions || []);
+      });
+    });
+    return result;
+  } catch(e) {
+    console.error('[getQuizDataDirect]', e.message);
+    throw e;
+  }
+}
+async function validateExamDirect(examCode, studentEmail) {
+  try {
+    // Fetch quiz meta directly from Supabase
+    var rows = await supabaseGet('quizzes',
+      { 'exam_code': 'eq.' + examCode.toUpperCase(),
+        'status':    'eq.active' },
+      'title,exam_code,status,start_time,end_time,duration,face_detection,' +
+      'show_correct_answers,allow_retakes,enable_tts,max_violations,school');
+
+    if (!rows || !rows.length) return { ok: false, message: 'Exam code not found' };
+    var quiz = rows[0];
+
+    // Time window check
+    var now   = new Date();
+    var start = new Date(quiz.start_time);
+    var end   = new Date(quiz.end_time);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()))
+      return { ok: false, message: 'Exam schedule not configured. Contact your teacher.' };
+    if (now < start)
+      return { ok: false, message: 'Exam has not started yet. Starts: ' + start.toLocaleString() };
+    if (now > end)
+      return { ok: false, message: 'Exam has expired' };
+
+    // Duplicate submission check (only when retakes off)
+    if (!quiz.allow_retakes) {
+      var existing = await supabaseGet('exam_results',
+        { 'exam_code':     'eq.' + examCode,
+          'student_email': 'eq.' + studentEmail.toLowerCase() },
+        'id');
+      // Note: anon key has no SELECT policy on exam_results
+      // so this falls back to GAS for the duplicate check
+      var gasCheck = await new Promise(function(resolve) {
+        post('validateExamCode',
+          { studentEmail: studentEmail, examCode: examCode },
+          function(e, r) { resolve(r); });
+      });
+      if (!gasCheck || gasCheck.status !== 'success') {
+        return { ok: false, message: (gasCheck && gasCheck.message) || 'Validation failed' };
+      }
+    }
+
+    // Subscription check via GAS (school data is protected)
+    if (quiz.school) {
+      var subCheck = await new Promise(function(resolve) {
+        post('validateExamCode',
+          { studentEmail: studentEmail, examCode: examCode },
+          function(e, r) { resolve(r); });
+      });
+      if (!subCheck || subCheck.status !== 'success') {
+        return { ok: false, message: (subCheck && subCheck.message) || 'Access denied' };
+      }
+      // Trust GAS result fully when subscription or duplicate check is needed
+      return { ok: true, quizData: subCheck.data.quizData };
+    }
+
+    return {
+      ok: true,
+      quizData: {
+        title:              String(quiz.title || ''),
+        duration:           parseInt(quiz.duration) || 30,
+        faceDetection:      quiz.face_detection !== false,
+        showCorrectAnswers: quiz.show_correct_answers === true,
+        maxViolations:      parseInt(quiz.max_violations) || 3,
+        allowRetakes:       quiz.allow_retakes === true,
+        enableTTS:          quiz.enable_tts === true
+      }
+    };
+  } catch(e) {
+    // Fallback to GAS if direct fetch fails
+    return new Promise(function(resolve) {
+      post('validateExamCode',
+        { studentEmail: studentEmail, examCode: examCode },
+        function(err, r) {
+          if (err || !r || r.status !== 'success') {
+            resolve({ ok: false, message: (r && r.message) || 'Validation failed' });
+          } else {
+            resolve({ ok: true, quizData: r.data.quizData });
+          }
+        });
+    });
   }
 }
 
@@ -928,32 +1043,33 @@ window.addEventListener('load',function(){
     safeText('preTitle','Configuration error'); safeText('camText','Server URL missing.'); return;
   }
  showLoading('Verifying exam access...');
-console.log('[DEBUG] Calling validateExamCode with:', { studentEmail: student.email, examCode: student.examCode });
-post('validateExamCode', { studentEmail: student.email, examCode: student.examCode }, function(e, r) {
-  console.log('[DEBUG] validateExamCode response — error:', e, 'result:', JSON.stringify(r));
-  hideLoading();
-  if (e || !r || r.status !== 'success') {
-    safeText('preTitle', 'Access Denied');
-    safeText('camText', (r && r.message) || 'Validation failed. Error: ' + (e ? e.message : 'null response'));
-    return;
-  }
-    quizMeta   = r.data.quizData;
-    faceEnabled= quizMeta.faceDetection!==false;
-    safeText('preTitle',quizMeta.title);
-    safeText('bannerCode',student.examCode);
+  validateExamDirect(student.examCode, student.email).then(function(result) {
+    hideLoading();
+    if (!result.ok) {
+      safeText('preTitle', 'Access Denied');
+      safeText('camText', result.message || 'Validation failed');
+      return;
+    }
+    quizMeta    = result.quizData;
+    faceEnabled = quizMeta.faceDetection !== false;
+    safeText('preTitle', quizMeta.title);
+    safeText('bannerCode', student.examCode);
     fetchStudentInfo();
     initMedia();
     CFG.MAX_VIOLATIONS = quizMeta.maxViolations || 3;
-    // Fetch teacher's voice profile if TTS is enabled
     if (quizMeta.enableTTS) {
-    post('getTeacherVoiceProfile', { examCode: student.examCode }, function(e2, r2) {
-    if (!e2 && r2 && r2.status === 'success' && r2.data && r2.data.voiceProfile) {
-      TTS._teacherVoiceProfile = r2.data.voiceProfile;
+      post('getTeacherVoiceProfileForExam', { examCode: student.examCode }, function(e2, r2) {
+        if (!e2 && r2 && r2.status === 'success' && r2.data && r.data.voiceProfile) {
+                 TTS._teacherVoiceProfile = r2.data.voiceProfile;
+        }
+      });
     }
+   }).catch(function(e) {
+    hideLoading();
+    safeText('preTitle', 'Access Denied');
+    safeText('camText', 'Validation error: ' + e.message);
   });
-}
-  });
-});
+});   // ← ADD THIS: closes the load event listener callback
 
 function fetchStudentInfo(){
   var email=student.email;
@@ -1170,15 +1286,15 @@ function startExam(){
   if(bar) bar.classList.toggle('hidden', !(quizMeta && quizMeta.enableTTS && TTS.enabled));
   setupSecurity();
   showLoading('Loading questions...');
-  post('getQuizData',{examCode:student.examCode, studentEmail:student.email, shuffle:true},function(e,r){
+  getQuizDataDirect(student.examCode).then(function(qs) {
     hideLoading();
-    if(e||!r||r.status!=='success'){alert('Failed to load questions: '+((r&&r.message)||'Unknown error'));return;}
-    questions=r.data.questions||[];
-    examStart=Date.now();
-    requestWakeLock(); // Prevent screen timeout during exam
-    timeLeft=(quizMeta.duration||30)*60;
-    safeText('examTitleBar',quizMeta.title);
-    safeText('examSubBar',student.email);
+    if (!qs || !qs.length) { alert('Failed to load questions. Please contact your teacher.'); return; }
+    questions = qs;
+    examStart = Date.now();
+    requestWakeLock();
+    timeLeft  = (quizMeta.duration||30) * 60;
+    safeText('examTitleBar', quizMeta.title);
+    safeText('examSubBar',   student.email);
     renderDots();
     renderQuestion();
     startTimer();
@@ -1187,16 +1303,18 @@ function startExam(){
         updateCandidateDisplays({Name:res.data.name||studentInfo.name,Class:res.data.className||'',School:res.data.school||'',locked:res.data.locked||false});
       }
     });
-    // Wait for video to actually be playing
-function waitForVideoAndSnap() {
-  var v = document.getElementById('examVideo');
-  if (v && v.readyState >= 2 && v.srcObject) {
-    setTimeout(function(){ capturePhoto('start'); }, 500);
-  } else {
-    setTimeout(waitForVideoAndSnap, 500);
-  }
-}
-waitForVideoAndSnap();
+    function waitForVideoAndSnap() {
+      var v = document.getElementById('examVideo');
+      if (v && v.readyState >= 2 && v.srcObject) {
+        setTimeout(function(){ capturePhoto('start'); }, 500);
+      } else {
+        setTimeout(waitForVideoAndSnap, 500);
+      }
+    }
+    waitForVideoAndSnap();
+    }).catch(function(e) {
+    hideLoading();
+    alert('Failed to load questions: ' + e.message);
   });
 }
 
@@ -1668,9 +1786,11 @@ function fetchAiExplanation(idx){
         else{btn.innerHTML='✦ AI Explanation';box.innerHTML='<div style="font-size:12px;color:var(--red);margin-top:8px">'+errMsg+'</div>';}
         return;
       }
-      var html='<div class="ai-explain-box"><div class="ai-label">⚡ AI Explanation</div>'+r.data.explanation+'</div>';
-      _explainCache[idx]=html; box.innerHTML=html; btn.style.display='none';
-      if(TTS.enabled) ttsSpeak(r.data.explanation);
+      var html='<div class="ai-explain-box"><div class="ai-label">⚡ AI Explanation</div>' + r.data.explanation + '</div>';
+      _explainCache[idx] = html;
+      box.innerHTML = html;
+      btn.style.display = 'none';
+      if (TTS.enabled) ttsSpeak(r.data.explanation);
     });
 }
 </script>
