@@ -221,12 +221,10 @@ window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,k,v){
 });
 var SCRIPT_URL = _params.script || '';
 
-// Validate it points to GAS (security — same check as Exam.html)
+// If no script URL in params, use the hardcoded production GAS URL
+// WebApp.html is a public gateway — students can visit it directly
 if (!SCRIPT_URL || SCRIPT_URL.indexOf('script.google.com/macros/s/') === -1) {
-  document.body.innerHTML = '<div style="font-family:sans-serif;padding:40px;text-align:center">'
-    + '<h2 style="color:#f87171">Invalid link</h2>'
-    + '<p>Please use the official exam portal link provided by your school.</p></div>';
-  throw new Error('Invalid script URL');
+  SCRIPT_URL = 'AKfycbzOOoUobrqx9zfpMlW4bx2fswEpk6eFCflGHMYT14bHkJ0whrAoLGOOXDn-IqzeN0N8Jw';
 }
 
 var EXAM_PAGE_URL = 'https://oyeb22.github.io/QUIZFLOW/Exam.html';
