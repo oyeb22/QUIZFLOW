@@ -9,21 +9,19 @@
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     body{font-family:var(--f);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
     .wrap{max-width:720px;width:100%}
-    .screen{display:none}
-    .screen.on{display:block}
+    .screen{display:none}.screen.on{display:block}
 
+    /* ── TOP CONTROLS ── */
     .top-controls{position:fixed;top:10px;right:12px;z-index:200;display:flex;gap:6px}
     .ctrl-btn{background:rgba(30,41,59,.9);border:1px solid #334155;border-radius:8px;color:var(--muted);font-size:16px;padding:6px 10px;cursor:pointer;line-height:1;transition:color .15s}
-    .ctrl-btn:hover{color:var(--txt)}
-    .ctrl-btn.muted{color:#f87171}
+    .ctrl-btn:hover{color:var(--txt)}.ctrl-btn.muted{color:#f87171}
 
+    /* ── JOIN ── */
     #s-join{text-align:center;padding:48px 20px}
     .brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
     .brand-dot{width:14px;height:14px;border-radius:50%}
-    .brand-dot:nth-child(1){background:var(--k-red)}
-    .brand-dot:nth-child(2){background:var(--k-blue)}
-    .brand-dot:nth-child(3){background:var(--k-yellow)}
-    .brand-dot:nth-child(4){background:var(--k-green)}
+    .brand-dot:nth-child(1){background:var(--k-red)}.brand-dot:nth-child(2){background:var(--k-blue)}
+    .brand-dot:nth-child(3){background:var(--k-yellow)}.brand-dot:nth-child(4){background:var(--k-green)}
     .brand h1{font-size:26px;font-weight:800;color:#fff}
     .join-sub{color:var(--muted);font-size:14px;margin-bottom:28px}
     .join-card{background:var(--panel);border-radius:16px;padding:28px;max-width:360px;margin:0 auto;border:1px solid #2d3a52}
@@ -35,6 +33,7 @@
     .join-btn:disabled{opacity:.5;cursor:not-allowed}
     .join-err{color:#f87171;font-size:13px;margin-top:12px;min-height:18px;text-align:center}
 
+    /* ── LOBBY ── */
     #s-lobby{text-align:center;padding:36px 20px}
     .lby-badge{display:inline-block;background:#4f78ff22;border:1px solid #4f78ff55;border-radius:20px;padding:4px 16px;font-size:12px;font-weight:600;color:#7fa4ff;margin-bottom:16px}
     .lby-code{font-family:monospace;font-size:clamp(40px,10vw,64px);font-weight:800;letter-spacing:10px;color:#fff;margin-bottom:4px}
@@ -47,17 +46,18 @@
     .pulse{animation:pulse 1.6s ease-in-out infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
+    /* ── COUNTDOWN ── */
     #s-countdown{text-align:center;padding:80px 20px}
     .cd-label{font-size:16px;color:var(--muted);font-weight:600;margin-bottom:20px;text-transform:uppercase;letter-spacing:1px}
     .cd-num{font-size:clamp(80px,22vw,130px);font-weight:900;font-family:monospace;line-height:1;color:#fff;animation:cdPop .5s cubic-bezier(.17,.67,.46,1.41)}
     @keyframes cdPop{from{transform:scale(2);opacity:0}to{transform:scale(1);opacity:1}}
 
+    /* ── QUESTION ── */
     .q-top{background:linear-gradient(135deg,#1e2d4a,#1a253e);border-radius:14px 14px 0 0;padding:18px 18px 12px;text-align:center;border:1px solid #2d3a52;border-bottom:none}
     .q-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
     .q-dots{display:flex;gap:4px}
     .q-dot{width:8px;height:8px;border-radius:50%;background:var(--track);transition:background .3s}
-    .q-dot.done{background:#4ade80}
-    .q-dot.active{background:#4f78ff}
+    .q-dot.done{background:#4ade80}.q-dot.active{background:#4f78ff}
     .timer-arc-wrap{display:flex;align-items:center;justify-content:center;gap:8px}
     .timer-svg{transform:rotate(-90deg)}
     .timer-bg{fill:none;stroke:#2d3a52;stroke-width:4}
@@ -68,45 +68,55 @@
     .q-tts-btn:hover{background:rgba(79,120,255,.25)}
     .q-body{background:var(--panel);border:1px solid #2d3a52;border-radius:0 0 14px 14px;padding:14px}
 
+    /* ── OPTIONS ── */
     .opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .opt-btn{display:flex;align-items:center;gap:12px;padding:14px;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;font-family:var(--f);cursor:pointer;text-align:left;min-height:60px;transition:filter .1s;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-appearance:none}
+    .opt-btn{display:flex;align-items:center;gap:12px;padding:14px;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;font-family:var(--f);cursor:pointer;text-align:left;min-height:60px;transition:filter .1s,transform .1s;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-appearance:none}
     .opt-btn:not(:disabled):active{filter:brightness(1.25);transform:scale(.97)}
     .opt-btn:disabled{cursor:not-allowed}
-    .opt-btn.k-red{background:var(--k-red)}
-    .opt-btn.k-blue{background:var(--k-blue)}
-    .opt-btn.k-yellow{background:var(--k-yellow)}
-    .opt-btn.k-green{background:var(--k-green)}
-    .opt-btn.selected{outline:4px solid rgba(255,255,255,.7);outline-offset:-4px}
-    .opt-btn.correct{filter:brightness(1.1);animation:bump .3s ease}
-    .opt-btn.wrong{filter:brightness(.4) grayscale(.4)}
-    @keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+    .opt-btn.k-red{background:var(--k-red)}.opt-btn.k-blue{background:var(--k-blue)}
+    .opt-btn.k-yellow{background:var(--k-yellow)}.opt-btn.k-green{background:var(--k-green)}
+    /* Instant feedback states — shown right after tap */
+    .opt-btn.state-correct{filter:brightness(1.2);outline:4px solid #4ade80;outline-offset:-4px;animation:bumpCorrect .35s ease}
+    .opt-btn.state-wrong{filter:brightness(.4) grayscale(.4)}
+    .opt-btn.state-reveal-correct{filter:brightness(1.15);outline:4px solid #4ade80;outline-offset:-4px}
+    .opt-btn.state-reveal-wrong{filter:brightness(.35) grayscale(.5)}
+    .opt-btn.state-reveal-notpicked{filter:brightness(.6)}
+    @keyframes bumpCorrect{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
     .opt-shape{width:28px;height:28px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:14px}
     .opt-txt{flex:1}
 
+    /* ── POST-ANSWER OVERLAY (shows score inline while waiting) ── */
+    .answered-overlay{padding:16px 0 0;text-align:center}
+    .score-pop{font-size:clamp(44px,12vw,72px);font-weight:900;font-family:monospace;line-height:1;animation:scorePop .45s cubic-bezier(.17,.67,.46,1.41)}
+    @keyframes scorePop{from{transform:scale(2.5) translateY(-10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+    .score-pop.correct{color:#4ade80}.score-pop.wrong{color:#f87171}
+    .score-label{font-size:15px;font-weight:700;margin-top:6px}
+    .score-label.correct{color:#4ade80}.score-label.wrong{color:#f87171}
+    .streak-badge{display:inline-block;background:#f59e0b22;border:1px solid #f59e0b55;border-radius:20px;padding:3px 12px;font-size:12px;color:#f59e0b;margin-top:6px}
+    .total-pill{margin-top:8px;font-size:13px;color:var(--muted)}
+    .total-pill span{color:#7fa4ff;font-family:monospace;font-weight:700}
+    .waiting-lbl{font-size:13px;color:var(--muted);margin-top:10px;animation:pulse 1.5s ease infinite}
+
+    /* ── SHORT ANSWER ── */
     .short-area{padding:4px 0}
     .short-inp{width:100%;padding:14px;background:#0f172a;border:2px solid #2d3a52;border-radius:10px;color:#fff;font-size:15px;font-family:var(--f);outline:none;margin-bottom:10px;-webkit-appearance:none}
     .short-inp:focus{border-color:#4f78ff}
     .sub-btn{width:100%;padding:14px;background:#4f78ff;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:var(--f);cursor:pointer}
     .sub-btn:disabled{opacity:.5;cursor:not-allowed}
-    .answered-msg{text-align:center;padding:24px;font-size:15px;font-weight:600;color:var(--muted)}
-    .answered-msg .big{font-size:38px;display:block;margin-bottom:10px}
-    .lock-badge{display:inline-block;background:#4ade8022;border:1px solid #4ade8055;border-radius:20px;padding:3px 12px;font-size:12px;color:#4ade80;margin-top:8px}
 
+    /* ── REVEAL (host-triggered) ── */
     #s-reveal{padding:10px 0}
-    .reveal-top{text-align:center;margin-bottom:16px}
-    .reveal-q{font-size:15px;font-weight:600;color:var(--muted);margin-bottom:12px;max-width:580px;margin-left:auto;margin-right:auto}
+    .reveal-q{font-size:15px;font-weight:600;color:var(--muted);margin-bottom:12px;max-width:580px;margin-left:auto;margin-right:auto;text-align:center}
     .reveal-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
     .reveal-opt{display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:10px;font-size:14px;font-weight:600}
     .reveal-opt.correct{background:var(--k-green);color:#fff}
     .reveal-opt.wrong{background:var(--track);color:var(--muted);filter:brightness(.7)}
     .reveal-opt-shape{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
-    .reveal-stat{text-align:center;padding:12px 0;margin-bottom:16px}
-    .reveal-stat .rs-your{font-size:14px;color:var(--muted);margin-bottom:4px}
-    .reveal-stat .rs-pts{font-size:34px;font-weight:900;font-family:monospace}
-    .reveal-stat .rs-pts.correct{color:#4ade80}
-    .reveal-stat .rs-pts.wrong{color:#f87171}
-    .reveal-stat .rs-streak{font-size:13px;color:#f59e0b;margin-top:2px}
+    .reveal-carry{text-align:center;padding:10px 0}
+    .reveal-carry .rc-label{font-size:13px;color:var(--muted);margin-bottom:4px}
+    .reveal-carry .rc-score{font-size:32px;font-weight:900;font-family:monospace;color:#4ade80}
 
+    /* ── LEADERBOARD ── */
     #s-leaderboard{text-align:center;padding:16px 0}
     .lb-hdr{font-size:20px;font-weight:800;margin-bottom:18px}
     .lb-list{max-width:480px;margin:0 auto 20px;display:flex;flex-direction:column;gap:8px}
@@ -120,8 +130,10 @@
     .lb-name{flex:1;font-size:15px;text-align:left}
     .lb-score{font-family:monospace;font-size:16px;font-weight:700;color:#4ade80}
     .lb-me{outline:2px solid #4f78ff;outline-offset:-2px;border-radius:10px}
+    .lb-delta{font-size:11px;color:#4ade80;margin-left:4px}
     .lb-next-auto{font-size:12px;color:var(--muted);margin-top:8px}
 
+    /* ── FINAL ── */
     #s-final{text-align:center;padding:48px 20px}
     .final-podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:24px auto;max-width:380px}
     .podium-slot{flex:1;text-align:center}
@@ -139,13 +151,10 @@
     .final-score-lbl{font-size:14px;color:var(--muted)}
     .play-again-btn{margin-top:28px;padding:14px 40px;background:#4f78ff;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:var(--f);cursor:pointer}
 
+    /* ── UTIL ── */
     .spin-icon{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spinR .7s linear infinite;vertical-align:middle;margin-right:8px}
     @keyframes spinR{to{transform:rotate(360deg)}}
-
-    @media(max-width:520px){
-      .opts-grid,.reveal-opts{grid-template-columns:1fr}
-      .opt-btn{min-height:52px}
-    }
+    @media(max-width:520px){.opts-grid,.reveal-opts{grid-template-columns:1fr}.opt-btn{min-height:52px}}
   </style>
 </head>
 <body>
@@ -157,6 +166,7 @@
 
 <div class="wrap">
 
+  <!-- JOIN -->
   <div class="screen on" id="s-join">
     <div class="brand">
       <div class="brand-dot"></div><div class="brand-dot"></div>
@@ -174,6 +184,7 @@
     </div>
   </div>
 
+  <!-- LOBBY -->
   <div class="screen" id="s-lobby">
     <div class="lby-badge">Waiting Room</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Room code</div>
@@ -184,11 +195,13 @@
     <div class="lby-wait pulse">Waiting for the teacher to start&hellip;</div>
   </div>
 
+  <!-- COUNTDOWN -->
   <div class="screen" id="s-countdown">
     <div class="cd-label">Get Ready!</div>
     <div class="cd-num" id="cd-num">3</div>
   </div>
 
+  <!-- QUESTION -->
   <div class="screen" id="s-question">
     <div class="q-top">
       <div class="q-meta">
@@ -210,20 +223,21 @@
     <div class="q-body" id="q-body"></div>
   </div>
 
+  <!-- REVEAL (host-triggered, shows correct answer) -->
   <div class="screen" id="s-reveal">
-    <div class="reveal-top">
-      <div class="reveal-q" id="reveal-q-txt"></div>
-      <div class="reveal-opts" id="reveal-opts"></div>
-      <div class="reveal-stat" id="reveal-stat"></div>
-    </div>
+    <div class="reveal-q" id="reveal-q-txt"></div>
+    <div class="reveal-opts" id="reveal-opts"></div>
+    <div class="reveal-carry" id="reveal-carry"></div>
   </div>
 
+  <!-- LEADERBOARD -->
   <div class="screen" id="s-leaderboard">
-    <div class="lb-hdr">Leaderboard</div>
+    <div class="lb-hdr">&#x1F3C6; Leaderboard</div>
     <div class="lb-list" id="lb-list"></div>
     <div class="lb-next-auto" id="lb-next-auto"></div>
   </div>
 
+  <!-- FINAL -->
   <div class="screen" id="s-final">
     <div style="font-size:13px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Final Results</div>
     <div class="lb-hdr">Game Over!</div>
@@ -242,43 +256,48 @@
 (function(){
 'use strict';
 
+/* ═══════════════════════════════════════════════════════════
+   ARCHITECTURE — TRUE KAHOOT REAL-TIME FLOW
+   ───────────────────────────────────────────────────────────
+   1. Host writes answer key to Firebase BEFORE showing question
+      (answerKeys/{sessionId}/{qIndex} = { correct, correctText, timePerQ })
+   2. Student answers → client scores INSTANTLY (no GAS round-trip)
+   3. Scored result written to Firebase immediately:
+      players/{playerId} = { score, streak, lastPoints, lastCorrect }
+   4. Host watches players node → sees answer count in real time
+   5. GAS scoreKahootQuestion is still called by host as a backup/
+      authoritative pass, but students already see their score
+═══════════════════════════════════════════════════════════ */
+
 var P       = new URLSearchParams(window.location.search);
 var GAS_URL = (P.get('script') || '').trim();
 var preCode = (P.get('room')   || '').trim().toUpperCase();
 
-/* ═══ SOUND ═══ */
+/* ── SOUND ── */
 var soundOn = true, actx = null;
 function getAC(){ if(!actx) try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){} return actx; }
 function unlockAC(){ var a=getAC(); if(a&&a.state==='suspended') a.resume(); }
-function playTone(freq,type,dur,vol,ramp){
+function playTone(f,t,d,v,r){
   if(!soundOn) return; var a=getAC(); if(!a) return;
-  try{
-    var o=a.createOscillator(),g=a.createGain();
-    o.connect(g);g.connect(a.destination);
-    o.type=type||'sine';o.frequency.value=freq;
-    g.gain.setValueAtTime(vol||0.15,a.currentTime);
-    if(ramp) g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+dur);
-    o.start();o.stop(a.currentTime+dur);
-  }catch(e){}
+  try{var o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);
+    o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(v||.15,a.currentTime);
+    if(r)g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);
+    o.start();o.stop(a.currentTime+d);}catch(e){}
 }
 function playCorrect(){ playTone(660,'square',.08,.12,true); setTimeout(function(){playTone(880,'square',.12,.1,true);},80); }
 function playWrong(){   playTone(160,'sawtooth',.22,.15,true); }
 function playCountdownBeep(){ playTone(880,'sine',.12,.12,true); }
-function playCountdownGo(){ [523,659,784,1047].forEach(function(n,i){ setTimeout(function(){playTone(n,'triangle',.3,.13,true);},i*120); }); }
+function playCountdownGo(){ [523,659,784,1047].forEach(function(n,i){setTimeout(function(){playTone(n,'triangle',.3,.13,true);},i*120);}); }
 function playTick(){ playTone(1200,'sine',.04,.05,true); }
 function toggleSound(){
   soundOn=!soundOn;
   var b=document.getElementById('soundBtn');
-  b.textContent=soundOn?'🎵':'🔇';
-  b.classList.toggle('muted',!soundOn);
+  b.textContent=soundOn?'🎵':'🔇'; b.classList.toggle('muted',!soundOn);
 }
 
-/* ═══ TTS ═══ */
+/* ── TTS ── */
 var ttsOn=false,currentUtt=null;
-function toggleTTS(){
-  ttsOn=!ttsOn;
-  document.getElementById('ttsBtn').textContent=ttsOn?'🔊':'🔕';
-}
+function toggleTTS(){ ttsOn=!ttsOn; document.getElementById('ttsBtn').textContent=ttsOn?'🔊':'🔕'; }
 function readCurrentQuestion(){
   if(!('speechSynthesis' in window)) return;
   var qTxt=(document.getElementById('q-txt')||{}).textContent||'';
@@ -287,16 +306,14 @@ function readCurrentQuestion(){
   });
   var full=qTxt+'. '+opts.join('. ');
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;resetTTSBtn();return;}
-  currentUtt=new SpeechSynthesisUtterance(full);
-  currentUtt.rate=0.9;
+  currentUtt=new SpeechSynthesisUtterance(full); currentUtt.rate=.9;
   currentUtt.onend=function(){currentUtt=null;resetTTSBtn();};
   window.speechSynthesis.speak(currentUtt);
-  var b=document.getElementById('q-tts-inner');
-  if(b){b.textContent='⏹ Stop';}
+  var b=document.getElementById('q-tts-inner'); if(b)b.textContent='⏹ Stop';
 }
 function resetTTSBtn(){var b=document.getElementById('q-tts-inner');if(b)b.textContent='🔊 Read aloud';}
 
-/* ═══ FIREBASE ═══ */
+/* ── FIREBASE ── */
 var db;
 try{
   var cfg={
@@ -313,33 +330,36 @@ try{
   db=firebase.database(ex||firebase.initializeApp(cfg,'kh'));
 }catch(e){console.error('[kahoot] Firebase:',e.message);}
 
-/* ═══ HELPERS ═══ */
-function show(id){
-  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('on');});
-  var t=document.getElementById(id); if(t) t.classList.add('on');
-}
+/* ── HELPERS ── */
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('on');});
+  var t=document.getElementById(id);if(t)t.classList.add('on');}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function el(id){return document.getElementById(id);}
 function gasPost(body,cb){
   fetch(GAS_URL,{method:'POST',body:JSON.stringify(body)})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-    .then(function(d){cb(null,d);}).catch(function(e){cb(e,null);});
+    .then(function(r){return r.json();}).then(function(d){cb(null,d);}).catch(function(e){cb(e,null);});
 }
+function normAnswer(s){return String(s||'').trim().toLowerCase();}
 
-/* ═══ STATE ═══ */
+/* ── STATE ── */
 var sessionId='', playerId='', playerName='';
 var questions=[], totalQ=0, timePerQ=20;
 var currentQIdx=-1, answered=false;
-var myScoreMap={};    // qIndex -> { isCorrect, pointsEarned } — populated from Firebase
 var totalScore=0, streak=0;
+// Per-question client-side score (keyed by qIndex)
+var myResults={};   // { isCorrect, pointsEarned, myAnswer }
 var roundTimeout=null, timerRaf=null, qStartAt_ms=0;
 var lastTickSecond=-1;
 var ARC_TOTAL=113;
 var SHAPES=['&#9650;','&#9632;','&#9679;','&#9830;'];
 var COLORS=['k-red','k-blue','k-yellow','k-green'];
-var stateRef=null, playersRef=null, resultsRef=null, lobbyPRef=null;
+var stateRef=null, playersRef=null, lobbyPRef=null, answerKeyRef=null;
 
-/* ═══ BOOT ═══ */
+// Answer key cache — host writes this to Firebase before showing each question
+// Structure: kahoot/{sessionId}/answerKeys/{qIndex} = { correct, correctText, type, timePerQ, points }
+var answerKeyCache={};  // qIndex -> key object
+
+/* ── BOOT ── */
 if(!GAS_URL){show('s-join');el('joinErr').textContent='Missing ?script= in URL.';}
 else{show('s-join');if(preCode)el('inp-code').value=preCode;}
 
@@ -348,7 +368,9 @@ el('inp-name').addEventListener('keydown',function(e){if(e.key==='Enter')doJoin(
 el('joinBtn').addEventListener('click',doJoin);
 if('speechSynthesis' in window){el('ttsBtn').style.display='';el('q-tts-inner').style.display='';}
 
-/* ═══ JOIN ═══ */
+/* ════════════════════════════════════════
+   JOIN
+════════════════════════════════════════ */
 function doJoin(){
   unlockAC();
   var btn=el('joinBtn'), errEl=el('joinErr');
@@ -356,7 +378,7 @@ function doJoin(){
   playerName=(el('inp-name').value||'').trim();
   errEl.textContent='';
   if(sessionId.length<4){errEl.textContent='Enter a valid room code';return;}
-  if(playerName.length<2){errEl.textContent='Enter your name (at least 2 characters)';return;}
+  if(playerName.length<2){errEl.textContent='Enter your name (at least 2 chars)';return;}
   btn.disabled=true; btn.innerHTML='<span class="spin-icon"></span>Joining…';
 
   playerId='p_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
@@ -370,25 +392,29 @@ function doJoin(){
     totalQ=res.data.totalQ||questions.length;
     timePerQ=res.data.timePerQ||20;
 
+    // Register player
     db.ref('kahoot/'+sessionId+'/players/'+playerId).set({
-      name:playerName, score:0, streak:0, joinedAt:firebase.database.ServerValue.TIMESTAMP
+      name:playerName, score:0, streak:0, lastPoints:0, lastCorrect:false,
+      answeredCount:0, joinedAt:firebase.database.ServerValue.TIMESTAMP
     });
+    // Cleanup on disconnect
+    db.ref('kahoot/'+sessionId+'/players/'+playerId+'/online')
+      .onDisconnect().set(false);
 
     el('lby-code').textContent=sessionId;
     buildDots();
     show('s-lobby');
     btn.disabled=false; btn.textContent='Join Quiz';
     watchLobbyPlayers();
+    watchAnswerKeys();   // ← watch for answer keys host writes ahead of each question
     watchGameState();
-    watchMyResults();   // NEW: watch for our scored results
   });
 }
 
 function buildDots(){
   var wrap=el('q-dots'); wrap.innerHTML='';
   for(var i=0;i<Math.min(totalQ,20);i++){
-    var d=document.createElement('div');
-    d.className='q-dot'; d.id='dot-'+i; wrap.appendChild(d);
+    var d=document.createElement('div'); d.className='q-dot'; d.id='dot-'+i; wrap.appendChild(d);
   }
 }
 function setDot(idx){
@@ -398,6 +424,22 @@ function setDot(idx){
   }
 }
 
+/* ════════════════════════════════════════
+   WATCH ANSWER KEYS
+   Host writes kahoot/{sid}/answerKeys/{qIndex} = { correct, correctText, type, timePerQ, points }
+   BEFORE pushing phase:'question' — so the key is always available when student answers
+════════════════════════════════════════ */
+function watchAnswerKeys(){
+  answerKeyRef=db.ref('kahoot/'+sessionId+'/answerKeys');
+  answerKeyRef.on('value',function(snap){
+    var keys=(snap&&snap.val())||{};
+    Object.keys(keys).forEach(function(qi){ answerKeyCache[parseInt(qi)]=keys[qi]; });
+  });
+}
+
+/* ════════════════════════════════════════
+   LOBBY PLAYERS
+════════════════════════════════════════ */
 function watchLobbyPlayers(){
   lobbyPRef=db.ref('kahoot/'+sessionId+'/players');
   lobbyPRef.on('value',function(snap){
@@ -410,76 +452,51 @@ function watchLobbyPlayers(){
   });
 }
 
-/* ═══ WATCH MY RESULTS (Firebase scores — written by GAS after each question) ═══ */
-function watchMyResults(){
-  resultsRef=db.ref('kahoot/'+sessionId+'/questionResults');
-  resultsRef.on('value',function(snap){
-    var allResults=(snap&&snap.val())||{};
-    // Rebuild totalScore and streak from all scored questions
-    totalScore=0; streak=0;
-    var sortedQs=Object.keys(allResults).map(Number).sort(function(a,b){return a-b;});
-    sortedQs.forEach(function(qi){
-      var qResult=allResults[qi]||{};
-      var myResult=qResult[playerId];
-      if(!myResult) return;
-      myScoreMap[qi]={isCorrect:myResult.isCorrect,pointsEarned:myResult.pointsEarned||0};
-      if(myResult.isCorrect){
-        totalScore+=myResult.pointsEarned||0;
-        streak++;
-      } else {
-        streak=0;
-      }
-    });
-    // Update player node on Firebase with live score
-    if(Object.keys(myScoreMap).length){
-      db.ref('kahoot/'+sessionId+'/players/'+playerId).update({
-        score:totalScore,
-        streak:streak
-      });
-    }
-  });
-}
-
+/* ════════════════════════════════════════
+   GAME STATE WATCHER
+════════════════════════════════════════ */
 function watchGameState(){
   stateRef=db.ref('kahoot/'+sessionId+'/state');
   stateRef.on('value',function(snap){
     var st=(snap&&snap.val())||{};
     var phase=st.phase||'lobby';
-    if(phase==='countdown'){detachLobby();startCountdown(st.countdownValue||3);}
-    else if(phase==='question'){
+    if     (phase==='countdown' ) { detachLobby(); startCountdown(st.countdownValue||3); }
+    else if(phase==='question'  ) {
       if(st.timePerQ) timePerQ=st.timePerQ;
       var qi=parseInt(st.qIndex)||0;
       if(qi!==currentQIdx&&st.qStartAt) startQuestion(qi,st.qStartAt);
     }
-    else if(phase==='reveal'){showReveal(st.qIndex,st.correctAnswer,st.correctText);}
-    else if(phase==='leaderboard'){showLeaderboard(st.autoAdvanceAt);}
-    else if(phase==='final'){showFinal();}
+    else if(phase==='reveal'    ) { showReveal(parseInt(st.qIndex)||0, st.correctAnswer, st.correctText); }
+    else if(phase==='leaderboard') { showLeaderboard(st.autoAdvanceAt); }
+    else if(phase==='final'     ) { showFinal(); }
   });
-  playersRef=db.ref('kahoot/'+sessionId+'/players');
+  if(!playersRef) playersRef=db.ref('kahoot/'+sessionId+'/players');
 }
 
 function detachLobby(){
   if(lobbyPRef){try{lobbyPRef.off('value');}catch(_){}lobbyPRef=null;}
 }
 
-/* ═══ COUNTDOWN ═══ */
+/* ════════════════════════════════════════
+   COUNTDOWN
+════════════════════════════════════════ */
 function startCountdown(from){
   show('s-countdown');
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;}
-  var num=from; el('cd-num').textContent=num;
-  playCountdownBeep();
+  var num=from; el('cd-num').textContent=num; playCountdownBeep();
   var iv=setInterval(function(){
     num--;
     if(num<=0){clearInterval(iv);playCountdownGo();return;}
     el('cd-num').textContent=num;
-    el('cd-num').style.animation='none';
-    void el('cd-num').offsetHeight;
+    el('cd-num').style.animation='none'; void el('cd-num').offsetHeight;
     el('cd-num').style.animation='cdPop .5s cubic-bezier(.17,.67,.46,1.41)';
     playCountdownBeep();
   },1000);
 }
 
-/* ═══ QUESTION ═══ */
+/* ════════════════════════════════════════
+   QUESTION
+════════════════════════════════════════ */
 function startQuestion(qi,qStartAt){
   clearTimeout(roundTimeout); stopTimer();
   answered=false; currentQIdx=qi; qStartAt_ms=qStartAt;
@@ -494,7 +511,7 @@ function startQuestion(qi,qStartAt){
   var msLeft=(qStartAt_ms+timePerQ*1000)-Date.now();
   if(msLeft<=0) msLeft=3000;
   runTimer();
-  roundTimeout=setTimeout(function(){if(!answered) timeOut();},msLeft);
+  roundTimeout=setTimeout(function(){if(!answered)timeOut();},msLeft);
   if(ttsOn) setTimeout(readCurrentQuestion,300);
 }
 
@@ -506,7 +523,7 @@ function renderAnswerArea(q){
       var btn=document.createElement('button');
       btn.className='opt-btn '+COLORS[i%4];
       btn.innerHTML='<span class="opt-shape">'+SHAPES[i%4]+'</span><span class="opt-txt">'+esc(opt)+'</span>';
-      btn.dataset.answer=opt; btn.dataset.index=i;
+      btn.dataset.answer=opt; btn.dataset.idx=i;
       btn.addEventListener('pointerdown',(function(o,b){
         return function(ev){ev.preventDefault();if(!answered)submitAnswer(o,b);};
       })(opt,btn));
@@ -531,7 +548,9 @@ function renderAnswerArea(q){
   }
 }
 
-/* ═══ TIMER ═══ */
+/* ════════════════════════════════════════
+   TIMER
+════════════════════════════════════════ */
 function runTimer(){
   stopTimer();
   var arc=el('timer-arc'),lbl=el('timer-label');
@@ -550,121 +569,264 @@ function runTimer(){
 }
 function stopTimer(){if(timerRaf){cancelAnimationFrame(timerRaf);timerRaf=null;}}
 
-/* ═══ SUBMIT — FIREBASE FIRST, NO GAS CALL ═══ */
+/* ════════════════════════════════════════
+   SUBMIT ANSWER — INSTANT CLIENT-SIDE SCORING
+   ────────────────────────────────────────
+   The answer key was pre-loaded into answerKeyCache by watchAnswerKeys().
+   We score immediately, show result, then write everything to Firebase
+   atomically in one update call.
+════════════════════════════════════════ */
 function submitAnswer(answer, btnEl){
   if(answered) return;
   answered=true;
   clearTimeout(roundTimeout); stopTimer();
-
-  el('q-body').querySelectorAll('.opt-btn,.sub-btn').forEach(function(b){b.disabled=true;});
-  if(btnEl) btnEl.classList.add('selected');
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;}
 
-  var deadline=qStartAt_ms+timePerQ*1000;
-  var timeRemaining=Math.max(0,(deadline-Date.now())/1000);
+  // Disable all buttons immediately to prevent double-tap
+  el('q-body').querySelectorAll('.opt-btn,.sub-btn').forEach(function(b){b.disabled=true;});
 
-  // ── INSTANT Firebase write — answer is locked immediately ──
-  db.ref('kahoot/'+sessionId+'/rawAnswers/'+playerId+'/'+currentQIdx).set({
+  var deadline   = qStartAt_ms + timePerQ * 1000;
+  var timeRemMs  = Math.max(0, deadline - Date.now());
+  var timeRemSec = timeRemMs / 1000;
+
+  // ── CLIENT-SIDE INSTANT SCORE ──
+  var key = answerKeyCache[currentQIdx];
+  var isCorrect = false;
+
+  if(key){
+    var sa = normAnswer(answer);
+    var ca = normAnswer(key.correct);
+    var ct = normAnswer(key.correctText||key.correct);
+    if(key.type==='SHORT'){
+      // Pipe-separated variants
+      var variants = ca.split('|');
+      isCorrect = variants.some(function(v){ return v.trim()===sa||sa.indexOf(v.trim())!==-1; });
+    } else if(key.type==='TF'){
+      // Normalise true/false
+      var normTF = function(x){
+        var s=normAnswer(x);
+        if(s==='true'||s==='a'||s==='yes') return 'true';
+        if(s==='false'||s==='b'||s==='no') return 'false';
+        return s;
+      };
+      isCorrect = normTF(sa) === normTF(ca);
+    } else {
+      isCorrect = sa===ca || sa===ct;
+    }
+  }
+  // If key not yet in cache (edge case), we'll get updated when reveal fires
+  // Points formula mirrors GAS: base + speed bonus + streak bonus
+  var pts        = key ? (key.points||1) : 1;
+  var basePoints = pts * 1000;
+  var speedBonus = isCorrect ? Math.round((timeRemSec / (timePerQ||20)) * 1000) : 0;
+  var newStreak  = isCorrect ? streak + 1 : 0;
+  var streakBonus= isCorrect ? newStreak * 50 : 0;
+  var pointsEarned = isCorrect ? (basePoints + speedBonus + streakBonus) : 0;
+
+  // Update local state immediately
+  streak    = newStreak;
+  totalScore = totalScore + pointsEarned;
+  myResults[currentQIdx] = { isCorrect:isCorrect, pointsEarned:pointsEarned, myAnswer:answer };
+
+  // Show immediate feedback on buttons (before Firebase round-trip)
+  showInstantFeedback(answer, isCorrect, btnEl, key);
+
+  // ── ONE ATOMIC FIREBASE WRITE ──
+  // Writes both the raw answer AND the updated score in a single call
+  var playerUpdate = {
+    score:        totalScore,
+    streak:       streak,
+    lastPoints:   pointsEarned,
+    lastCorrect:  isCorrect,
+    answeredCount: currentQIdx + 1,
+    online:       true
+  };
+  var updates = {};
+  // Raw answer for host's answer-count display
+  updates['kahoot/'+sessionId+'/rawAnswers/'+playerId+'/'+currentQIdx] = {
     answer:        answer,
-    timeRemaining: timeRemaining,
+    timeRemaining: timeRemSec,
     currentStreak: streak,
+    isCorrect:     isCorrect,
+    pointsEarned:  pointsEarned,
     lockedAt:      firebase.database.ServerValue.TIMESTAMP
+  };
+  // Player score (host leaderboard + next leaderboard screen)
+  Object.keys(playerUpdate).forEach(function(k){
+    updates['kahoot/'+sessionId+'/players/'+playerId+'/'+k] = playerUpdate[k];
   });
-
-  // Show lock confirmation — score will arrive via watchMyResults() after GAS scores
-  el('q-body').innerHTML=
-    '<div class="answered-msg">'
-    +'<span class="big">&#10003;</span>'
-    +'<div>Answer locked in!</div>'
-    +'<div class="lock-badge">Waiting for results…</div>'
-    +'</div>';
+  db.ref().update(updates);
 }
 
+/* ════════════════════════════════════════
+   INSTANT FEEDBACK
+   Show correct/wrong on the buttons RIGHT NOW,
+   plus a score pop-up below the options
+════════════════════════════════════════ */
+function showInstantFeedback(answer, isCorrect, selectedBtn, key){
+  var body = el('q-body');
+
+  // ── Color the buttons ──
+  var allBtns = body.querySelectorAll('.opt-btn');
+  allBtns.forEach(function(b){
+    var isSelected = (b === selectedBtn || normAnswer(b.dataset.answer) === normAnswer(answer));
+    if(isSelected){
+      b.classList.add(isCorrect ? 'state-correct' : 'state-wrong');
+    } else {
+      b.classList.add('state-wrong');
+    }
+  });
+
+  // ── Sound ──
+  if(isCorrect) playCorrect(); else playWrong();
+
+  // ── Score pop below buttons ── 
+  var overlay = document.createElement('div');
+  overlay.className = 'answered-overlay';
+
+  var scorePop = document.createElement('div');
+  scorePop.className = 'score-pop ' + (isCorrect ? 'correct' : 'wrong');
+  scorePop.textContent = isCorrect ? '+' + pointsEarned(isCorrect,key,answer) : '0';
+
+  var scoreLabel = document.createElement('div');
+  scoreLabel.className = 'score-label ' + (isCorrect ? 'correct' : 'wrong');
+  scoreLabel.textContent = isCorrect ? 'Correct! 🎉' : 'Wrong ✗';
+
+  overlay.appendChild(scorePop);
+  overlay.appendChild(scoreLabel);
+
+  if(isCorrect && streak > 1){
+    var streakEl = document.createElement('div');
+    streakEl.className = 'streak-badge';
+    streakEl.textContent = '🔥 ' + streak + ' in a row!';
+    overlay.appendChild(streakEl);
+  }
+
+  var totalPill = document.createElement('div');
+  totalPill.className = 'total-pill';
+  totalPill.innerHTML = 'Total: <span>' + totalScore.toLocaleString() + ' pts</span>';
+  overlay.appendChild(totalPill);
+
+  var waitLbl = document.createElement('div');
+  waitLbl.className = 'waiting-lbl';
+  waitLbl.textContent = 'Waiting for next question…';
+  overlay.appendChild(waitLbl);
+
+  body.appendChild(overlay);
+}
+
+// Helper — returns the points that would be earned (for display in pop)
+function pointsEarned(isCorrect, key, answer){
+  if(!isCorrect) return 0;
+  var deadline   = qStartAt_ms + timePerQ * 1000;
+  var timeRemSec = Math.max(0,(deadline - Date.now()) / 1000);
+  var pts        = key ? (key.points||1) : 1;
+  var base       = pts * 1000;
+  var speed      = Math.round((timeRemSec / (timePerQ||20)) * 1000);
+  var streakB    = streak * 50;
+  return base + speed + streakB;
+}
+
+/* ════════════════════════════════════════
+   TIMEOUT
+════════════════════════════════════════ */
 function timeOut(){
   if(answered) return;
   answered=true; stopTimer();
-  el('q-body').querySelectorAll('.opt-btn,.sub-btn').forEach(function(b){b.disabled=true;});
-  el('q-body').innerHTML='<div class="answered-msg"><span class="big">⏱</span>Time\'s up!</div>';
   playWrong();
-  // Write a "no-answer" marker so GAS knows this player was present
-  db.ref('kahoot/'+sessionId+'/rawAnswers/'+playerId+'/'+currentQIdx).set({
-    answer:        '',
-    timeRemaining: 0,
-    currentStreak: streak,
-    lockedAt:      firebase.database.ServerValue.TIMESTAMP,
-    timedOut:      true
+  streak = 0;
+  el('q-body').querySelectorAll('.opt-btn,.sub-btn').forEach(function(b){b.disabled=true;});
+  // Write a timed-out marker
+  db.ref().update({
+    ['kahoot/'+sessionId+'/rawAnswers/'+playerId+'/'+currentQIdx]: {
+      answer:'', timeRemaining:0, currentStreak:0, timedOut:true,
+      isCorrect:false, pointsEarned:0,
+      lockedAt:firebase.database.ServerValue.TIMESTAMP
+    },
+    ['kahoot/'+sessionId+'/players/'+playerId+'/streak']: 0,
+    ['kahoot/'+sessionId+'/players/'+playerId+'/lastCorrect']: false,
+    ['kahoot/'+sessionId+'/players/'+playerId+'/lastPoints']: 0,
+    ['kahoot/'+sessionId+'/players/'+playerId+'/answeredCount']: currentQIdx + 1
   });
+  var body=el('q-body');
+  body.innerHTML='';
+  var ov=document.createElement('div'); ov.className='answered-overlay';
+  ov.innerHTML='<div class="score-pop wrong">⏱</div>'
+    +'<div class="score-label wrong">Time\'s up!</div>'
+    +'<div class="waiting-lbl">Waiting for next question…</div>';
+  body.appendChild(ov);
 }
 
-/* ═══ REVEAL — reads from myScoreMap (populated by watchMyResults) ═══ */
-function showReveal(qi,serverCorrect,correctText){
+/* ════════════════════════════════════════
+   REVEAL — host-triggered, shows correct answer
+   Client already knows if they were right (myResults cache),
+   so we just add the correct-answer highlight overlay
+════════════════════════════════════════ */
+function showReveal(qi, serverCorrect, correctText){
   stopTimer(); clearTimeout(roundTimeout);
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;}
-  var q=questions[qi]||questions[currentQIdx]; if(!q) return;
-  var correct=serverCorrect||'';
-  el('reveal-q-txt').textContent=q.question;
-  var optsWrap=el('reveal-opts'); optsWrap.innerHTML='';
+  var q = questions[qi] || questions[currentQIdx]; if(!q) return;
+  var correct = serverCorrect || '';
+
+  el('reveal-q-txt').textContent = q.question;
+  var optsWrap = el('reveal-opts'); optsWrap.innerHTML='';
+
   if(q.type==='MCQ'||q.type==='TF'){
     (q.options||[]).forEach(function(opt,i){
-      var isC=opt.toLowerCase()===correct.toLowerCase()||
-              String.fromCharCode(65+i)===correct.toUpperCase()||
-              opt.toLowerCase()===(correctText||'').toLowerCase();
+      var isC = normAnswer(opt)===normAnswer(correct)
+             || String.fromCharCode(65+i)===correct.toUpperCase()
+             || normAnswer(opt)===normAnswer(correctText||'');
       var div=document.createElement('div');
       div.className='reveal-opt '+(isC?'correct':'wrong');
       div.innerHTML='<div class="reveal-opt-shape">'+SHAPES[i%4]+'</div><span>'+esc(opt)+'</span>'+(isC?' ✓':'');
       optsWrap.appendChild(div);
     });
-  }
-  // Use scored result from Firebase if available, else show pending
-  var stat=el('reveal-stat');
-  var myResult=myScoreMap[qi];
-  if(myResult){
-    var isC=myResult.isCorrect;
-    if(isC) playCorrect(); else playWrong();
-    stat.innerHTML=
-      '<div class="rs-your">'+(isC?'Correct! 🎉':'Wrong ✗')+'</div>'
-      +'<div class="rs-pts '+(isC?'correct':'wrong')+'">'+(isC?'+'+myResult.pointsEarned:'0')+'</div>'
-      +(isC&&streak>1?'<div class="rs-streak">🔥 '+streak+' in a row!</div>':'');
   } else {
-    stat.innerHTML='<div class="rs-your" style="color:var(--muted)"><span class="spin-icon"></span>Scoring…</div>';
-    // Poll myScoreMap until the result arrives (GAS scoring lag)
-    var poll=setInterval(function(){
-      var r=myScoreMap[qi];
-      if(!r) return;
-      clearInterval(poll);
-      var isC=r.isCorrect;
-      if(isC) playCorrect(); else playWrong();
-      stat.innerHTML=
-        '<div class="rs-your">'+(isC?'Correct! 🎉':'Wrong ✗')+'</div>'
-        +'<div class="rs-pts '+(isC?'correct':'wrong')+'">'+(isC?'+'+r.pointsEarned:'0')+'</div>'
-        +(isC&&streak>1?'<div class="rs-streak">🔥 '+streak+' in a row!</div>':'');
-    },300);
+    optsWrap.innerHTML='<div style="padding:12px;color:#4ade80;font-weight:700">✓ Correct: '+esc(correctText||correct)+'</div>';
+  }
+
+  // Score carry-over (use client-side result if available)
+  var myR = myResults[qi];
+  var carry = el('reveal-carry');
+  if(myR){
+    carry.innerHTML='<div class="rc-label">'+(myR.isCorrect?'You got it right!':'Not quite this time')+'</div>'
+      +'<div class="rc-score">'+totalScore.toLocaleString()+' pts total</div>';
+  } else {
+    // Didn't answer (joined late or disconnected)
+    carry.innerHTML='<div class="rc-label" style="color:var(--muted)">—</div>'
+      +'<div class="rc-score">'+totalScore.toLocaleString()+' pts total</div>';
   }
   show('s-reveal');
 }
 
-/* ═══ LEADERBOARD ═══ */
+/* ════════════════════════════════════════
+   LEADERBOARD
+════════════════════════════════════════ */
 function showLeaderboard(autoAdvanceAt){
+  if(!playersRef) playersRef=db.ref('kahoot/'+sessionId+'/players');
   playersRef.once('value',function(snap){
     var players=(snap&&snap.val())||{};
-    var sorted=Object.entries(players).sort(function(a,b){return (b[1].score||0)-(a[1].score||0);});
+    var sorted=Object.entries(players)
+      .filter(function(e){return e[1].name;})
+      .sort(function(a,b){return (b[1].score||0)-(a[1].score||0);});
     var medals=['🥇','🥈','🥉'];
     el('lb-list').innerHTML=sorted.slice(0,10).map(function(e,i){
       var pid=e[0],p=e[1],isMe=pid===playerId;
-      return '<div class="lb-row'+(isMe?' lb-me':'')+'" style="animation-delay:'+i*60+'ms">'
+      var delta=p.lastPoints>0?'<span class="lb-delta">+'+p.lastPoints+'</span>':'';
+      return '<div class="lb-row'+(isMe?' lb-me':'')+'" style="animation-delay:'+i*55+'ms">'
         +'<div class="lb-rank">'+(medals[i]||(i+1))+'</div>'
-        +'<div class="lb-name">'+esc(p.name)+'</div>'
-        +'<div class="lb-score">'+((p.score||0).toLocaleString())+'</div>'
-        +(p.streak>2?'<span style="font-size:12px;color:#f59e0b;margin-left:4px">🔥'+p.streak+'</span>':'')
+        +'<div class="lb-name">'+esc(p.name)+(isMe?' <span style="font-size:10px;color:#7fa4ff">(you)</span>':'')+'</div>'
+        +(p.streak>1?'<span style="font-size:11px;color:#f59e0b">🔥'+p.streak+'</span>':'')
+        +'<div class="lb-score">'+((p.score||0).toLocaleString())+delta+'</div>'
         +'</div>';
     }).join('');
     show('s-leaderboard');
+
     if(autoAdvanceAt){
       var cd=Math.max(1,Math.ceil((autoAdvanceAt-Date.now())/1000));
-      el('lb-next-auto').textContent='Next in '+cd+'s';
+      el('lb-next-auto').textContent='Next question in '+cd+'s…';
       var iv=setInterval(function(){
-        cd--;
-        el('lb-next-auto').textContent=cd>0?'Next in '+cd+'s':'Loading…';
+        cd--; el('lb-next-auto').textContent=cd>0?'Next question in '+cd+'s…':'Get ready!';
         if(cd<=0)clearInterval(iv);
       },1000);
     } else {
@@ -673,15 +835,20 @@ function showLeaderboard(autoAdvanceAt){
   });
 }
 
-/* ═══ FINAL ═══ */
+/* ════════════════════════════════════════
+   FINAL PODIUM
+════════════════════════════════════════ */
 function showFinal(){
   stopTimer(); clearTimeout(roundTimeout);
   [523,659,784,1047,1318].forEach(function(n,i){
     setTimeout(function(){playTone(n,'triangle',.4,.14,true);},i*140);
   });
+  if(!playersRef) playersRef=db.ref('kahoot/'+sessionId+'/players');
   playersRef.once('value',function(snap){
     var players=(snap&&snap.val())||{};
-    var sorted=Object.entries(players).sort(function(a,b){return (b[1].score||0)-(a[1].score||0);});
+    var sorted=Object.entries(players)
+      .filter(function(e){return e[1].name;})
+      .sort(function(a,b){return (b[1].score||0)-(a[1].score||0);});
     var podiumOrder=[1,0,2],pClasses=['p2','p1','p3'];
     var podium=el('final-podium'); podium.innerHTML='';
     podiumOrder.forEach(function(rank,slot){
@@ -695,22 +862,21 @@ function showFinal(){
       podium.appendChild(div);
     });
     var myRank=sorted.findIndex(function(e){return e[0]===playerId;});
-    var myFinalScore=sorted[myRank]?(sorted[myRank][1].score||0):totalScore;
-    var rankStr=myRank===0?'1st':myRank===1?'2nd':myRank===2?'3rd':(myRank+1)+'th';
-    el('final-rank-badge').textContent='You finished '+rankStr+' out of '+sorted.length+' players';
+    var myFinalScore=myRank>=0?(sorted[myRank][1].score||0):totalScore;
+    var rankStr=myRank===0?'1st':myRank===1?'2nd':myRank===2?'3rd':(myRank>=0?(myRank+1)+'th':'—');
+    el('final-rank-badge').textContent='You finished '+rankStr+' of '+sorted.length+' players';
     el('final-score-big').textContent=myFinalScore.toLocaleString();
     show('s-final');
   });
 }
 
+/* ── CLEANUP ── */
 window.addEventListener('beforeunload',function(){
   stopTimer(); clearTimeout(roundTimeout);
-  if(stateRef)   try{stateRef.off('value');}catch(_){}
-  if(playersRef) try{playersRef.off('value');}catch(_){}
-  if(resultsRef) try{resultsRef.off('value');}catch(_){}
-  if(lobbyPRef)  try{lobbyPRef.off('value');}catch(_){}
-  if(playerId&&sessionId)
-    db.ref('kahoot/'+sessionId+'/players/'+playerId+'/online').set(false);
+  if(stateRef)    try{stateRef.off('value');}catch(_){}
+  if(playersRef)  try{playersRef.off('value');}catch(_){}
+  if(lobbyPRef)   try{lobbyPRef.off('value');}catch(_){}
+  if(answerKeyRef)try{answerKeyRef.off('value');}catch(_){}
 });
 
 }());
