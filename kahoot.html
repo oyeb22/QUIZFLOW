@@ -395,40 +395,53 @@ function doJoin(){
   errEl.textContent='';
   if(sessionId.length<4){errEl.textContent='Enter a valid room code';return;}
   if(playerName.length<2){errEl.textContent='Enter your name (at least 2 chars)';return;}
-  btn.disabled=true; btn.innerHTML='<span class="spin-icon"></span>Joining…';
 
+  // Guard: Firebase must be ready
+  if(!db){errEl.textContent='Connection not ready. Please refresh the page.';return;}
+
+  btn.disabled=true; btn.innerHTML='<span class="spin-icon"></span>Joining…';
   playerId='p_'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 
-  // Load questions from Firebase (written there by host on session create).
-  // This replaces the GAS round-trip, eliminates the race condition where
-  // questions[] was empty when the first 'question' phase event fired, and
-  // works even when the student joins after the game has started.
-  db.ref('kahoot/'+sessionId+'/meta').once('value',function(metaSnap){
-    var meta=metaSnap&&metaSnap.val();
-    if(!meta){
-      // Session not found in Firebase — may be old session or wrong code
-      btn.disabled=false; btn.textContent='Join Quiz';
-      errEl.textContent='Room not found. Check the code and try again.'; return;
-    }
-    totalQ=meta.totalQ||0;
-    timePerQ=meta.timePerQ||20;
+  function joinFail(msg){
+    btn.disabled=false; btn.textContent='Join Quiz';
+    errEl.textContent=msg||'Could not join. Try again.';
+  }
 
-    db.ref('kahoot/'+sessionId+'/questions').once('value',function(qSnap){
-      var qArr=qSnap&&qSnap.val();
-      if(!qArr||!qArr.length){
-        btn.disabled=false; btn.textContent='Join Quiz';
-        errEl.textContent='Room not ready yet. Ask your teacher to reload.'; return;
+  try{
+    db.ref('kahoot/'+sessionId+'/meta').once('value').then(function(metaSnap){
+      var meta=metaSnap&&metaSnap.val();
+      if(!meta){
+        joinFail('Room not found. Check the code with your teacher.'); return;
       }
-      questions=Array.isArray(qArr)?qArr:Object.values(qArr);
-      totalQ=totalQ||questions.length;
+      totalQ   = meta.totalQ   || 0;
+      timePerQ = meta.timePerQ || 20;
 
-      // Register player in Firebase
-      db.ref('kahoot/'+sessionId+'/players/'+playerId).set({
+      return db.ref('kahoot/'+sessionId+'/questions').once('value');
+
+    }).then(function(qSnap){
+      if(!qSnap) return; // already failed above
+      var raw = qSnap.val();
+
+      // Firebase may return an array or a plain object — handle both
+      var qArr = raw
+        ? (Array.isArray(raw) ? raw : Object.values(raw)).filter(Boolean)
+        : [];
+
+      if(!qArr.length){
+        joinFail('Room not ready yet — ask your teacher to reload the host page.'); return;
+      }
+      questions = qArr;
+      totalQ    = totalQ || questions.length;
+
+      // Register player
+      return db.ref('kahoot/'+sessionId+'/players/'+playerId).set({
         name:playerName, score:0, streak:0, lastPoints:0, lastCorrect:false,
         answeredCount:0, joinedAt:firebase.database.ServerValue.TIMESTAMP, online:true
       });
-      db.ref('kahoot/'+sessionId+'/players/'+playerId+'/online')
-        .onDisconnect().set(false);
+
+    }).then(function(){
+      // onDisconnect cleanup
+      db.ref('kahoot/'+sessionId+'/players/'+playerId+'/online').onDisconnect().set(false);
 
       el('lby-code').textContent=sessionId;
       buildDots();
@@ -437,11 +450,14 @@ function doJoin(){
       watchLobbyPlayers();
       watchAnswerKeys();
       watchGameState();
+
+    }).catch(function(err){
+      joinFail('Error: '+(err&&err.message?err.message:String(err)));
     });
-  },function(fbErr){
-    btn.disabled=false; btn.textContent='Join Quiz';
-    errEl.textContent='Connection error: '+fbErr.message;
-  });
+
+  }catch(e){
+    joinFail('Unexpected error: '+e.message);
+  }
 }
 
 function buildDots(){
