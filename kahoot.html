@@ -464,10 +464,18 @@ function setDot(idx){
 ════════════════════════════════════════ */
 function watchAnswerKeys(){
   answerKeyRef=db.ref('kahoot/'+sessionId+'/answerKeys');
-  answerKeyRef.on('value',function(snap){
+  answerKeyRef.on('child_added',function(snap){
+    // FIX 1: Firebase returns object keys as strings — always coerce to int
+    // so answerKeyCache[currentQIdx] (integer) always finds the entry.
+    var qi=parseInt(snap.key);
+    if(!isNaN(qi)) answerKeyCache[qi]=snap.val();
+  });
+  // Also load any keys already present (late-joining students)
+  answerKeyRef.once('value',function(snap){
     var keys=(snap&&snap.val())||{};
-    Object.keys(keys).forEach(function(qi){
-      answerKeyCache[parseInt(qi)]=keys[qi];
+    Object.keys(keys).forEach(function(k){
+      var qi=parseInt(k);
+      if(!isNaN(qi)) answerKeyCache[qi]=keys[k];
     });
   });
 }
@@ -683,35 +691,50 @@ function submitAnswer(answer, btnEl){
   var timeRemSec   = timeRemMs / 1000;
 
   // ── INSTANT SCORE from local cache ──
+  // FIX 1: key lookup uses integer index — guaranteed to match after watchAnswerKeys fix
   var key = answerKeyCache[currentQIdx];
   var isCorrect = false;
 
   if(key){
     var sa = normAnswer(answer);
-    var ca = normAnswer(key.correct);
-    var ct = normAnswer(key.correctText||key.correct);
+    var ca = normAnswer(key.correct||'');
+    var ct = normAnswer(key.correctText||key.correct||'');
 
     if(key.type==='SHORT'){
+      // Pipe-separated variants, substring match
       var variants = ca.split('|');
       isCorrect = variants.some(function(v){
         var vt=v.trim();
         return vt===sa || sa.indexOf(vt)!==-1 || (vt.length>=3&&vt.indexOf(sa)!==-1&&sa.length>=3);
       });
+
     } else if(key.type==='TF'){
       var normTF=function(x){
         var s=normAnswer(x);
-        if(s==='true'||s==='a'||s==='yes') return 'true';
-        if(s==='false'||s==='b'||s==='no') return 'false';
+        if(s==='true' ||s==='a'||s==='yes'||s==='1') return 'true';
+        if(s==='false'||s==='b'||s==='no' ||s==='0') return 'false';
         return s;
       };
       isCorrect = normTF(sa)===normTF(ca);
+
     } else {
-      // MCQ — match by text or letter
-      isCorrect = sa===ca || sa===ct;
+      // FIX 3: MCQ — key.correct may be full text OR a letter (A/B/C/D).
+      // Match both: compare answer text directly, AND resolve the letter
+      // against the question's options array to get the text equivalent.
+      var q = questions[currentQIdx];
+      var correctText = ct || ca;
+
+      // If key.correct is a single letter A-D, resolve it to option text
+      if(/^[a-d]$/.test(ca) && q && q.options){
+        var letterIdx = ca.charCodeAt(0) - 97; // 'a'=0,'b'=1,'c'=2,'d'=3
+        if(q.options[letterIdx]) correctText = normAnswer(q.options[letterIdx]);
+      }
+
+      isCorrect = sa===correctText || sa===ca;
     }
   }
-  // If key not in cache yet (edge case: host wrote key and state simultaneously),
-  // we mark unknown and let the server reconcile. The UI still shows "answered".
+  // If key not in cache yet (edge case), isCorrect stays false.
+  // The server's scoreKahootQuestion will reconcile via GAS.
 
   // ── Compute points (mirrors GAS formula exactly) ──
   var pts         = key?(key.points||1):1;
@@ -726,12 +749,12 @@ function submitAnswer(answer, btnEl){
   totalScore = totalScore + pointsEarned;
   myResults[currentQIdx]={isCorrect:isCorrect,pointsEarned:pointsEarned,myAnswer:answer};
 
-  // Show instant visual feedback
+  // Show instant visual feedback before Firebase round-trip
   showInstantFeedback(answer,isCorrect,btnEl,pointsEarned);
 
-  // ── ATOMIC Firebase write: raw answer + scored player node ──
-  var updates={};
-  updates['kahoot/'+sessionId+'/rawAnswers/'+playerId+'/'+currentQIdx]={
+  // ── Firebase write: raw answer first (non-score fields) ──
+  var rawUpdate={};
+  rawUpdate['kahoot/'+sessionId+'/rawAnswers/'+playerId+'/'+currentQIdx]={
     answer:        answer,
     timeRemaining: timeRemSec,
     currentStreak: streak,
@@ -739,13 +762,20 @@ function submitAnswer(answer, btnEl){
     pointsEarned:  pointsEarned,
     lockedAt:      firebase.database.ServerValue.TIMESTAMP
   };
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/score']        = totalScore;
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/streak']       = streak;
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/lastPoints']   = pointsEarned;
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/lastCorrect']  = isCorrect;
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/answeredCount']= currentQIdx+1;
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/online']       = true;
-  db.ref().update(updates);
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/streak']       = streak;
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/lastPoints']   = pointsEarned;
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/lastCorrect']  = isCorrect;
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/answeredCount']= currentQIdx+1;
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/online']       = true;
+  db.ref().update(rawUpdate);
+
+  // FIX 2: Use a Firebase transaction for score so it always accumulates
+  // correctly — even if the page was refreshed or the local variable drifted.
+  if(pointsEarned > 0){
+    db.ref('kahoot/'+sessionId+'/players/'+playerId+'/score').transaction(function(current){
+      return (current||0) + pointsEarned;
+    });
+  }
 }
 
 /* ════════════════════════════════════════
