@@ -587,7 +587,20 @@ function startQuestion(qi, serverTs){
 
   // FIX 1 + 3: FREEZE qStartAt_ms at the moment the question starts.
   // All subsequent calculations (timeRemaining at submit) use this value.
-  qStartAt_ms = serverTs;
+  //
+  // TIMER FIX: serverTs is when the HOST wrote state. By the time the
+  // Firebase event reaches the student and the question renders, 2-5s
+  // may have already passed — so the timer would start at 17 or 15.
+  // Fix: reset qStartAt_ms to Date.now() so the player always sees
+  // the full timePerQ countdown from the moment they see the question.
+  var networkDelay = Math.max(0, Date.now() - serverTs);
+  if(networkDelay >= timePerQ * 1000){
+    // Already past deadline — show question briefly then time out
+    qStartAt_ms = Date.now() - (timePerQ * 1000) + 1500;
+  } else {
+    // Always give the player the full timer from the moment they see it
+    qStartAt_ms = Date.now();
+  }
 
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;}
   var q=questions[qi]; if(!q) return;
@@ -600,14 +613,12 @@ function startQuestion(qi, serverTs){
   // Start visual timer
   runTimer();
 
-  // FIX 2: local deadline — self-advance if host doesn't push reveal in time
-  var msLeft = Math.max(500, (qStartAt_ms + timePerQ * 1000) - Date.now());
+  // FIX 2: local deadline — self-advance if host doesn't push reveal in time.
+  // qStartAt_ms is now Date.now() so msLeft = full timePerQ + grace period.
+  var msLeft = timePerQ * 1000;
   deadlineTimeout = setTimeout(function(){
-    // Only fire if we're still on this question and haven't answered
-    if(currentQIdx===qi && !answered){
-      timeOut();
-    }
-  }, msLeft + 500); // +500ms grace period so host can push reveal slightly late
+    if(currentQIdx===qi && !answered) timeOut();
+  }, msLeft + 800); // +800ms grace so host reveal push beats local timeout
 
   if(ttsOn) setTimeout(readCurrentQuestion,300);
 }
@@ -749,8 +760,8 @@ function submitAnswer(answer, btnEl){
   totalScore = totalScore + pointsEarned;
   myResults[currentQIdx]={isCorrect:isCorrect,pointsEarned:pointsEarned,myAnswer:answer};
 
-  // Show instant visual feedback before Firebase round-trip
-  showInstantFeedback(answer,isCorrect,btnEl,pointsEarned);
+  // Show neutral "answered" feedback — no wrong/correct reveal until host shows it
+  showAnsweredFeedback(btnEl, answer);
 
   // ── Firebase write: raw answer first (non-score fields) ──
   var rawUpdate={};
@@ -779,53 +790,43 @@ function submitAnswer(answer, btnEl){
 }
 
 /* ════════════════════════════════════════
-   INSTANT FEEDBACK
+   ANSWERED FEEDBACK — neutral, no wrong/correct
+   Highlight the selected option, show a lock-in
+   confirmation, and wait for the host to reveal.
 ════════════════════════════════════════ */
-function showInstantFeedback(answer, isCorrect, selectedBtn, pointsEarned){
+function showAnsweredFeedback(selectedBtn, answer){
   var body=el('q-body');
 
-  // Colour the option buttons
+  // Dim all buttons, highlight the one they picked
   var allBtns=body.querySelectorAll('.opt-btn');
   allBtns.forEach(function(b){
-    var isSelected=(b===selectedBtn||normAnswer(b.dataset.answer)===normAnswer(answer));
-    b.classList.add(isSelected?(isCorrect?'state-correct':'state-wrong'):'state-wrong');
+    var isPicked=(b===selectedBtn||normAnswer(b.dataset.answer||'')===normAnswer(answer));
+    if(isPicked){
+      b.style.outline='4px solid #fff';
+      b.style.outlineOffset='-4px';
+      b.style.filter='brightness(1.15)';
+    } else {
+      b.style.filter='brightness(.45) grayscale(.3)';
+    }
   });
 
-  if(isCorrect) playCorrect(); else playWrong();
+  // Play a neutral lock-in tone (not correct/wrong)
+  playTone(700,'sine',.08,.1,true);
 
-  // Score pop overlay
+  // Overlay: just show "Answer locked in"
   var overlay=document.createElement('div');
   overlay.className='answered-overlay';
-
-  var scorePop=document.createElement('div');
-  scorePop.className='score-pop '+(isCorrect?'correct':'wrong');
-  scorePop.textContent=isCorrect?('+'+pointsEarned):'0';
-
-  var scoreLabel=document.createElement('div');
-  scoreLabel.className='score-label '+(isCorrect?'correct':'wrong');
-  scoreLabel.textContent=isCorrect?'Correct! 🎉':'Wrong ✗';
-
-  overlay.appendChild(scorePop);
-  overlay.appendChild(scoreLabel);
-
-  if(isCorrect && streak>1){
-    var streakEl=document.createElement('div');
-    streakEl.className='streak-badge';
-    streakEl.textContent='🔥 '+streak+' in a row!';
-    overlay.appendChild(streakEl);
-  }
-
-  var totalPill=document.createElement('div');
-  totalPill.className='total-pill';
-  totalPill.innerHTML='Total: <span>'+totalScore.toLocaleString()+' pts</span>';
-  overlay.appendChild(totalPill);
-
-  var waitLbl=document.createElement('div');
-  waitLbl.className='waiting-lbl';
-  waitLbl.textContent='Waiting for next question…';
-  overlay.appendChild(waitLbl);
-
+  overlay.innerHTML=
+    '<div style="font-size:48px;margin-bottom:6px">🔒</div>'+
+    '<div style="font-size:17px;font-weight:700;color:#f8fafc;margin-bottom:4px">Answer locked in!</div>'+
+    '<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Waiting for the teacher to reveal…</div>'+
+    '<div class="total-pill">Score so far: <span>'+totalScore.toLocaleString()+' pts</span></div>';
   body.appendChild(overlay);
+}
+
+/* kept for timeOut — plays wrong sound there */
+function showInstantFeedback(answer, isCorrect, selectedBtn, pointsEarned){
+  showAnsweredFeedback(selectedBtn, answer);
 }
 
 /* ════════════════════════════════════════
@@ -897,13 +898,37 @@ function showReveal(qi,serverCorrect,correctText){
     optsWrap.innerHTML='<div style="padding:12px;color:#4ade80;font-weight:700">✓ Correct: '+esc(correctText||correct)+'</div>';
   }
 
-  var myR=myResults[qi];
+  // Use server correct answer to determine if player got it right —
+  // this is authoritative regardless of client-side scoring accuracy.
+  var myR = myResults[qi];
+  var myAns = myR ? normAnswer(myR.myAnswer||'') : '';
+  var correctNorm = normAnswer(correct);
+  var correctTextNorm = normAnswer(correctText||correct);
+
+  // Check player's answer against the revealed correct answer
+  var gotItRight = false;
+  if(myR && myAns){
+    gotItRight = myAns===correctNorm || myAns===correctTextNorm;
+    // Also check if their answer text matches any option that IS correct
+    if(!gotItRight && q && q.options){
+      q.options.forEach(function(opt,i){
+        var isCorrectOpt = normAnswer(opt)===correctNorm || normAnswer(opt)===correctTextNorm
+                        || String.fromCharCode(65+i)===correct.toUpperCase();
+        if(isCorrectOpt && myAns===normAnswer(opt)) gotItRight=true;
+      });
+    }
+  }
+
+  // Play sound now that we know for sure
+  if(myR){ if(gotItRight) playCorrect(); else playWrong(); }
+
   var carry=el('reveal-carry');
-  if(myR){
-    carry.innerHTML='<div class="rc-label">'+(myR.isCorrect?'You got it right! 🎉':'Not quite this time')+'</div>'
+  if(myR && myAns){
+    carry.innerHTML='<div class="rc-label" style="color:'+(gotItRight?'#4ade80':'#f87171')+';font-size:16px;font-weight:700">'
+      +(gotItRight?'✓ Correct! 🎉':'✗ Not this time')+'</div>'
       +'<div class="rc-score">'+totalScore.toLocaleString()+' pts total</div>';
   } else {
-    carry.innerHTML='<div class="rc-label" style="color:var(--muted)">—</div>'
+    carry.innerHTML='<div class="rc-label" style="color:var(--muted)">Time's up</div>'
       +'<div class="rc-score">'+totalScore.toLocaleString()+' pts total</div>';
   }
   show('s-reveal');
