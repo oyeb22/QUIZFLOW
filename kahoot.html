@@ -106,13 +106,20 @@
     #s-reveal{padding:10px 0}
     .reveal-q{font-size:15px;font-weight:600;color:var(--muted);margin-bottom:12px;max-width:580px;margin-left:auto;margin-right:auto;text-align:center}
     .reveal-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-    .reveal-opt{display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:10px;font-size:14px;font-weight:600}
-    .reveal-opt.correct{background:var(--k-green);color:#fff}
-    .reveal-opt.wrong{background:var(--track);color:var(--muted);filter:brightness(.7)}
+    .reveal-opt{display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:10px;font-size:14px;font-weight:600;position:relative}
+    /* Correct answer = bright green */
+    .reveal-opt.is-correct{background:var(--k-green);color:#fff;outline:3px solid #4ade80;outline-offset:-3px}
+    /* The option the player picked (but it's wrong) = dim with a border so they can see what they chose */
+    .reveal-opt.my-pick-wrong{background:var(--track);color:var(--muted);filter:brightness(.75);outline:2px solid #94a3b8;outline-offset:-2px}
+    /* Other wrong options = just dim */
+    .reveal-opt.not-picked{background:var(--track);color:var(--muted);filter:brightness(.55)}
     .reveal-opt-shape{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
-    .reveal-carry{text-align:center;padding:10px 0}
-    .reveal-carry .rc-label{font-size:13px;color:var(--muted);margin-bottom:4px}
-    .reveal-carry .rc-score{font-size:32px;font-weight:900;font-family:monospace;color:#4ade80}
+    .reveal-correct-tick{margin-left:auto;font-size:16px}
+    .reveal-my-marker{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:600;white-space:nowrap}
+    /* Score pill at bottom of reveal */
+    .reveal-score-pill{text-align:center;padding:10px 0}
+    .reveal-score-pill .rsp-label{font-size:13px;color:var(--muted);margin-bottom:4px}
+    .reveal-score-pill .rsp-score{font-size:32px;font-weight:900;font-family:monospace;color:#7fa4ff}
 
     /* LEADERBOARD */
     #s-leaderboard{text-align:center;padding:16px 0}
@@ -224,7 +231,7 @@
   <div class="screen" id="s-reveal">
     <div class="reveal-q" id="reveal-q-txt"></div>
     <div class="reveal-opts" id="reveal-opts"></div>
-    <div class="reveal-carry" id="reveal-carry"></div>
+    <div class="reveal-score-pill" id="reveal-score-pill"></div>
   </div>
 
   <!-- LEADERBOARD -->
@@ -253,34 +260,6 @@
 (function(){
 'use strict';
 
-/* ═══════════════════════════════════════════════════════════════
-   ARCHITECTURE — THREE FIXES APPLIED
-   ───────────────────────────────────────────────────────────────
-   FIX 1 — QUESTION NEVER SHOWS:
-     State listener is now forgiving. It triggers on ANY phase
-     change to 'question', even if qStartAt hasn't arrived yet.
-     qStartAt_ms is captured ONCE when the question starts and
-     frozen — never recalculated at submit time.
-     If qStartAt is missing (race condition), we fall back to
-     Date.now() so the question still renders.
-
-   FIX 2 — AUTO-ADVANCE (deadline-based self-advance):
-     The client sets its own setTimeout based on the question
-     deadline. If the host tab is closed or the timer fires
-     before everyone answers, the student advances to timeOut()
-     independently — no dependency on host pushing 'reveal'.
-     The Firebase state listener still handles host-driven
-     advances normally; the local timeout is cancelled if
-     the host pushes a phase change first.
-
-   FIX 3 — MS-LEVEL ANSWER LOCK / INSTANT SCORING:
-     The host writes answerKeys/{qIndex} to Firebase BEFORE
-     pushing phase:'question'. watchAnswerKeys() caches them
-     locally. On tap, we score immediately from the local cache
-     (no GAS round-trip). qStartAt_ms is frozen at question-
-     start so timeRemaining is accurate at the moment of tap.
-═══════════════════════════════════════════════════════════════ */
-
 var P       = new URLSearchParams(window.location.search);
 var GAS_URL = (P.get('script') || '').trim();
 var preCode = (P.get('room')   || '').trim().toUpperCase();
@@ -296,11 +275,11 @@ function playTone(f,t,d,v,r){
     if(r)g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);
     o.start();o.stop(a.currentTime+d);}catch(e){}
 }
-function playCorrect(){ playTone(660,'square',.08,.12,true); setTimeout(function(){playTone(880,'square',.12,.1,true);},80); }
-function playWrong(){   playTone(160,'sawtooth',.22,.15,true); }
+function playRevealChime(){ [523,659,784].forEach(function(n,i){setTimeout(function(){playTone(n,'triangle',.25,.1,true);},i*90);}); }
 function playCountdownBeep(){ playTone(880,'sine',.12,.12,true); }
 function playCountdownGo(){ [523,659,784,1047].forEach(function(n,i){setTimeout(function(){playTone(n,'triangle',.3,.13,true);},i*120);}); }
 function playTick(){ playTone(1200,'sine',.04,.05,true); }
+function playLockIn(){ playTone(700,'sine',.08,.1,true); }
 function toggleSound(){
   soundOn=!soundOn;
   var b=document.getElementById('soundBtn');
@@ -358,21 +337,14 @@ var currentQIdx=-1, answered=false;
 var totalScore=0, streak=0;
 var myResults={};
 
-// FIX 1 & 3: qStartAt_ms is FROZEN when question starts, never recalculated
 var qStartAt_ms=0;
-
-// FIX 2: local deadline timeout handle — cancelled if host pushes phase first
 var deadlineTimeout=null;
-
 var roundTimeout=null, timerRaf=null;
 var lastTickSecond=-1;
 var ARC_TOTAL=113;
 var SHAPES=['&#9650;','&#9632;','&#9679;','&#9830;'];
 var COLORS=['k-red','k-blue','k-yellow','k-green'];
 var stateRef=null, playersRef=null, lobbyPRef=null, answerKeyRef=null;
-
-// FIX 3: Answer key cache — populated by watchAnswerKeys() before question starts
-// Structure: answerKeyCache[qIndex] = { correct, correctText, type, timePerQ, points }
 var answerKeyCache={};
 
 /* ── BOOT ── */
@@ -395,8 +367,6 @@ function doJoin(){
   errEl.textContent='';
   if(sessionId.length<4){errEl.textContent='Enter a valid room code';return;}
   if(playerName.length<2){errEl.textContent='Enter your name (at least 2 chars)';return;}
-
-  // Guard: Firebase must be ready
   if(!db){errEl.textContent='Connection not ready. Please refresh the page.';return;}
 
   btn.disabled=true; btn.innerHTML='<span class="spin-icon"></span>Joining…';
@@ -410,39 +380,23 @@ function doJoin(){
   try{
     db.ref('kahoot/'+sessionId+'/meta').once('value').then(function(metaSnap){
       var meta=metaSnap&&metaSnap.val();
-      if(!meta){
-        joinFail('Room not found. Check the code with your teacher.'); return;
-      }
+      if(!meta){joinFail('Room not found. Check the code with your teacher.');return;}
       totalQ   = meta.totalQ   || 0;
       timePerQ = meta.timePerQ || 20;
-
       return db.ref('kahoot/'+sessionId+'/questions').once('value');
-
     }).then(function(qSnap){
-      if(!qSnap) return; // already failed above
+      if(!qSnap) return;
       var raw = qSnap.val();
-
-      // Firebase may return an array or a plain object — handle both
-      var qArr = raw
-        ? (Array.isArray(raw) ? raw : Object.values(raw)).filter(Boolean)
-        : [];
-
-      if(!qArr.length){
-        joinFail('Room not ready yet — ask your teacher to reload the host page.'); return;
-      }
+      var qArr = raw?(Array.isArray(raw)?raw:Object.values(raw)).filter(Boolean):[];
+      if(!qArr.length){joinFail('Room not ready yet — ask your teacher to reload the host page.');return;}
       questions = qArr;
       totalQ    = totalQ || questions.length;
-
-      // Register player
       return db.ref('kahoot/'+sessionId+'/players/'+playerId).set({
-        name:playerName, score:0, streak:0, lastPoints:0, lastCorrect:false,
-        answeredCount:0, joinedAt:firebase.database.ServerValue.TIMESTAMP, online:true
+        name:playerName,score:0,streak:0,lastPoints:0,lastCorrect:false,
+        answeredCount:0,joinedAt:firebase.database.ServerValue.TIMESTAMP,online:true
       });
-
     }).then(function(){
-      // onDisconnect cleanup
       db.ref('kahoot/'+sessionId+'/players/'+playerId+'/online').onDisconnect().set(false);
-
       el('lby-code').textContent=sessionId;
       buildDots();
       show('s-lobby');
@@ -450,11 +404,9 @@ function doJoin(){
       watchLobbyPlayers();
       watchAnswerKeys();
       watchGameState();
-
     }).catch(function(err){
       joinFail('Error: '+(err&&err.message?err.message:String(err)));
     });
-
   }catch(e){
     joinFail('Unexpected error: '+e.message);
   }
@@ -474,19 +426,14 @@ function setDot(idx){
 }
 
 /* ════════════════════════════════════════
-   FIX 3: WATCH ANSWER KEYS
-   Host writes answerKeys/{qIndex} BEFORE pushing phase:'question'.
-   We cache every key we receive so scoring is instant on tap.
+   WATCH ANSWER KEYS
 ════════════════════════════════════════ */
 function watchAnswerKeys(){
   answerKeyRef=db.ref('kahoot/'+sessionId+'/answerKeys');
   answerKeyRef.on('child_added',function(snap){
-    // FIX 1: Firebase returns object keys as strings — always coerce to int
-    // so answerKeyCache[currentQIdx] (integer) always finds the entry.
     var qi=parseInt(snap.key);
     if(!isNaN(qi)) answerKeyCache[qi]=snap.val();
   });
-  // Also load any keys already present (late-joining students)
   answerKeyRef.once('value',function(snap){
     var keys=(snap&&snap.val())||{};
     Object.keys(keys).forEach(function(k){
@@ -512,10 +459,7 @@ function watchLobbyPlayers(){
 }
 
 /* ════════════════════════════════════════
-   FIX 1 + 2: GAME STATE WATCHER
-   Forgiving listener — triggers on qIndex change even if
-   qStartAt hasn't resolved yet. Local deadline timeout
-   self-advances when timer runs out independently of host.
+   GAME STATE WATCHER
 ════════════════════════════════════════ */
 function watchGameState(){
   stateRef=db.ref('kahoot/'+sessionId+'/state');
@@ -530,17 +474,13 @@ function watchGameState(){
     else if(phase==='question'){
       detachLobby();
       var qi=typeof st.qIndex==='number'?st.qIndex:parseInt(st.qIndex||'0');
-      // FIX 1: trigger on ANY new qIndex, regardless of qStartAt presence
-      // Use st.timePerQ from state if provided (host may have changed it)
       if(st.timePerQ) timePerQ=st.timePerQ;
       if(qi!==currentQIdx){
-        // FIX 1: freeze qStartAt_ms now; fall back to Date.now() if missing
-        var serverTs = (st.qStartAt && st.qStartAt > 1000) ? st.qStartAt : Date.now();
+        var serverTs=(st.qStartAt&&st.qStartAt>1000)?st.qStartAt:Date.now();
         startQuestion(qi, serverTs);
       }
     }
     else if(phase==='reveal'){
-      // Host triggered reveal — cancel local deadline, show server result
       cancelDeadlineTimeout();
       showReveal(
         typeof st.qIndex==='number'?st.qIndex:parseInt(st.qIndex||'0'),
@@ -564,7 +504,6 @@ function detachLobby(){
   if(lobbyPRef){try{lobbyPRef.off('value');}catch(_){}lobbyPRef=null;}
 }
 
-/* ── Deadline timeout helpers ── */
 function cancelDeadlineTimeout(){
   if(deadlineTimeout){clearTimeout(deadlineTimeout);deadlineTimeout=null;}
   if(roundTimeout){clearTimeout(roundTimeout);roundTimeout=null;}
@@ -589,10 +528,7 @@ function startCountdown(from){
 }
 
 /* ════════════════════════════════════════
-   FIX 1 + 2: START QUESTION
-   - qStartAt_ms frozen here, never touched again
-   - FIX 2: local deadline timeout set; cancelled if host
-     pushes reveal/leaderboard before it fires
+   START QUESTION
 ════════════════════════════════════════ */
 function startQuestion(qi, serverTs){
   cancelDeadlineTimeout();
@@ -601,21 +537,11 @@ function startQuestion(qi, serverTs){
   currentQIdx=qi;
   lastTickSecond=-1;
 
-  // FIX 1 + 3: FREEZE qStartAt_ms at the moment the question starts.
-  // All subsequent calculations (timeRemaining at submit) use this value.
-  //
-  // TIMER FIX: serverTs is when the HOST wrote state. By the time the
-  // Firebase event reaches the student and the question renders, 2-5s
-  // may have already passed — so the timer would start at 17 or 15.
-  // Fix: reset qStartAt_ms to Date.now() so the player always sees
-  // the full timePerQ countdown from the moment they see the question.
-  var networkDelay = Math.max(0, Date.now() - serverTs);
-  if(networkDelay >= timePerQ * 1000){
-    // Already past deadline — show question briefly then time out
-    qStartAt_ms = Date.now() - (timePerQ * 1000) + 1500;
+  var networkDelay=Math.max(0,Date.now()-serverTs);
+  if(networkDelay>=timePerQ*1000){
+    qStartAt_ms=Date.now()-(timePerQ*1000)+1500;
   } else {
-    // Always give the player the full timer from the moment they see it
-    qStartAt_ms = Date.now();
+    qStartAt_ms=Date.now();
   }
 
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;}
@@ -625,16 +551,12 @@ function startQuestion(qi, serverTs){
   renderAnswerArea(q);
   show('s-question');
   resetTTSBtn();
-
-  // Start visual timer
   runTimer();
 
-  // FIX 2: local deadline — self-advance if host doesn't push reveal in time.
-  // qStartAt_ms is now Date.now() so msLeft = full timePerQ + grace period.
-  var msLeft = timePerQ * 1000;
-  deadlineTimeout = setTimeout(function(){
-    if(currentQIdx===qi && !answered) timeOut();
-  }, msLeft + 800); // +800ms grace so host reveal push beats local timeout
+  var msLeft=timePerQ*1000;
+  deadlineTimeout=setTimeout(function(){
+    if(currentQIdx===qi&&!answered) timeOut();
+  },msLeft+800);
 
   if(ttsOn) setTimeout(readCurrentQuestion,300);
 }
@@ -679,28 +601,22 @@ function runTimer(){
   stopTimer();
   var arc=el('timer-arc'), lbl=el('timer-label');
   function tick(){
-    // FIX 3: always use the frozen qStartAt_ms, never Date.now() as baseline
-    var deadline = qStartAt_ms + timePerQ * 1000;
-    var left = Math.max(0, (deadline - Date.now()) / 1000);
-    var ratio = left / timePerQ;
-    arc.setAttribute('stroke-dashoffset', ARC_TOTAL * (1 - ratio));
-    arc.setAttribute('stroke', ratio>.5?'#4ade80':ratio>.25?'#f59e0b':'#ef4444');
-    lbl.textContent = Math.ceil(left);
+    var deadline=qStartAt_ms+timePerQ*1000;
+    var left=Math.max(0,(deadline-Date.now())/1000);
+    var ratio=left/timePerQ;
+    arc.setAttribute('stroke-dashoffset',ARC_TOTAL*(1-ratio));
+    arc.setAttribute('stroke',ratio>.5?'#4ade80':ratio>.25?'#f59e0b':'#ef4444');
+    lbl.textContent=Math.ceil(left);
     var secLeft=Math.ceil(left);
     if(secLeft<=5&&secLeft!==lastTickSecond){lastTickSecond=secLeft;playTick();}
-    if(left>0){ timerRaf=requestAnimationFrame(tick); }
-    // Timer visually hits 0 — deadlineTimeout handles the actual advance
+    if(left>0){timerRaf=requestAnimationFrame(tick);}
   }
   timerRaf=requestAnimationFrame(tick);
 }
 function stopTimer(){if(timerRaf){cancelAnimationFrame(timerRaf);timerRaf=null;}}
 
 /* ════════════════════════════════════════
-   FIX 3: SUBMIT ANSWER — INSTANT CLIENT-SIDE SCORING
-   ────────────────────────────────────────────────────
-   Score using the pre-loaded answerKeyCache[currentQIdx].
-   timeRemaining computed from frozen qStartAt_ms (accurate).
-   One atomic Firebase write: raw answer + scored player state.
+   SUBMIT ANSWER
 ════════════════════════════════════════ */
 function submitAnswer(answer, btnEl){
   if(answered) return;
@@ -709,77 +625,59 @@ function submitAnswer(answer, btnEl){
   stopTimer();
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;}
 
-  // Disable all inputs immediately
   el('q-body').querySelectorAll('.opt-btn,.sub-btn').forEach(function(b){b.disabled=true;});
 
-  // FIX 3: timeRemaining uses frozen qStartAt_ms — accurate to the ms
-  var deadline     = qStartAt_ms + timePerQ * 1000;
-  var timeRemMs    = Math.max(0, deadline - Date.now());
-  var timeRemSec   = timeRemMs / 1000;
+  var deadline     =qStartAt_ms+timePerQ*1000;
+  var timeRemMs    =Math.max(0,deadline-Date.now());
+  var timeRemSec   =timeRemMs/1000;
 
-  // ── INSTANT SCORE from local cache ──
-  // FIX 1: key lookup uses integer index — guaranteed to match after watchAnswerKeys fix
-  var key = answerKeyCache[currentQIdx];
-  var isCorrect = false;
+  var key=answerKeyCache[currentQIdx];
+  var isCorrect=false;
 
   if(key){
-    var sa = normAnswer(answer);
-    var ca = normAnswer(key.correct||'');
-    var ct = normAnswer(key.correctText||key.correct||'');
+    var sa=normAnswer(answer);
+    var ca=normAnswer(key.correct||'');
+    var ct=normAnswer(key.correctText||key.correct||'');
 
     if(key.type==='SHORT'){
-      // Pipe-separated variants, substring match
-      var variants = ca.split('|');
-      isCorrect = variants.some(function(v){
+      var variants=ca.split('|');
+      isCorrect=variants.some(function(v){
         var vt=v.trim();
-        return vt===sa || sa.indexOf(vt)!==-1 || (vt.length>=3&&vt.indexOf(sa)!==-1&&sa.length>=3);
+        return vt===sa||sa.indexOf(vt)!==-1||(vt.length>=3&&vt.indexOf(sa)!==-1&&sa.length>=3);
       });
-
     } else if(key.type==='TF'){
       var normTF=function(x){
         var s=normAnswer(x);
-        if(s==='true' ||s==='a'||s==='yes'||s==='1') return 'true';
-        if(s==='false'||s==='b'||s==='no' ||s==='0') return 'false';
+        if(s==='true'||s==='a'||s==='yes'||s==='1') return 'true';
+        if(s==='false'||s==='b'||s==='no'||s==='0') return 'false';
         return s;
       };
-      isCorrect = normTF(sa)===normTF(ca);
-
+      isCorrect=normTF(sa)===normTF(ca);
     } else {
-      // FIX 3: MCQ — key.correct may be full text OR a letter (A/B/C/D).
-      // Match both: compare answer text directly, AND resolve the letter
-      // against the question's options array to get the text equivalent.
-      var q = questions[currentQIdx];
-      var correctText = ct || ca;
-
-      // If key.correct is a single letter A-D, resolve it to option text
-      if(/^[a-d]$/.test(ca) && q && q.options){
-        var letterIdx = ca.charCodeAt(0) - 97; // 'a'=0,'b'=1,'c'=2,'d'=3
-        if(q.options[letterIdx]) correctText = normAnswer(q.options[letterIdx]);
+      var q=questions[currentQIdx];
+      var correctText=ct||ca;
+      if(/^[a-d]$/.test(ca)&&q&&q.options){
+        var letterIdx=ca.charCodeAt(0)-97;
+        if(q.options[letterIdx]) correctText=normAnswer(q.options[letterIdx]);
       }
-
-      isCorrect = sa===correctText || sa===ca;
+      isCorrect=sa===correctText||sa===ca;
     }
   }
-  // If key not in cache yet (edge case), isCorrect stays false.
-  // The server's scoreKahootQuestion will reconcile via GAS.
 
-  // ── Compute points (mirrors GAS formula exactly) ──
-  var pts         = key?(key.points||1):1;
-  var basePoints  = pts * 1000;
-  var speedBonus  = isCorrect ? Math.round((timeRemSec/(timePerQ||20))*1000) : 0;
-  var newStreak   = isCorrect ? streak+1 : 0;
-  var streakBonus = isCorrect ? newStreak*50 : 0;
-  var pointsEarned= isCorrect ? (basePoints+speedBonus+streakBonus) : 0;
+  var pts        =key?(key.points||1):1;
+  var basePoints =pts*1000;
+  var speedBonus =isCorrect?Math.round((timeRemSec/(timePerQ||20))*1000):0;
+  var newStreak  =isCorrect?streak+1:0;
+  var streakBonus=isCorrect?newStreak*50:0;
+  var pointsEarned=isCorrect?(basePoints+speedBonus+streakBonus):0;
 
-  // Update local totals immediately (UI feedback uses these)
-  streak     = newStreak;
-  totalScore = totalScore + pointsEarned;
+  streak    =newStreak;
+  totalScore=totalScore+pointsEarned;
   myResults[currentQIdx]={isCorrect:isCorrect,pointsEarned:pointsEarned,myAnswer:answer};
 
-  // Show neutral "answered" feedback — no wrong/correct reveal until host shows it
+  // Neutral lock-in feedback — no pass/fail revealed yet
   showAnsweredFeedback(btnEl, answer);
 
-  // ── Firebase write: raw answer first (non-score fields) ──
   var rawUpdate={};
   rawUpdate['kahoot/'+sessionId+'/rawAnswers/'+playerId+'/'+currentQIdx]={
     answer:        answer,
@@ -789,31 +687,25 @@ function submitAnswer(answer, btnEl){
     pointsEarned:  pointsEarned,
     lockedAt:      firebase.database.ServerValue.TIMESTAMP
   };
-  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/streak']       = streak;
-  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/lastPoints']   = pointsEarned;
-  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/lastCorrect']  = isCorrect;
-  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/answeredCount']= currentQIdx+1;
-  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/online']       = true;
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/streak']       =streak;
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/lastPoints']   =pointsEarned;
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/lastCorrect']  =isCorrect;
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/answeredCount']=currentQIdx+1;
+  rawUpdate['kahoot/'+sessionId+'/players/'+playerId+'/online']       =true;
   db.ref().update(rawUpdate);
 
-  // FIX 2: Use a Firebase transaction for score so it always accumulates
-  // correctly — even if the page was refreshed or the local variable drifted.
-  if(pointsEarned > 0){
+  if(pointsEarned>0){
     db.ref('kahoot/'+sessionId+'/players/'+playerId+'/score').transaction(function(current){
-      return (current||0) + pointsEarned;
+      return (current||0)+pointsEarned;
     });
   }
 }
 
 /* ════════════════════════════════════════
-   ANSWERED FEEDBACK — neutral, no wrong/correct
-   Highlight the selected option, show a lock-in
-   confirmation, and wait for the host to reveal.
+   ANSWERED FEEDBACK — neutral lock-in
 ════════════════════════════════════════ */
 function showAnsweredFeedback(selectedBtn, answer){
   var body=el('q-body');
-
-  // Dim all buttons, highlight the one they picked
   var allBtns=body.querySelectorAll('.opt-btn');
   allBtns.forEach(function(b){
     var isPicked=(b===selectedBtn||normAnswer(b.dataset.answer||'')===normAnswer(answer));
@@ -826,10 +718,8 @@ function showAnsweredFeedback(selectedBtn, answer){
     }
   });
 
-  // Play a neutral lock-in tone (not correct/wrong)
-  playTone(700,'sine',.08,.1,true);
+  playLockIn();
 
-  // Overlay: just show "Answer locked in"
   var overlay=document.createElement('div');
   overlay.className='answered-overlay';
   overlay.innerHTML=
@@ -840,57 +730,43 @@ function showAnsweredFeedback(selectedBtn, answer){
   body.appendChild(overlay);
 }
 
-/* kept for timeOut — plays wrong sound there */
-function showInstantFeedback(answer, isCorrect, selectedBtn, pointsEarned){
-  showAnsweredFeedback(selectedBtn, answer);
-}
-
 /* ════════════════════════════════════════
-   FIX 2: TIMEOUT — self-advance when deadline passes
-   Called by local deadlineTimeout, not by host push.
-   Writes a timed-out marker to Firebase so host's answer
-   count stays accurate.
+   TIMEOUT
 ════════════════════════════════════════ */
 function timeOut(){
   if(answered) return;
   answered=true;
   stopTimer();
-  playWrong();
   streak=0;
   el('q-body').querySelectorAll('.opt-btn,.sub-btn').forEach(function(b){b.disabled=true;});
 
-  // Write timed-out marker
   var updates={};
   updates['kahoot/'+sessionId+'/rawAnswers/'+playerId+'/'+currentQIdx]={
-    answer:'', timeRemaining:0, currentStreak:0, timedOut:true,
-    isCorrect:false, pointsEarned:0,
+    answer:'',timeRemaining:0,currentStreak:0,timedOut:true,
+    isCorrect:false,pointsEarned:0,
     lockedAt:firebase.database.ServerValue.TIMESTAMP
   };
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/streak']       = 0;
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/lastCorrect']  = false;
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/lastPoints']   = 0;
-  updates['kahoot/'+sessionId+'/players/'+playerId+'/answeredCount']= currentQIdx+1;
+  updates['kahoot/'+sessionId+'/players/'+playerId+'/streak']       =0;
+  updates['kahoot/'+sessionId+'/players/'+playerId+'/lastCorrect']  =false;
+  updates['kahoot/'+sessionId+'/players/'+playerId+'/lastPoints']   =0;
+  updates['kahoot/'+sessionId+'/players/'+playerId+'/answeredCount']=currentQIdx+1;
   db.ref().update(updates);
 
-  // Show timed-out overlay
   var body=el('q-body'); body.innerHTML='';
   var ov=document.createElement('div'); ov.className='answered-overlay';
   ov.innerHTML='<div class="score-pop wrong">⏱</div>'
-    +'<div class="score-label wrong">Time’s up!</div>'
+    +'<div class="score-label wrong">Time\'s up!</div>'
     +'<div class="waiting-lbl">Waiting for the teacher…</div>';
   body.appendChild(ov);
-
-  // FIX 2: After showing time's-up, wait a moment then watch Firebase for
-  // reveal/leaderboard push. The state watcher is already active so it will
-  // fire automatically — no additional action needed here.
 }
 
 /* ════════════════════════════════════════
-   REVEAL — host-triggered
-   Shows correct answer with highlight overlay.
-   myResults cache used for carry-over score display.
+   REVEAL — FIX 1
+   No "correct / wrong" messaging to the player.
+   Just show all options, highlight the correct one green,
+   mark the player's picked option if it was wrong (dim + border).
 ════════════════════════════════════════ */
-function showReveal(qi,serverCorrect,correctText){
+function showReveal(qi, serverCorrect, correctText){
   stopTimer();
   cancelDeadlineTimeout();
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;}
@@ -900,53 +776,64 @@ function showReveal(qi,serverCorrect,correctText){
   el('reveal-q-txt').textContent=q.question;
   var optsWrap=el('reveal-opts'); optsWrap.innerHTML='';
 
+  // Determine what the player answered
+  var myR   =myResults[qi];
+  var myAns =myR?normAnswer(myR.myAnswer||''):'';
+
+  // Play a gentle chime — no pass/fail sound
+  playRevealChime();
+
   if(q.type==='MCQ'||q.type==='TF'){
     (q.options||[]).forEach(function(opt,i){
-      var isC=normAnswer(opt)===normAnswer(correct)
-           || String.fromCharCode(65+i)===correct.toUpperCase()
-           || normAnswer(opt)===normAnswer(correctText||'');
+      // Is this the correct option?
+      var isCorrectOpt=normAnswer(opt)===normAnswer(correct)
+                    || String.fromCharCode(65+i)===correct.toUpperCase()
+                    || normAnswer(opt)===normAnswer(correctText||'');
+
+      // Did the player pick this option?
+      var playerPickedThis=myAns&&(normAnswer(opt)===myAns);
+
       var div=document.createElement('div');
-      div.className='reveal-opt '+(isC?'correct':'wrong');
-      div.innerHTML='<div class="reveal-opt-shape">'+SHAPES[i%4]+'</div><span>'+esc(opt)+'</span>'+(isC?' ✓':'');
+      var cls='reveal-opt';
+      var suffix='';
+
+      if(isCorrectOpt){
+        cls+=' is-correct';
+        suffix='<span class="reveal-correct-tick">✓</span>';
+      } else if(playerPickedThis){
+        // Player picked this but it's wrong — show with a muted border so they know what they chose
+        cls+=' my-pick-wrong';
+        suffix='<span class="reveal-my-marker">your pick</span>';
+      } else {
+        cls+=' not-picked';
+      }
+
+      div.className=cls;
+      div.innerHTML='<div class="reveal-opt-shape">'+SHAPES[i%4]+'</div>'
+        +'<span style="flex:1">'+esc(opt)+'</span>'
+        +suffix;
       optsWrap.appendChild(div);
     });
   } else {
-    optsWrap.innerHTML='<div style="padding:12px;color:#4ade80;font-weight:700">✓ Correct: '+esc(correctText||correct)+'</div>';
-  }
-
-  // Use server correct answer to determine if player got it right —
-  // this is authoritative regardless of client-side scoring accuracy.
-  var myR = myResults[qi];
-  var myAns = myR ? normAnswer(myR.myAnswer||'') : '';
-  var correctNorm = normAnswer(correct);
-  var correctTextNorm = normAnswer(correctText||correct);
-
-  // Check player's answer against the revealed correct answer
-  var gotItRight = false;
-  if(myR && myAns){
-    gotItRight = myAns===correctNorm || myAns===correctTextNorm;
-    // Also check if their answer text matches any option that IS correct
-    if(!gotItRight && q && q.options){
-      q.options.forEach(function(opt,i){
-        var isCorrectOpt = normAnswer(opt)===correctNorm || normAnswer(opt)===correctTextNorm
-                        || String.fromCharCode(65+i)===correct.toUpperCase();
-        if(isCorrectOpt && myAns===normAnswer(opt)) gotItRight=true;
-      });
+    // Short answer — just show the correct answer highlighted
+    optsWrap.innerHTML='<div class="reveal-opt is-correct" style="grid-column:1/-1">'
+      +'<div class="reveal-opt-shape">✓</div>'
+      +'<span style="flex:1">'+esc(correctText||correct)+'</span>'
+      +'</div>';
+    // Show player's answer if they gave one
+    if(myAns){
+      optsWrap.innerHTML+='<div class="reveal-opt my-pick-wrong" style="grid-column:1/-1">'
+        +'<div class="reveal-opt-shape">📝</div>'
+        +'<span style="flex:1">You answered: '+esc(myR.myAnswer||myAns)+'</span>'
+        +'</div>';
     }
   }
 
-  // Play sound now that we know for sure
-  if(myR){ if(gotItRight) playCorrect(); else playWrong(); }
+  // Score pill — just total score, no pass/fail label
+  el('reveal-score-pill').innerHTML=
+    '<div class="rsp-label">Your score</div>'
+    +'<div class="rsp-score">'+totalScore.toLocaleString()+' pts</div>';
 
-  var carry=el('reveal-carry');
-  if(myR && myAns){
-    carry.innerHTML='<div class="rc-label" style="color:'+(gotItRight?'#4ade80':'#f87171')+';font-size:16px;font-weight:700">'
-      +(gotItRight?'✓ Correct! 🎉':'✗ Not this time')+'</div>'
-      +'<div class="rc-score">'+totalScore.toLocaleString()+' pts total</div>';
-  } else {
-    carry.innerHTML='<div class="rc-label" style="color:var(--muted)">Time’s up</div>'
-      +'<div class="rc-score">'+totalScore.toLocaleString()+' pts total</div>';
-  }
   show('s-reveal');
 }
 
@@ -973,8 +860,7 @@ function showLeaderboard(autoAdvanceAt){
     }).join('');
     show('s-leaderboard');
 
-    // Countdown to next question (uses autoAdvanceAt from Firebase)
-    if(autoAdvanceAt && autoAdvanceAt>Date.now()){
+    if(autoAdvanceAt&&autoAdvanceAt>Date.now()){
       var iv2=setInterval(function(){
         var cd=Math.max(0,Math.ceil((autoAdvanceAt-Date.now())/1000));
         el('lb-next-auto').textContent=cd>0?'Next question in '+cd+'s…':'Get ready! ⚡';
