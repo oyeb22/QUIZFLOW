@@ -876,7 +876,7 @@ function timeOut(){
   var body=el('q-body'); body.innerHTML='';
   var ov=document.createElement('div'); ov.className='answered-overlay';
   ov.innerHTML='<div class="score-pop wrong">⏱</div>'
-    +'<div class="score-label wrong">Time\'s up!</div>'
+    +'<div class="score-label wrong">Time’s up!</div>'
     +'<div class="waiting-lbl">Waiting for the teacher…</div>';
   body.appendChild(ov);
 
@@ -944,7 +944,7 @@ function showReveal(qi,serverCorrect,correctText){
       +(gotItRight?'✓ Correct! 🎉':'✗ Not this time')+'</div>'
       +'<div class="rc-score">'+totalScore.toLocaleString()+' pts total</div>';
   } else {
-    carry.innerHTML='<div class="rc-label" style="color:var(--muted)">Time's up</div>'
+    carry.innerHTML='<div class="rc-label" style="color:var(--muted)">Time’s up</div>'
       +'<div class="rc-score">'+totalScore.toLocaleString()+' pts total</div>';
   }
   show('s-reveal');
