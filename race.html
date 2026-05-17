@@ -337,6 +337,17 @@ function playWrong() {
   osc.connect(g); g.connect(audioCtx.destination);
   osc.start(); osc.stop(audioCtx.currentTime + 0.25);
 }
+function playLockIn(){
+  if(!audioReady) return;
+  var osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(700, audioCtx.currentTime);
+  var g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.18, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+  osc.connect(g); g.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+}
 
 /* Streak milestone — fanfare riff */
 function playStreakMilestone(streakCount) {
@@ -1100,74 +1111,24 @@ function loadQ(){
 }
 
 function submitAns(answer, btnEl){
-  /* Optimistic lock — prevents double-tap */
+  // Optimistic lock — prevents double-tap / double-submit
   if(answering) return;
-  answering=true;
-
-  /* Disable all controls immediately — fast UI response */
-  el('q-area').querySelectorAll('button,input').forEach(function(b){ b.disabled=true; });
-
-  /* Immediately give visual feedback based on educated guess:
-     we show the button as "selected" straight away, then
-     GAS response confirms or overrides with correct/wrong class.
-  */
-  if(btnEl) btnEl.style.opacity='0.7';
-
-  gasPost({
-    action:     'validateRaceAnswer',
-    raceId:     raceId,
-    playerId:   playerId,
-    questionId: questions[currentQ].id,
-    answer:     answer
-  }, function(err,res){
-    answering=false;
-    if(btnEl) btnEl.style.opacity='1';
-
-    if(err||!res||res.status!=='success'){
-      /* On network error, re-enable so they can retry */
-      el('q-area').querySelectorAll('button,input').forEach(function(b){ b.disabled=false; });
-      return;
-    }
-
-    var d=res.data;
-    if(d.isCorrect){
-      streak++;
-      if(btnEl) btnEl.classList.add('correct');
-      flashScreen('correct');
-      playCorrect();
-      if(streak>=3){
-        nitroUntil=Date.now()+1800;
-        boostUntil=0;
-        showBanner('nitro');
-        flashScreen('nitro');
-        playNitro();
-        if(streak===3||streak===5||streak===7) playStreakMilestone(streak);
-      } else {
-        boostUntil=Date.now()+2200;
-      }
-    } else {
-      streak=0;
-      if(btnEl) btnEl.classList.add('wrong');
-      flashScreen('wrong');
-      wrongUntil=Date.now()+600;
-      showBanner('wrong');
-      playWrong();
-    }
-
-    myProgress=d.progress||0;
-    /* Push updated data to Firebase */
-    db.ref('race/'+raceId+'/players/'+playerId).update({
-      progress: myProgress,
-      correct:  d.correctCount||0,
-      streak:   streak,
-      updatedAt:firebase.database.ServerValue.TIMESTAMP
-    });
-
-    currentQ++;
-    /* Short delay before next question — enough to see feedback */
-    setTimeout(function(){ loadQ(); }, 560);
+  answering = true;
+ 
+  // ── 1. INSTANT UI LOCK-IN (no waiting for server) ──────────────
+  el('q-area').querySelectorAll('button,input').forEach(function(b){ b.disabled = true; });
+ 
+  // Highlight selected button immediately in a neutral "locked" state
+  if(btnEl){
+    btnEl.style.outline = '3px solid rgba(255,255,255,0.6)';
+    btnEl.style.outlineOffset = '-3px';
+    btnEl.style.filter = 'brightness(1.15)';
+  }
+ 
+  // Dim non-selected buttons immediately
+  el('q-area').querySelectorAll('.opt-btn').forEach(function(b){
+    if(b !== btnEl) b.style.filter = 'brightness(0.38) grayscale(0.4)';
   });
-}
 
 /* ═══════════ EFFECTS ═══════════ */
 var nitroTimer=null, wrongTimer=null, flashTimer=null;
@@ -1176,6 +1137,8 @@ function showBanner(type){
     var b=el('nitro-banner'); b.classList.add('show');
     clearTimeout(nitroTimer);
     nitroTimer=setTimeout(function(){ b.classList.remove('show'); },1300);
+  } else if(type === 'locked'){
+    // no banner for lock-in — the button highlight is enough
   } else {
     var w=el('wrong-banner'); w.classList.add('show');
     clearTimeout(wrongTimer);
@@ -1183,6 +1146,7 @@ function showBanner(type){
   }
 }
 function flashScreen(type){
+  if(type === 'locked') type = 'correct'; // reuse green flash for lock-in
   var f=el('screen-flash');
   f.className='screen-flash '+type+' show';
   clearTimeout(flashTimer);
