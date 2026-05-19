@@ -246,9 +246,22 @@ try {
     messagingSenderId:'698483423316',
     appId:'1:698483423316:web:d5dd780bb186d8253115c1'
   };
-  var existingApp = null;
-  if (firebase.apps) firebase.apps.forEach(function(a){ if(a.name==='race') existingApp=a; });
-  db = firebase.database(existingApp || firebase.initializeApp(cfg,'race'));
+  // Robust app initialization - check all possible app states
+  var raceApp = null;
+  try {
+    raceApp = firebase.app('race');
+  } catch(e) {
+    // App doesn't exist yet, that's fine
+  }
+  if (!raceApp) {
+    try {
+      raceApp = firebase.initializeApp(cfg, 'race');
+    } catch(e) {
+      // Maybe already initialized by another script
+      raceApp = firebase.app('race');
+    }
+  }
+  db = firebase.database(raceApp);
 } catch(e) {
   show('s-fatal');
   el('fatal-msg').textContent = 'Firebase error: ' + e.message;
@@ -956,7 +969,12 @@ function generateTrack() {
 
 /* ============ 3D SCENE SETUP ============ */
 function init3D() {
+  console.log('init3D called');
   var canvas = el('game-canvas');
+  if (!canvas) {
+    console.error('Game canvas not found!');
+    return;
+  }
 
   scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x050810, 0.008);
@@ -1250,11 +1268,18 @@ function updateSpeedLines(speedKmh, dt) {
 
 /* ============ PRE-RACE CINEMATIC ============ */
 var cinematicCars = [];
-var cinematicPhase = 'none'; // none, drivein, lineup, countdown, race
+// cinematicPhase already declared above
 
 function startPreRaceCinematic() {
   cinematicPhase = 'drivein';
+  console.log('Starting pre-race cinematic');
   showCinematicText('DRIVERS APPROACHING STARTING GRID');
+
+  // Ensure player car exists for cinematic
+  if(!playerCar){
+    playerCar = createCar(playerColor, playerName, true);
+    scene.add(playerCar);
+  }
 
   // Create all player cars at a distance and drive them in
   var players = Object.values(allPlayers);
@@ -1291,6 +1316,7 @@ function animateCinematicDriveIn() {
   var allArrived = true;
 
   cinematicCars.forEach(function(c) {
+    if(!c.car) return;
     var diff = c.targetProgress - c.currentProgress;
     if (diff < 0) diff += 1;
 
@@ -1371,6 +1397,8 @@ var lastTime = 0;
 
 function renderLoop(time) {
   if (!gameRunning) return;
+  // Prevent duplicate loops
+  if(rafId) cancelAnimationFrame(rafId);
   rafId = requestAnimationFrame(renderLoop);
 
   var dt = Math.min((time - lastTime) / 1000, 0.05);
@@ -1595,20 +1623,24 @@ function doJoin() {
   raceId = (el('inp-code').value || '').trim().toUpperCase();
   playerName = (el('inp-name').value || '').trim();
   errE.textContent = '';
-  if (raceId.length < 4) { errE.textContent = 'Enter a valid race code'; return; }
+  if (raceId.length < 4) { errE.textContent = 'Enter a valid race code (min 4 chars)'; return; }
   if (playerName.length < 2) { errE.textContent = 'Enter driver name (min 2 chars)'; return; }
 
   btn.disabled = true; btn.textContent = 'ENTERING GRID...';
   playerId = 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
+  console.log('Joining race:', raceId, 'as', playerName, 'id:', playerId);
+
   initAudio();
 
   gasPost({ action: 'getRaceQuestions', raceId: raceId }, function(err, res) {
     if (err || !res || res.status !== 'success') {
+      console.error('Join failed:', err, res);
       errE.textContent = (res && res.message) || 'Race not found. Check your code.';
       btn.disabled = false; btn.textContent = '▶ ENTER RACE';
       return;
     }
+    console.log('Join success, questions:', res.data ? res.data.length : 0);
     questions = res.data || [];
     totalQ = questions.length;
     playerColor = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
@@ -1632,6 +1664,12 @@ function doJoin() {
 
     el('lby-code').textContent = raceId;
     show('s-lobby');
+    // Ensure our own player is in allPlayers before watching
+    allPlayers[playerId] = {
+      pid: playerId, name: playerName, color: playerColor,
+      laneX: laneOffsets[Math.floor(Math.random() * laneOffsets.length)],
+      progress: 0, correct: 0, streak: 0, finished: false
+    };
     watchLobby();
     btn.disabled = false; btn.textContent = '▶ ENTER RACE';
   });
@@ -1654,22 +1692,56 @@ function watchLobby() {
 
   phaseRef = db.ref('race/' + raceId + '/state/phase');
   phaseRef.on('value', function(snap) {
-    if (!snap || !snap.val()) return;
-    if (snap.val() === 'started') { detachLobby(); init3D(); startPreRaceCinematic(); }
-    else if (snap.val() === 'ended') { endRace(); }
+    var val = snap ? snap.val() : null;
+    console.log('Phase update:', val, 'for race:', raceId);
+    if (val === 'started') {
+      if (cinematicPhase !== 'none') return;
+      detachLobby();
+      init3D();
+      startPreRaceCinematic();
+    } else if (val === 'ended') {
+      endRace();
+    }
   });
+
+  // CRITICAL FALLBACK: Poll phase every 2 seconds as backup
+  window._lobbyPollInterval = setInterval(function() {
+    if (cinematicPhase !== 'none') {
+      clearInterval(window._lobbyPollInterval);
+      window._lobbyPollInterval = null;
+      return;
+    }
+    db.ref('race/' + raceId + '/state/phase').once('value').then(function(snap) {
+      var val = snap ? snap.val() : null;
+      if (val === 'started' && cinematicPhase === 'none') {
+        console.log('Poll fallback triggered race start');
+        clearInterval(window._lobbyPollInterval);
+        window._lobbyPollInterval = null;
+        detachLobby();
+        init3D();
+        startPreRaceCinematic();
+      }
+    }).catch(function(e) { console.log('Poll error:', e); });
+  }, 2000);
 }
 
 function detachLobby() {
   if (lobbyPRef) { try { lobbyPRef.off('value'); } catch(_) {} lobbyPRef = null; }
   if (phaseRef) { try { phaseRef.off('value'); } catch(_) {} phaseRef = null; }
+  if (window._lobbyPollInterval) {
+    clearInterval(window._lobbyPollInterval);
+    window._lobbyPollInterval = null;
+  }
 }
 
 /* ============ START RACE GAMEPLAY ============ */
 function startRaceGameplay() {
-  // Create player car
-  playerCar = createCar(playerColor, playerName, true);
-  scene.add(playerCar);
+  console.log('Starting race gameplay');
+  // Create player car if not already created during cinematic
+  if(!playerCar){
+    playerCar = createCar(playerColor, playerName, true);
+    scene.add(playerCar);
+  }
 
   // Create other player cars
   Object.values(allPlayers).forEach(function(p) {
@@ -1681,6 +1753,7 @@ function startRaceGameplay() {
 
   el('hud-race-code').textContent = raceId;
   gameRunning = true;
+  console.log('Race gameplay started, gameRunning = true');
   el('game-hud').classList.add('on');
 
   // Watch all players
@@ -1929,6 +2002,11 @@ function endRace() {
   stopAllMusic();
   if (gameRef) { try { gameRef.off('value'); } catch(_) {} gameRef = null; }
 }
+
+// Global error handler for debugging
+window.addEventListener('error', function(e) {
+  console.error('Global error:', e.message, 'at', e.filename, ':', e.lineno);
+});
 
 window.addEventListener('beforeunload', function() {
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
